@@ -217,3 +217,7 @@ react contextにいれちゃう
   - default_role_id
     - アカウント作る際に最初にアサインされるrole
 
+
+about pageは必要。ヘッダーを圧迫しちゃうけど、リンク追加する。dbにもcolumn用意
+ユーザー情報の編集フラグも用意して、一度も編集してないとポストできなくしておく。
+roleにtop post intervalを用意して、topへのポストを連続でできなくする機能は欲しい。column定義は/{\d}2(y,m,w,d,h,m)+/な感じ。数字は2桁固定で、単位を指定する。
