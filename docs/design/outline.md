@@ -7,6 +7,7 @@
 slackのUIのほうが楽だし見やすい
 2ちゃんねる的なUIでもいいかもしれない。
 マストドンのサーバをシングルユーザモードで運用するのとそんなにかわらないので、その点を考慮したい
+マストドンのシングルユーザモードでは、だれも入ってこれない
 
 ## 機能概要
 ### ログイン
@@ -36,6 +37,7 @@ twitterは特定のツイートに対してコメントをつけてgraph上に�
 croakerボタン->トップ画面へのリンク
 検索窓
 settingボタン->自身のユーザ管理画面へ
+aboutボタン->aboutへ
 
 ### フッター
 ファイルアップロードボタン。画像のみ指定するやつは面倒だしui圧迫するので用意しない
@@ -56,6 +58,7 @@ thread linkはスレに連なってればboldで目立つ感じにしておく
     - top link
   - 検索窓
   - setting link
+  - about link
 - つぶやき
   - 最新が下
   - つぶやき単体
@@ -78,12 +81,14 @@ thread linkはスレに連なってればboldで目立つ感じにしておく
 スクロール時に一番したの投稿番号がハッシュとしてurlにつく
 リンクとしてもハッシュつきのリンクはそこを起点として表示する
 
+規約同意ができていない場合、投稿ができない
+
 ### 検索結果
 検索結果なだけで、ほぼトップと一緒
 urlに`?search=<text>`とつく
 
 ### スレッド
-検索結果なだけで、ほぼトップと一緒
+スレッドの情報なだけで、ほぼトップと一緒
 urlに`/thread/<number>`とつく
 
 ### ユーザ管理画面
@@ -98,6 +103,42 @@ urlに`/thread/<number>`とつく
 - アカウント削除
 - banボタン
   - 管理者にのみ表示される
+- visitor activities
+  - 直近1週間のvisitorの投稿まとめ
+  - 通知の実装が面倒なので1週間で区切る
+  - ユーザごとに行をまとめ、最新のものが上
+  - クリックすると投稿に飛べるがそれも最新のみ。スレッド内であってもトップレベルに飛ばす。アンカーを利用
+  - ownerにしか表示しない
+
+初回の編集時にaboutの内容を表示し、`編集完了&同意`とキャンセルボタンを用意する。
+
+### about
+- croakerの説明
+```
+このwebサイトは、croakerというアプリケーションで動かしています。
+croakerは、twitterで友達もできず、会社のslackのタイムラインでもなかなか絡んでもらえない寂しい中年のサラリーマンプログラマが作りました。
+
+croakerは、ownerがセルフホストして運用コストを負担して動かすownerのためのタイムラインを作るアプリケーションです。
+slackのtimesチャンネルの運用に近いが、publicであり、owner自身が強くコントロールできることを目的としています。
+基本的にすべてはownerのものになるので、気に食わない投稿は削除でき、気に食わない人はbanできてしまいます。
+slackで同僚のtimesチャンネルを荒らしたら迷惑ですよね？でも適度に話しかけられることを嫌がる人は少ないはずです。
+
+こういった考え方で作られたものなので、利用者に公平であるために、visitor（あなたのことです）の情報は最低限です。
+github、googleアカウントでログインでき、必要な情報は裏側で取得保持していますが、ログイン以外の機能では利用しません。
+唯一、[名前]だけは初期的にgithub、googleのものを設定しますが、それも変更可能です。
+表示される情報で個人を特定可能になるものは基本的にないので、逆にわかりやすいように名前や説明を補足してほしいです。
+ownerとの円滑なコミュニケーションのためにお願いします。
+
+データについても基本的にownerに帰属します。
+croakerの作者は、visitorの情報のうちgithub、googleから取得した情報の利用はしません。
+投稿してもらった情報も外部に譲渡、公開することはしませんが、アプリケーションの改善やプログラマとしてのスキルアップのため、分析には利用させていただきます。
+利用されるownerさんがいらっしゃるのであれば、このあたりの考えは宣言いただいて利用してほしいと考えています。
+
+ごちゃごちゃと小難しい話が長いですが、最後まで読んでご理解いただき、ありがとうございます。
+今後ともよろしくお願いします。
+```
+
+- ownerへのリンク
 
 ### ログイン画面
 未ログイン時には、ユーザ管理画面リンクがログイン画面になる
@@ -146,6 +187,7 @@ type session = {
   croaker_description: string;
   croaker_status: string;
   croaker_role: string;
+  form_agreement: bool;
 };
 ```
 
@@ -154,6 +196,8 @@ type session = {
 - post /crocker/<identifier>
   - name
   - description
+  - form_agreement
+  - form_agreement=falseでも更新は成功するが、いつまでも投稿はできない
 
 - post /crocker/<identifier>/ban
 
@@ -180,6 +224,8 @@ react contextにいれちゃう
     - banned
   - role_id
     - foreign
+  - form_agreement
+    - bool
   - created_date
   - update_date
 - croak
@@ -187,16 +233,18 @@ react contextにいれちゃう
     - foreign
   - croak_id
   - content
+    - 140文字までにしたい
+    - link含めてだとどうしても短くなっちゃうがlink情報だけ抜き出して保持しようとすると別テーブルが必要なので、要検討
   - file path
   - thread
-    - null
-    - croak_id
+    - not null
+    - topレベルの場合は、自身のcroak_idが入る
   - posted_date
   - deleted_date
 - role
   - role_id
   - name
-    - admin
+    - owner
     - visitor
   - ban power
     - bool
@@ -209,6 +257,12 @@ react contextにいれちゃう
     - disable
   - post files
     - bool
+  - top post interval
+    - トップレベルのpostの投稿間隔指定。これより短くはできない
+    - 数字2桁+ymwdhmという単位で指定
+  - show other activities
+    - bool
+    - ユーザ管理画面に他のユーザの行動まとめを表示するかどうか
 - configuration
   - active
     - for mentainance
@@ -216,10 +270,38 @@ react contextにいれちゃう
     - アカウントつくれなくする設定だがnext auth上でどうやればいいかわからんので保留
   - default_role_id
     - アカウント作る際に最初にアサインされるrole
+  - about contents
 
+roleはowner,visitorの2レコード、configurationは1レコードをデフォルトでいれておきたい。
+migrationでできるかな
 
-about pageは必要。ヘッダーを圧迫しちゃうけど、リンク追加する。dbにもcolumn用意
-ユーザー情報の編集フラグも用意して、一度も編集してないとポストできなくしておく。
-roleにtop post intervalを用意して、topへのポストを連続でできなくする機能は欲しい。column定義は/{\d}2(y,m,w,d,h,m)+/な感じ。数字は2桁固定で、単位を指定する。
-やっぱ文字数制限はあったほうがいいかも。twitterリスペクトで140文字かな。
-ユーザー情報の初回編集時はaboutの内容を表示して同意ボタンでsubmitできるようにしたい。
+### textについて
+基本的にフリーテキストで改行もいれられる。
+markdownのように修飾する機能は基本的にない。リッチに書きたければ、別途ブログ記事にすべき。
+
+ただ、リンクぐらいは認識したい。
+なるべく実装をさぼりたいので`https`スキームのみ認識する。twitterではスキームの前にスペースがあいていたり、行頭だと認識されるので、それと同等にする。
+URLはマルチバイト文字も許されるはずなので、そこも許容したい。
+画像、動画、OGPは取得して表示したい。コンテンツのサマリがでないとリンクがなんであるか、タイムラインから離れないとわからないのは不便なので。
+
+一番、攻撃の隙になりやすい部分なのでセキュアになるように十分注意して実装したい。
+難易度が高そうなので、リリース後の追加機能になるかも
+
+## 技術要素
+- sqlite + litestream
+- next.js
+- next-auth
+  - github login
+  - google login
+- kysely
+- sqliteとファイルデータのバックエンドとしてgcs
+  - 署名付きURLの発行
+- 実行環境はcloud run
+
+## plans
+1. docker、node、create-next-app、sqliteなどの環境整備
+2. kyselyでのテーブル定義、基本的なDAO実装
+3. route handlerの実装
+4. front pageの実装
+5. 全体調整
+
