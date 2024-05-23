@@ -1,0 +1,19 @@
+#!/bin/bash
+
+comm=$1
+
+if [ $comm = "build" ]; then
+  docker compose build --build-arg UID="$(id -u)" --build-arg GID="$(id -g)" --no-cache
+elif [ $comm = "up" ]; then
+  docker compose up -d
+elif [ $comm = "stop" ]; then
+  docker compose stop
+elif [ $comm = "ps" ]; then
+  docker compose ps
+elif [ $comm = "sqlite" ]; then
+  docker compose exec app sqlite3 croaker.sqlite3
+elif [ $comm = "app" ]; then
+  docker compose exec app bash
+else
+  docker compose exec app npm run $comm
+fi
