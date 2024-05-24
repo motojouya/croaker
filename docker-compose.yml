@@ -18,7 +18,13 @@ services:
       NODE_ENV: develop
       PORT: 3000
       RDB_FILE: croaker.sqlite3
-      SESSION_SECRET: secret12secret34secret56secret78
-      SESSION_COOKIE_NAME: session-id
+      # SESSION_SECRET: secret12secret34secret56secret78
+      # SESSION_COOKIE_NAME: session-id
+      NEXTAUTH_SECRET: "something_secret"
+      NEXTAUTH_URL: "http://localhost:3000"
+      GITHUB_ID: "" # TODO
+      GITHUB_SECRET: "" # TODO
+      GOOGLE_CLIENT_ID: "" # TODO
+      GOOGLE_CLIENT_SECRET: "" # TODO
     ports:
       - "3000:3000"
