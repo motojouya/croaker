@@ -271,9 +271,22 @@ react contextにいれちゃう
   - default_role_id
     - アカウント作る際に最初にアサインされるrole
   - about contents
+- link
+  - croak_id
+  - url
+  - type
+    - content type (image ogp script など)
+  - ogp_title
+  - ogp_image
+  - ogp_text
+  - created_date
 
 roleはowner,visitorの2レコード、configurationは1レコードをデフォルトでいれておきたい。
 migrationでできるかな
+
+linkテーブルは、サーバサイドでcontentsを解析してhttps始まりのリンクがあれば認識して保存する
+url単位での重複は許されていて、基本はcroak_idとurlで一意になる。
+キャッシュのために保存するが、あたらしいポストについては常に最新のOGPを取りに行くイメージ
 
 ### textについて
 基本的にフリーテキストで改行もいれられる。

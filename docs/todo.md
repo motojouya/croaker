@@ -8,9 +8,11 @@
 こんな構成で中身を全部用意する
 ```
 src/rdb
-  migration
-  types
+  migration -> ok
+  types -> ok
   table
   query
 ```
+
+linkテーブルを作ってないのでmigrationとtypeを書く
 
