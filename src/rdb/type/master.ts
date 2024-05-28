@@ -1,6 +1,11 @@
-import type { GeneratedAlways } from "kysely"
+import {
+  GeneratedAlways,
+  Insertable,
+  Selectable,
+  Updateable
+} from 'kysely'
 
-exort interface Role {
+exort interface RoleTable {
   role_id: number;
   name: string;
   ban_power: boolean;
@@ -10,10 +15,16 @@ exort interface Role {
   top_post_interval: number;
   show_other_activities: boolean;
 }
+export type Role = Selectable<RoleTable>
+export type NewRole = Insertable<RoleTable>
+export type RoleUpdate = Updateable<RoleTable>
 
-exort interface Configuration {
+exort interface ConfigurationTable {
   active: boolean;
   account_create_available: boolean;
   default_role_id: number;
   about_contents: string;
 }
+export type Configuration = Selectable<ConfigurationTable>
+export type NewConfiguration = Insertable<ConfigurationTable>
+export type ConfigurationUpdate = Updateable<ConfigurationTable>

@@ -1,26 +1,25 @@
-import type { GeneratedAlways } from "kysely"
 import type {
-  User,
-  Account,
-  Session,
-  VerificationToken,
+  UserTable,
+  AccountTable,
+  SessionTable,
+  VerificationTokenTable,
 } from '@/rdb/type/auth';
 import type {
-  Croak,
-  Croaker,
+  CroakTable,
+  CroakerTable,
 } from '@/rdb/type/croak';
 import type {
-  Role,
-  Configuration,
+  RoleTable,
+  ConfigurationTable,
 } from '@/rdb/type/master';
 
 export interface Database {
-  User: User;
-  Account: Account;
-  Session: Session;
-  VerificationToken: VerificationToken;
-  Croak: Croak,
-  Croaker: Croaker,
-  Role: Role,
-  Configuration: Configuration,
+  User: UserTable;
+  Account: AccountTable;
+  Session: SessionTable;
+  VerificationToken: VerificationTokenTable;
+  Croak: CroakTable,
+  Croaker: CroakerTable,
+  Role: RoleTable,
+  Configuration: ConfigurationTable,
 }

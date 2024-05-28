@@ -10,9 +10,9 @@
 src/rdb
   migration -> ok
   types -> ok
-  table
+  table -> ok
   query
 ```
 
-linkテーブルを作ってないのでmigrationとtypeを書く
+linkテーブルを作ってないのでmigrationとtypeを書く -> ok
 
