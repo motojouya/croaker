@@ -9,7 +9,7 @@ export const find: Find = (db) => async (userId) => {
     .executeTakeFirst()
 }
 
-export type Get = (db: Kysely) => (userIds: string[]) => Promise<CroakerTable[] | null>;
+export type Get = (db: Kysely) => (userIds: string[]) => Promise<CroakerTable[]>;
 export const get: Get = (db) => async (userIds) => {
   return await db.selectFrom('croaker')
     .where('user_id', 'in', userIds)

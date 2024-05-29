@@ -5,6 +5,9 @@ import {
   Updateable
 } from 'kysely'
 
+export const CROAKER_STATUS_ACTIVE = 'ACTIVE';
+export const CROAKER_STATUS_BANNED = 'BANNED';
+
 export interface CroakerTable {
   user_id: string;
   identifier: string;

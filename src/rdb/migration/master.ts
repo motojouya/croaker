@@ -1,6 +1,10 @@
 import { Kysely, sql } from 'kysely'
 
 export async function up(db: Kysely<any>): Promise<void> {
+
+  // TODO
+  await db.raw(sql<void>`PRAGMA foreign_keys = ON`).execute();
+
   await db.schema
     .createTable('configuration')
     .addColumn('active', 'tinyint', (col) => col.notNull())
@@ -23,6 +27,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 }
 
 export async function down(db: Kysely<any>): Promise<void> {
+  await db.raw(sql<void>`PRAGMA foreign_keys = OFF`).execute();
   await db.schema.dropTable('role').execute();
   await db.schema.dropTable('configuration').execute();
 }

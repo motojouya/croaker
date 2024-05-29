@@ -159,6 +159,14 @@ type croak = {
   croaker_id: string;
   croak_time: Date;
   has_thread: bool;
+  links: Link[];
+};
+type Link = {
+  url: string;
+  type: string;
+  title?: string;
+  image?: string;
+  summary?: string;
 };
 type return = {
   croaks: Croak[];

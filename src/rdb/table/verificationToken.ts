@@ -9,7 +9,7 @@ export const find: Find = (db) => async (identifier) => {
     .executeTakeFirst()
 }
 
-export type Get = (db: Kysely) => (identifiers: string[]) => Promise<VerificationTokenTable[] | null>;
+export type Get = (db: Kysely) => (identifiers: string[]) => Promise<VerificationTokenTable[]>;
 export const get: Get = (db) => async (identifiers) => {
   return await db.selectFrom('verificationToken')
     .where('identifier', 'in', identifiers)

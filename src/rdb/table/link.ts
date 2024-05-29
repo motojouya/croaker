@@ -10,7 +10,7 @@ export const find: Find = (db) => async (croakId, url) => {
     .executeTakeFirst()
 }
 
-export type Get = (db: Kysely) => (croakId: number) => Promise<LinkTable[] | null>;
+export type Get = (db: Kysely) => (croakId: number) => Promise<LinkTable[]>;
 export const get: Get = (db) => async (croakId) => {
   return await db.selectFrom('link')
     .where('croak_id', '=', croakId)

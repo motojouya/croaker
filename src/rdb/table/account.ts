@@ -9,7 +9,7 @@ export const find: Find = (db) => async (id) => {
     .executeTakeFirst()
 }
 
-export type Get = (db: Kysely) => (ids: string[]) => Promise<AccountTable[] | null>;
+export type Get = (db: Kysely) => (ids: string[]) => Promise<AccountTable[]>;
 export const get: Get = (db) => async (ids) => {
   return await db.selectFrom('account')
     .where('id', 'in', ids)

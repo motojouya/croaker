@@ -1,18 +1,20 @@
-import { kysely } from 'kysely'
+import { kysely, NotNull } from 'kysely'
 import { CroakTable, CroakUpdate, Croak, NewCroak } from '@/rdb/type/croak'
 
 export type Find = (db: Kysely) => (croakId: number) => Promise<CroakTable | null>;
 export const find: Find = (db) => async (croakId) => {
   return await db.selectFrom('croak')
     .where('croak_id', '=', croakId)
+    .where('deleted_date', NotNull)
     .selectAll()
     .executeTakeFirst()
 }
 
-export type Get = (db: Kysely) => (croakIds: number[]) => Promise<CroakTable[] | null>;
+export type Get = (db: Kysely) => (croakIds: number[]) => Promise<CroakTable[]>;
 export const get: Get = (db) => async (croakIds) => {
   return await db.selectFrom('croak')
     .where('croak_id', 'in', croakIds)
+    .where('deleted_date', NotNull)
     .selectAll()
     .executeTakeFirst()
 }
