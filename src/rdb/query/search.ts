@@ -8,10 +8,10 @@ import {
   getLinks,
 } from '@/rdb/query/croak';
 
-export type Top = (db: Kysely) => (cursor: number, limit: number) => Promise<Croak[]>;
-export const top: Top = (db) => async (offsetCursor, limit) => {
+export type Search = (db: Kysely) => (search: string, cursor: number, limit: number) => Promise<Croak[]>;
+export const search: Search = (db) => async (search, offsetCursor, limit) => {
 
-  const croaks = await getCroaks(db)(offsetCursor, limit);
+  const croaks = await getCroaks(db)(search, offsetCursor, limit);
 
   const croakIds = croaks.map(croak => croak.croak_id);
 
@@ -25,15 +25,15 @@ export const top: Top = (db) => async (offsetCursor, limit) => {
   }));
 }
 
-type GetCroaks = (db: Kysely) => (cursor: number, limit: number) => Promise<Omit<Croak, 'links'>[]>;
-const getCroaks: GetCroaks = (db) => async (cursor, limit) => {
+type GetCroaks = (db: Kysely) => (search: string, cursor: number, limit: number) => Promise<Omit<Croak, 'links'>[]>;
+const getCroaks: GetCroaks = (db) => async (search, cursor, limit) => {
   return await db
     .selectFrom('croak')
     .select([
       'croak.croak_id as croak_id',
       'croak.contents as contents',
       'croak.file_path as file_path',
-      'case when thread.thread_id is null then false else then true end as has_thread',
+      'case when thread.thread_id is null then false else true end as has_thread',
       'croaker.identifier as croaker_identifier',
       'croaker.name as croaker_name',
       'croak.posted_date as posted_date',
@@ -45,7 +45,10 @@ const getCroaks: GetCroaks = (db) => async (cursor, limit) => {
       (eb) => {
         eb
           .selectFrom('croak')
-          .select(['croak.thread as thread_id'])
+          .select([
+            'croak.thread as thread_id',
+            `sum(case when contents like %${search}% then 1 else 0 end) as exist_count`, // TODO
+          ])
           .where('croak.thread', NotNull)
           .groupBy('croak.thread')
           .as('thread');
@@ -59,6 +62,10 @@ const getCroaks: GetCroaks = (db) => async (cursor, limit) => {
     .where('croak.delete_date', NotNull)
     .where('croak.thread', Null)
     .where('croak.id', '>', offsetCursor)
+    .where((eb) => eb.or([
+      eb('croak.contents', 'like', `%${search}%`), // TODO
+      eb('thread.exist_count', '>', 0),
+    ]))
     .limit(limit)
     .execute();
 };

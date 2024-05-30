@@ -173,6 +173,7 @@ type return = {
   head_id: number;
   tail_id: number;
   count: number;
+  has_next: bool;
 };
 ```
 
