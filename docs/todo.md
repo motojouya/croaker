@@ -1,18 +1,67 @@
 
-## DB周り
-- migration
-- type定義
-- tableアクセス定義
-- query定義
+## API
+sessionとdbをbindする関数は必要かも。それで隠蔽してやりたい。
+route handlerは、そういうコンテナ的な役割をroute.tsに書きやすいが、server componentは書きづらいので、それを補助するイメージ
+transactionの関数は、caseディレクトリ側に記載するし、用意があるので、大丈夫
 
-こんな構成で中身を全部用意する
-```
-src/rdb
-  migration -> ok
-  types -> ok
-  table -> ok
-  query
+### croaks
+- /croak/top?offset=<number>
+- /croak/search/<text>?offset=<number>
+- /croak/thread/<number>?offset=<number>
+
+DBから取得してきてreturn typeに変換する
+```ts
+type return = {
+  croaks: Croak[];
+  head_id: number;
+  tail_id: number;
+  count: number;
+  has_next: bool;
+};
 ```
 
-linkテーブルを作ってないのでmigrationとtypeを書く -> ok
+- post /croak/text
+  - text
+- post /croak/file
+  - file
+- post /croak/delete/<croak_id>
+
+ロジック書いてく
+
+### croakers
+- /croker/<croaker_identifier>
+
+更新は自分のページだけなので、更新に必要な情報はsessionで足りる。
+更新のエンドポイントを通るときにsessionを更新すれば反映されるはずなので、取得も不要かな
+ownerは、他のユーザのactivitiesを参照できるので、それを取得できる関数の用意は必要
+
+```ts
+type session = {
+  user_id: string;
+  name: string;
+  email: string;
+  email_verified: bool;
+  croaker_id: string;
+  croaker_name: string;
+  croaker_description: string;
+  croaker_status: string;
+  croaker_role: string;
+  form_agreement: bool;
+};
+```
+
+他ユーザはserver componentsで値をいれてしまうので取得エンドポイントは不要
+
+- post /crocker/<identifier>
+  - name
+  - description
+  - form_agreement
+  - form_agreement=falseでも更新は成功するが、いつまでも投稿はできない
+
+- post /crocker/<identifier>/ban
+
+### role & configuration
+server components上で取得して、propsにわたす感じにする
+react contextにいれちゃう
+ただ、それらを取得する関数は必要なはず。両方一気に取得できる形でいいと思う。データ量多くないし
 
