@@ -17,4 +17,5 @@ https://zenn.dev/snowcait/articles/d0f609d6366ef9
 https://zenn.dev/littleforest/articles/scrape-og-tags  
 https://zenn.dev/akfm/articles/server-actions-with-conform  
 https://conform.guide  
+https://tech.pla-cole.co/wildcard-acm-create/  
 
