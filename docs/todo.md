@@ -5,9 +5,12 @@ route handlerは、そういうコンテナ的な役割をroute.tsに書きや�
 transactionの関数は、caseディレクトリ側に記載するし、用意があるので、大丈夫
 
 ### croaks
-- /croak/top?offset=<number>
-- /croak/search/<text>?offset=<number>
-- /croak/thread/<number>?offset=<number>
+- getTopCroaks
+  - /croak/top?offset=<number>
+- searchCroaks
+  - /croak/search/<text>?offset=<number>
+- getThreadCroaks
+  - /croak/thread/<number>?offset=<number>
 
 DBから取得してきてreturn typeに変換する
 ```ts
@@ -20,20 +23,29 @@ type return = {
 };
 ```
 
-- post /croak/text
-  - text
-- post /croak/file
-  - file
-- post /croak/delete/<croak_id>
+- postCroak
+  - post /croak/text
+    - text
+- postFile
+  - post /croak/file
+    - file
+- deleteCroak
+  - post /croak/delete/<croak_id>
 
 ロジック書いてく
 
 ### croakers
-- /croker/<croaker_identifier>
-
 更新は自分のページだけなので、更新に必要な情報はsessionで足りる。
 更新のエンドポイントを通るときにsessionを更新すれば反映されるはずなので、取得も不要かな
 ownerは、他のユーザのactivitiesを参照できるので、それを取得できる関数の用意は必要
+
+自分以外のユーザ画面はserver componentsでやっちゃうのでエンドポイントは不要
+
+- getCroaker
+  - croaker identifier
+- getRecentActivities
+  - selfUserId
+  - days
 
 ```ts
 type session = {
@@ -52,16 +64,20 @@ type session = {
 
 他ユーザはserver componentsで値をいれてしまうので取得エンドポイントは不要
 
-- post /crocker/<identifier>
-  - name
-  - description
-  - form_agreement
-  - form_agreement=falseでも更新は成功するが、いつまでも投稿はできない
+- changeSelfSetting
+  - post /crocker/self
+    - name
+    - description
+    - form_agreement
+    - form_agreement=falseでも更新は成功するが、いつまでも投稿はできない
 
-- post /crocker/<identifier>/ban
+- func banCrocker
+  - post /crocker/<identifier>/ban
 
 ### role & configuration
 server components上で取得して、propsにわたす感じにする
 react contextにいれちゃう
+
 ただ、それらを取得する関数は必要なはず。両方一気に取得できる形でいいと思う。データ量多くないし
+->普通にcaseに書いていく。でないと、actor(from session)をどう分解してdatabase accessにわたすかという知識を書く場所がないので
 

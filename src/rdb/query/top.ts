@@ -8,7 +8,7 @@ import {
   getLinks,
 } from '@/rdb/query/croak';
 
-export type Top = (db: Kysely) => (cursor: number, limit: number) => Promise<Croak[]>;
+export type Top = (db: Kysely) => (offsetCursor: number, limit: number) => Promise<Croak[]>;
 export const top: Top = (db) => async (offsetCursor, limit) => {
 
   const croaks = await getCroaks(db)(offsetCursor, limit);
@@ -25,8 +25,8 @@ export const top: Top = (db) => async (offsetCursor, limit) => {
   }));
 }
 
-type GetCroaks = (db: Kysely) => (cursor: number, limit: number) => Promise<Omit<Croak, 'links'>[]>;
-const getCroaks: GetCroaks = (db) => async (cursor, limit) => {
+type GetCroaks = (db: Kysely) => (offsetCursor: number, limit: number) => Promise<Omit<Croak, 'links'>[]>;
+const getCroaks: GetCroaks = (db) => async (offsetCursor, limit) => {
   return await db
     .selectFrom('croak')
     .select([
