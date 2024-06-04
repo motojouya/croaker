@@ -2,18 +2,8 @@ import { Kysely, NotNull, Null } from 'kysely'
 import { CROAKER_STATUS_ACTIVE } from '@/rdb/type/croak'
 import { Croak } from '@/rdb/query/croak';
 
-export type RecentActivities = (db: Kysely) => (selfUserId: string, days: number) => Promise<Croak[]>;
+export type RecentActivities = (db: Kysely) => (selfUserId: string, days: number) => Promise<Omit<Croak, 'links' | 'has_thread'>[]>;
 export const recentActivities: RecentActivities = (db) => async (selfUserId, days) => {
-
-  const croaks = await getCroaks(db)(selfUserId, days);
-  return croaks.map(croak => ({
-    ...croak,
-    links: [],
-  }));
-}
-
-type GetCroaks = (db: Kysely) => (selfUserId: string, days: number) => Promise<Omit<Croak, 'links'>[]>;
-const getCroaks: GetCroaks = (db) => async (cursor, limit) => {
   return await db
     .selectFrom('croak')
     .select([
@@ -21,7 +11,6 @@ const getCroaks: GetCroaks = (db) => async (cursor, limit) => {
       'croak.contents as contents',
       'croak.thread as thread',
       'croak.posted_date as posted_date',
-      'false as has_thread',
       'croaker.identifier as croaker_identifier',
       'croaker.name as croaker_name',
     ])
