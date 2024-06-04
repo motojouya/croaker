@@ -28,3 +28,9 @@ exort interface ConfigurationTable {
 export type Configuration = Selectable<ConfigurationTable>
 export type NewConfiguration = Insertable<ConfigurationTable>
 export type ConfigurationUpdate = Updateable<ConfigurationTable>
+
+export const POST_AUTHORITY_TOP = 'TOP';
+export const POST_AUTHORITY_THREAD = 'THREAD';
+export const POST_AUTHORITY_DISABLE = 'DISABLE';
+export const CROAKER_STATUS_BANNED = 'BANNED';
+export const CROAKER_STATUS_ACTIVE = 'ACTIVE';

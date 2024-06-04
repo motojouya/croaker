@@ -4,12 +4,17 @@ import {
   Selectable,
   Updateable
 } from 'kysely'
+import {
+  TableExpression,
+  FromTables,
+} from 'kysely/parser/table-parser';
+import { Database } from '@/rdb/type';
 
-export async function create<T>(
+export async function create<TE extends TableExpression<DB, keyof DB>>(
   db: Kysely,
-  tableName: string,
-  newRecord: Insertable<T>
-): Promise<T[]> {
+  tableName: TE,
+  newRecord: Insertable<FromTables<DB, never, TE>>
+): Promise<FromTables<DB, never, TE>[]> {
 
   return await db.insertInto(tableName)
     .values(newRecord)
@@ -17,11 +22,11 @@ export async function create<T>(
     .executeTakeFirstOrThrow();
 }
 
-export async function read<T>(
+export async function read<TE extends TableExpression<DB, keyof DB>>(
   db: Kysely,
-  tableName: string,
-  criteria: Partial<Selectable<T>>
-): Promise<T[]> {
+  tableName: TE,
+  criteria: Partial<Selectable<FromTables<DB, never, TE>>>
+): Promise<FromTables<DB, never, TE>[]> {
 
   let query = db.selectFrom(tableName);
 
@@ -32,12 +37,12 @@ export async function read<T>(
   return await query.selectAll().execute();
 }
 
-export async function update<T>(
+export async function update<TE extends TableExpression<DB, keyof DB>>(
   db: Kysely,
-  tableName: string,
-  criteria: Partial<Selectable<T>>,
-  updateWith: Updateable<T>
-): Promise<T[]> {
+  tableName: TE,
+  criteria: Partial<Selectable<FromTables<DB, never, TE>>>,
+  updateWith: Updateable<FromTables<DB, never, TE>>
+): Promise<FromTables<DB, never, TE>[]> {
 
   let command = db.updateTable(tableName).set(updateWith);
 
@@ -48,11 +53,11 @@ export async function update<T>(
   return await command.returningAll().execute();
 }
 
-export async function delete<T>(
+export async function delete<TE extends TableExpression<DB, keyof DB>>(
   db: Kysely,
-  tableName: string,
-  criteria: Partial<Selectable<T>>
-): Promise<T[]> {
+  tableName: TE,
+  criteria: Partial<Selectable<FromTables<DB, never, TE>>>
+): Promise<FromTables<DB, never, TE>[]> {
 
   let command = db.deleteFrom(tableName);
 
