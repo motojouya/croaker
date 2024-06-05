@@ -18,4 +18,7 @@ https://zenn.dev/littleforest/articles/scrape-og-tags
 https://zenn.dev/akfm/articles/server-actions-with-conform  
 https://conform.guide  
 https://tech.pla-cole.co/wildcard-acm-create/  
+https://cloud.google.com/storage/docs/uploading-objects?hl=ja#storage-upload-object-client-libraries  
+https://developers.google.com/speed/docs/insights/OptimizeImages?hl=ja  
+https://github.com/rsms/node-imagemagick  
 

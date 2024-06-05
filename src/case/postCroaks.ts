@@ -20,53 +20,6 @@ import {
 } from '@/rdb/type/master';
 import { InvalidArgumentsError, AuthorityError } from '@/lib/validation';
 
-import { Storage, UploadOptions } from '@google-cloud/storage';
-import { v4 } from 'uuid';
-
-export class FileError extends Error {
-  constructor(
-    readonly croaker_identifier: string,
-    readonly action: string,
-    readonly path: string,
-    readonly exception: Error,
-    readonly message: string,
-  ) {
-    super();
-  }
-}
-
-type uploadFile = () => Promise<string>;
-const uploadFile = () => {
-  try {
-    const storage = new Storage({
-      projectId: 'user-projectId',
-      keyFilename: './key.json',
-      credentials: require('cred.json'),
-    });
-    const bucket = storage.bucket('createbucket-69fd9e10-25eb-4311-aac3-9641fa49c247');
-
-    const options: UploadOptions = {
-      contentType: 'text/plain', // 'application/zip' 'image/jpeg' ...
-      destination: `${v4()}/uploadFile.txt`, // TODO 拡張子
-      gzip: true,
-      preconditionOpts: { ifGenerationMatch: generationMatchPrecondition },
-      cacheControl: 'public, max-age=600', // TODO 必要？
-      contentLanguage: 'ja' // TODO 必要？
-    };
-
-    await bucket.upload('./src/cloudStorage/object/uploadFile.txt', options);
-  } catch (e) {
-    return new FileError(
-      actor.croaker_identifier,
-      'upload',
-      file_path,
-      e,
-      'ファイルアップロードできませんでした'
-    );
-  }
-}
-
-
 type PostCroak = (rdb: Kysely, actor: Actor) => (text: string, thread?: number) => Promise<Croak | AuthorityError | InvalidArgumentsError>;
 const postCroak: PostCroak = (rdb, actor) => async (text, thread) => {
 
@@ -168,6 +121,20 @@ const postFile: PostFile = (rdb, actor) => async (filePath, thread) => {
   });
 };
 
+// import { NextResponse } from "next/server";
+// import { postFile } from "@/case/postCroaks";
+//
+// export async function POST(request: Request) {
+//
+//   const formData = await request.formData();
+//   const file: any = formData.get("file");
+//   const buffer = Buffer.from(await file?.arrayBuffer());
+//
+//   const croak = postFile(buffer, file);
+//
+//   return NextResponse.json(croak);
+// }
+
 type DeleteCroak = (rdb: Kysely, actor: Actor) => (croakId: number) => Promise<Croak | AuthorityError>;
 const deleteCroak: DeleteCroak = (rdb, actor) => async (croakId) => {
 
@@ -188,55 +155,3 @@ const deleteCroak: DeleteCroak = (rdb, actor) => async (croakId) => {
 
   return await delete(rdb, 'croak', { croak_id: croakId });
 };
-
-
-
-
-
-import { NextResponse } from "next/server";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-
-//Upload image to AWS S3
-export async function POST(request: Request) {
-  const { ACCESS_KEY_ID, SECRET_ACCESS_KEY, REGION, S3_BUCKET_NAME } =
-    process.env;
-
-  const s3Client = new S3Client({
-    region: REGION,
-    credentials: {
-      accessKeyId: ACCESS_KEY_ID || "",
-      secretAccessKey: SECRET_ACCESS_KEY || "",
-    },
-  });
-
-  // URLからファイル名を取得
-  const { searchParams } = new URL(request.url);
-  const fileName = searchParams.get("filename");
-
-  const formData = await request.formData();
-  const file: any = formData.get("file");
-
-  // File オブジェクトから Buffer に変換
-  const buffer = Buffer.from(await file?.arrayBuffer());
-
-  // アップロードパラメータの設定
-  const uploadParams: any = {
-    Bucket: S3_BUCKET_NAME,
-    Key: fileName, //保存時の画像名
-    Body: buffer, //input fileから取得
-    ContentType: "image/png", // 適切なContentTypeを設定
-    ACL: "public-read", // 公開読み取りアクセスを設定
-  };
-
-  try {
-    //画像のアップロード
-    const command = new PutObjectCommand(uploadParams);
-    const uploadResult = await s3Client.send(command);
-    console.log("Upload success:", uploadResult);
-    const imageUrl = `https://${S3_BUCKET_NAME}.s3.${REGION}.amazonaws.com/${fileName}`;
-    return NextResponse.json({ imageUrl });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json(err);
-  }
-}
