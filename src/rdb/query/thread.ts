@@ -12,23 +12,26 @@ export const thread: Thread = (db) => async (threadId, offsetCursor, limit) => {
   const croakIds = croaks.map(croak => croak.croak_id);
 
   const links = await getLinks(db)(croakIds);
-
   const croakIdLinkDic = Object.groupBy('croak_id', links);
+
+  const files = await getFiles(db)(croakIds);
+  const croakIdFileDic = Object.groupBy('croak_id', files);
 
   return croaks.map(croak => ({
     ...croak,
     links: croakIdLinkDic[croak.id] || [],
+    files: croakIdFileDic[croak.id] || [],
   }));
 }
 
-type GetCroaks = (db: Kysely) => (threadId: number, cursor: number, limit: number) => Promise<Omit<Croak, 'links'>[]>;
+type GetCroaks = (db: Kysely) => (threadId: number, cursor: number, limit: number) => Promise<Omit<Croak, 'links' | 'files'>[]>;
 const getCroaks: GetCroaks = (db) => async (threadId, cursor, limit) => {
   return await db
     .selectFrom('croak')
     .select([
       'croak.croak_id as croak_id',
       'croak.contents as contents',
-      'croak.file_path as file_path',
+      'croak.thread as thread',
       'false as has_thread'
       'croaker.identifier as croaker_identifier',
       'croaker.name as croaker_name',

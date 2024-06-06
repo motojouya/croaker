@@ -3,28 +3,29 @@ import imageMagick from 'imagemagick';
 // npm i -D @types/imagemagick
 // npm i node-imagemagick
 
-export const CONTENT_TYPE_JPEG = 'image/jpeg';
-export const CONTENT_TYPE_PNG = 'image/png';
-export const CONTENT_TYPE_GIF = 'image/gif';
-export type ContentTypeImages = CONTENT_TYPE_JPEG | CONTENT_TYPE_PNG | CONTENT_TYPE_GIF;
-
-export type Convert = (filePath: string) => Promise<string>;
+export type Convert = (filePath: string) => Promise<string | ImageCommandError | ImageFormatError>;
 export const convert: Convert = async (filePath) => {
 
   const imageInfo = getInformation(filePath);
+  if (imageInfo instanceof ImageCommandError) {
+    return imageInfo;
+  }
 
   const validContentType =
     imageInfo.format === 'jpg' ||
     imageInfo.format === 'png' ||
     imageInfo.format === 'gif';
   if (!validContentType) {
-    return null;
+    return new ImageFormatError(imageInfo.format, filePath, 'image形式はjpeg,png,gifのみです');
   }
 
   const width = imageInfo.width > 1000 ? 1000 : imageInfo.width;
 
   if (imageInfo.format === 'jpg') {
-    await resizeImage(filePath, `temp/${v4()}.jpeg`, width);
+    const error = await resizeJpeg(filePath, `temp/${v4()}.jpeg`, width);
+    if (error) {
+      return error;
+    }
     return resizedFilePath;
   }
 
@@ -35,11 +36,24 @@ export const convert: Convert = async (filePath) => {
     resizedFilePath = `temp/${v4()}.gif`;
   }
 
-  await resizeImage(filePath, resizedFilePath, width, imageInfo.format);
+  const error = await resizeImage(filePath, resizedFilePath, width, imageInfo.format);
+  if (error) {
+    return error;
+  }
   return resizedFilePath;
 };
 
-export class ImageError extends Error {
+export class ImageFormatError extends Error {
+  constructor(
+    readonly format: string,
+    readonly path: string,
+    readonly message: string,
+  ) {
+    super();
+  }
+}
+
+export class ImageCommandError extends Error {
   constructor(
     readonly action: string,
     readonly path: string,
@@ -58,12 +72,12 @@ type ImageFeatures = {
   depth: number; // 8,
 };
 
-type GetInformation = (filePath: string) => Promise<ImageFeatures | ImageError>
+type GetInformation = (filePath: string) => Promise<ImageFeatures | ImageCommandError>
 const getInformation: GetInformation = async (filePath) => {
   return new Promise((resolve) => {
     imageMagick.identify(filePath, (error, features) => {
       if (error) {
-        resolve(new ImageError('identify', filePath, error, 'imageファイルを読み込めません'));
+        resolve(new ImageCommandError('identify', filePath, error, 'imageファイルを読み込めません'));
       } else {
         resolve(features);
       }
@@ -71,7 +85,7 @@ const getInformation: GetInformation = async (filePath) => {
   });
 };
 
-type ResizeImage = (filePath: string, resizedPath: string, width: number, format: string) => Promise<null | ImageError>
+type ResizeImage = (filePath: string, resizedPath: string, width: number, format: string) => Promise<null | ImageCommandError>
 const resizeImage: ResizeImage = async (filePath, resizedPath, width, format) => {
   const resizeOption = {
     srcPath: filePath,
@@ -84,15 +98,15 @@ const resizeImage: ResizeImage = async (filePath, resizedPath, width, format) =>
   return new Promise((resolve) => {
     imageMagick.resize(resizeOption, (error) => {
       if (error) {
-        resolve(new ImageError('resize', filePath, error, 'imageファイルのサイズ変更ができません'));
+        resolve(new ImageCommandError('resize', filePath, error, 'imageファイルのサイズ変更ができません'));
       } else {
-        resolve(features);
+        resolve(null);
       }
     });
   });
 };
 
-type ResizeJpeg = (filePath: string, resizedPath: string, width: number) => Promise<null | ImageError>
+type ResizeJpeg = (filePath: string, resizedPath: string, width: number) => Promise<null | ImageCommandError>
 const resizeJpeg: ResizeJpeg = async (filePath, resizedPath, width) => {
   const resizeOption = {
     srcPath: filePath,
@@ -106,7 +120,7 @@ const resizeJpeg: ResizeJpeg = async (filePath, resizedPath, width) => {
   return new Promise((resolve) => {
     imageMagick.resize(resizeOption, (error) => {
       if (error) {
-        resolve(new ImageError('resize', filePath, error, 'imageファイルのサイズ変更ができません'));
+        resolve(new ImageCommandError('resize', filePath, error, 'imageファイルのサイズ変更ができません'));
       } else {
         resolve(features);
       }

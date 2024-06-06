@@ -48,3 +48,19 @@ export interface LinkTable {
 export type Link = Selectable<LinkTable>
 export type NewLink = Insertable<LinkTable>
 export type LinkUpdate = Updateable<LinkTable>
+
+export const STORAGE_TYPE_GCS = 'GCS';
+
+export interface FileTable {
+  file_id: GeneratedAlways<number>;
+  croak_id: number;
+  storage_type: string;
+  source: string;
+  name: string;
+  content_type: string;
+  created_date: Date;
+}
+export type File = Selectable<FileTable>
+export type NewFile = Insertable<FileTable>
+export type FileUpdate = Updateable<FileTable>
+

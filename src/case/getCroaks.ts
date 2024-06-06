@@ -3,7 +3,7 @@ import { Croak } from '@/rdb/query/croak';
 import { top } from '@/rdb/query/top';
 import { search } from '@/rdb/query/search';
 import { thread } from '@/rdb/query/thread';
-import { Actor } from '@/lib/session'; // TODO
+import { Context } from '@/lib/context';
 
 export type CroakList = {
   croaks: Croak[];
@@ -12,23 +12,23 @@ export type CroakList = {
 
 export const DISPLAY_LIMIT = 20;
 
-export type GetTopCroaks = (rdb: Kysely, actor: Actor) => (cursor?: number) => Promise<CroakList>
-export const getTopCroaks: GetTopCroaks = (rdb, actor) => async (cursor) => {
-  const result = await top(rdb)(offsetCursor(cursor), DISPLAY_LIMIT + 1);
+export type GetTopCroaks = (context: Context) => (cursor?: number) => Promise<CroakList>
+export const getTopCroaks: GetTopCroaks = (context) => async (cursor) => {
+  const result = await top(context.db)(offsetCursor(cursor), DISPLAY_LIMIT + 1);
   // TODO fileに関してpresigned urlを発行する
   return getCroakList(result);
 };
 
-export type GetThreadCroaks = (rdb: Kysely, actor: Actor) => (threadId: number, cursor?: number) => Promise<CroakList>
-export const getThreadCroaks: GetThreadCroaks = (rdb, actor) => async (threadId, cursor) => {
-  const result = await thread(rdb)(threadId, offsetCursor(cursor), DISPLAY_LIMIT + 1);
+export type GetThreadCroaks = (context: Context) => (threadId: number, cursor?: number) => Promise<CroakList>
+export const getThreadCroaks: GetThreadCroaks = (context) => async (threadId, cursor) => {
+  const result = await thread(context.db)(threadId, offsetCursor(cursor), DISPLAY_LIMIT + 1);
   // TODO fileに関してpresigned urlを発行する
   return getCroakList(result);
 };
 
-export type SearchCroaks = (rdb: Kysely, actor: Actor) => (search: string, cursor?: number) => Promise<CroakList>
-export const searchCroaks: SearchCroaks = (rdb, actor) => async (search, cursor) => {
-  const result = await search(rdb)(search, offsetCursor(cursor), DISPLAY_LIMIT + 1);
+export type SearchCroaks = (context: Context) => (search: string, cursor?: number) => Promise<CroakList>
+export const searchCroaks: SearchCroaks = (context) => async (search, cursor) => {
+  const result = await search(context.db)(search, offsetCursor(cursor), DISPLAY_LIMIT + 1);
   // TODO fileに関してpresigned urlを発行する
   return getCroakList(result);
 };

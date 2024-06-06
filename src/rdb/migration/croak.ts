@@ -23,7 +23,6 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn('croak_id', 'serial', (col) => col.primaryKey())
     .addColumn('user_id', 'text', (col) => col.notNull()) // foreign key
     .addColumn('content', 'text')
-    .addColumn('file_path', 'text')
     .addColumn('thread', 'integer') // nullable top levelの場合にnull
     .addColumn('posted_date', 'timestamp', (col) =>
       col.defaultTo(sql`now()`).notNull()
@@ -39,6 +38,19 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn('title', 'text')
     .addColumn('image', 'text')
     .addColumn('summary', 'text')
+    .addColumn('created_date', 'timestamp', (col) =>
+      col.defaultTo(sql`now()`).notNull()
+    )
+    .execute();
+
+  await db.schema
+    .createTable('file')
+    .addColumn('file_id', 'serial', (col) => col.primaryKey())
+    .addColumn('croak_id', 'text', (col) => col.primaryKey()) // foreign key
+    .addColumn('type', 'text', (col) => col.notNull()) // gcs
+    .addColumn('source', 'text', (col) => col.notNull()) // image ogp etc
+    .addColumn('name', 'text', (col) => col.notNull())
+    .addColumn('content_type', 'text', (col) => col.notNull()) // mime type
     .addColumn('created_date', 'timestamp', (col) =>
       col.defaultTo(sql`now()`).notNull()
     )

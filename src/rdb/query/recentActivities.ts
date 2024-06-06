@@ -1,8 +1,8 @@
 import { Kysely, NotNull, Null } from 'kysely'
 import { CROAKER_STATUS_ACTIVE } from '@/rdb/type/croak'
-import { Croak } from '@/rdb/query/croak';
+import { CroakMini } from '@/rdb/query/croak';
 
-export type RecentActivities = (db: Kysely) => (selfUserId: string, days: number) => Promise<Omit<Croak, 'links' | 'has_thread'>[]>;
+export type RecentActivities = (db: Kysely) => (selfUserId: string, days: number) => Promise<CroakMini[]>;
 export const recentActivities: RecentActivities = (db) => async (selfUserId, days) => {
   return await db
     .selectFrom('croak')

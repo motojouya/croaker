@@ -2,7 +2,6 @@ import { Kysely, NotNull, Null } from 'kysely'
 import { add, compareAsc } from 'date-fns';
 
 import { Croak } from '@/rdb/query/croak';
-import { Actor } from '@/lib/session'; // TODO
 import { create, delete, read } from '@/lib/repository';
 import { getRoleAuthority } from '@/lib/role'
 import { getLastCroak } from '@/rdb/query/getLastCroak';
@@ -18,13 +17,18 @@ import {
   CROAKER_STATUS_BANNED,
   CROAKER_STATUS_ACTIVE,
 } from '@/rdb/type/master';
+import { STORAGE_TYPE_GCS } from '@/rdb/type/croak';
 import { InvalidArgumentsError, AuthorityError } from '@/lib/validation';
 import { convert } from '@/lib/image';
-import { Storage, uploadFile } from '@/lib/file';
+import { Storage, uploadFile, FileError } from '@/lib/fileStorage';
 import { Context } from '@/lib/context';
 
-type PostCroak = (context: Context) => (text: string, thread?: number) => Promise<Croak | AuthorityError | InvalidArgumentsError>;
-const postCroak: PostCroak = (context) => async (text, thread) => {
+export type PostCroak = (context: Context) => (text: string, thread?: number) => Promise<
+  | Omit<Croak, 'has_thread' | 'files'>
+  | AuthorityError
+  | InvalidArgumentsError
+>;
+export const postCroak: PostCroak = (context) => async (text, thread) => {
 
   const actor = context.actor;
 
@@ -65,20 +69,51 @@ const postCroak: PostCroak = (context) => async (text, thread) => {
 
   // TODO contentsの中身から、linkを取り出し、OGPを取得してlinkテーブルにいれる
 
-  return await create(context.db, 'croak', {
+  const croak = await create(context.db, 'croak', {
     user_id: actor.user_id;
     contents: contents,
-    file_path: filePath,
     thread: thread,
   });
+
+  const links = [];
+  let link;
+  for (const linkData of linkDataList) {
+    link = await create(context.db, 'link', {
+      croak_id: croak.croak_id,
+      storage_type: STORAGE_TYPE_GCS,
+      source: uploadedSource,
+      name: file.name,
+      content_type: file.type;
+    });
+    links.push(link);
+  }
+
+  const { coak_id, contents, thread, posted_date, } = croak;
+  return {
+    coak_id,
+    contents,
+    thread,
+    posted_date,
+    croaker_identifier: actor.croaker_identifier,
+    croaker_name: actor.croaker_name,
+    links,
+  };
 };
 
-type PostFile = (context: Context) => (filePath: string, thread?: number) => Promise<Croak | AuthorityError | InvalidArgumentsError>;
-const postFile: PostFile = (context) => async (filePath, thread) => {
+// TODO Fileにどういう情報が入ってるかよくわかっていない
+export type PostFile = (context: Context) => (file: File, thread?: number) => Promise<
+  | Omit<Croak, 'has_thread' | 'links'>
+  | AuthorityError
+  | InvalidArgumentsError
+  | FileError
+  | ImageCommandError
+  | ImageFormatError
+>;
+export const postFile: PostFile = (context) => async (file, thread) => {
 
   const actor = context.actor;
 
-  if (!filePath) {
+  if (!file) {
     return null;
   }
 
@@ -117,50 +152,46 @@ const postFile: PostFile = (context) => async (filePath, thread) => {
     return new AuthorityError(actor.croaker_identifier, 'post_file', 'ファイルをアップロードすることはできません');
   }
 
-  // TODO do something
-  // file投稿するならfile pathがあってるかとか必要。事前にfile tabelがあるなら、primary keyの一致だけでいける
-
-  // content typeが入ってこないので、常にconvertを呼び出し、imageじゃなければ、nullを返す
-  let uploadFile = filePath;
-  const converted = convert(filePath);
-  if (converted) {
-    uploadFile = converted;
+  const uploadFilePath = convert(file.name);
+  if (
+    converted instanceof ImageCommandError ||
+    converted instanceof ImageFormatError
+  ) {
+    return converted;
   }
 
-  await uploadFile(context.storage)(uploadFile);
-  // TODO file テーブルを作って、そっちにいれる
-  // create table file (
-  //  id
-  //  croak_id
-  //  path
-  //  name
-  // )
-  // croakテーブルからは、file_pathは消す
+  const uploadedSource = await uploadFile(context.storage)(uploadFilePath, file.extension);
+  if (uploadedSource instanceof FileError) {
+    return uploadedSource;
+  }
 
-  return await create(context.db, 'croak', {
+  const croak = await create(context.db, 'croak', {
     user_id: actor.user_id;
-    contents: contents,
-    file_path: filePath,
+    contents: null,
     thread: thread,
   });
-};
 
-// import { type NextRequest } from 'next/server'
-//  
-// export async function GET(request: NextRequest) {
-//   const requestHeaders = new Headers(request.headers)
-// }
-// import { headers } from 'next/headers'
-// 
-// export async function GET(request: Request) {
-//   const headersList = headers()
-//   const referer = headersList.get('referer')
-//  
-//   return new Response('Hello, Next.js!', {
-//     status: 200,
-//     headers: { referer: referer },
-//   })
-// }
+  const file = await create(context.db, 'file', {
+    croak_id: croak.croak_id,
+    storage_type: STORAGE_TYPE_GCS,
+    source: uploadedSource,
+    name: file.name,
+    content_type: file.type;
+  });
+
+  // TODO presigned urlを発行して、見えるようにする必要がある
+
+  const { coak_id, contents, thread, posted_date, } = croak;
+  return {
+    coak_id,
+    contents,
+    thread,
+    posted_date,
+    croaker_identifier: actor.croaker_identifier,
+    croaker_name: actor.croaker_name,
+    files: [file],
+  };
+};
 
 // import { NextResponse } from "next/server";
 // import { postFile } from "@/case/postCroaks";
@@ -169,14 +200,13 @@ const postFile: PostFile = (context) => async (filePath, thread) => {
 //
 //   const formData = await request.formData();
 //   const file = formData.get("file") as File;
-//   const arrayBuffer = await file.arrayBuffer();
 //
-//   const buffer = Buffer.from(arrayBuffer);
-//   const buffer = new Uint8Array(arrayBuffer);
+//   // const arrayBuffer = await file.arrayBuffer();
+//   // const buffer = Buffer.from(arrayBuffer);
+//   // const buffer = new Uint8Array(arrayBuffer);
+//   // await fs.writeFile(`./public/uploads/${file.name}`, buffer);
 //
-//   await fs.writeFile(`./public/uploads/${file.name}`, buffer);
-//
-//   const croak = postFile(buffer, file);
+//   const croak = postFile(file);
 //
 //   return NextResponse.json(croak);
 // }

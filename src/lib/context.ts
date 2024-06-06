@@ -1,7 +1,7 @@
 import { Kysely } from 'kysely'
 import { getRdb } from '@/lib/rdb'
 import { Actor, getRdb } from '@/lib/rdb' // TODO session
-import { Storage, getStorage } from '@/lib/file';
+import { Storage, getStorage } from '@/lib/fileStorage';
 
 export type Context = {
   db: Kysely,
