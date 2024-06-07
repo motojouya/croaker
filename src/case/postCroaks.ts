@@ -25,9 +25,22 @@ import { convert } from '@/lib/image';
 import { Storage, uploadFile, generatePreSignedUrl, FileError } from '@/lib/fileStorage';
 import { Context } from '@/lib/context';
 import { Actor } from '@/lib/session';
+import {
+  CHARACTOR_COUNT_MAX,
+  trimText,
+  charCount,
+} from '@/lib/text';
+import {
+  URL_REG_EXP,
+  getLinks,
+} from '@/lib/fetch';
 
-type AuthorizeMutation = (actor: Actor) => undefined | AuthorityError;
+type AuthorizeMutation = (actor?: Actor) => undefined | AuthorityError;
 const authorizeMutation: AuthorizeMutation = (actor) => {
+
+  if (!actor) {
+    return new AuthorityError(null, 'none', 'ログインしてください');
+  }
 
   if (actor.status == CROAKER_STATUS_BANNED) {
     return new AuthorityError(actor.croaker_identifier, 'banned', 'ブロックされたユーザです');
@@ -64,12 +77,13 @@ export type PostCroak = (context: Context) => (text: string, thread?: number) =>
   | AuthorityError
   | InvalidArgumentsError
 >;
-export const postCroak: PostCroak = (context) => async (text, thread) => {
+export const postCroak: PostCroak = ({ actor, db, storage }) => async (text, thread) => {
 
-  const actor = context.actor;
+  const lines = trimText(text);
 
-  if (!text) {
-    return new InvalidArgumentsError(actor.croaker_identifier, 'text', text, 'textが空です');
+  const charactorCount = charCount(lines);
+  if (charactorCount < 1 || CHARACTOR_COUNT_MAX < charactorCount) {
+    return new InvalidArgumentsError(actor.croaker_identifier, 'text', text, 'textは1以上140文字までです');
   }
 
   if (thread && thread < 1) {
@@ -81,81 +95,54 @@ export const postCroak: PostCroak = (context) => async (text, thread) => {
     return authorizeMutationErr;
   }
 
-  const actorAuthority = await read(context.db, 'role', { role_name: actor.role_name });
-  const lastCroak = await getLastCroak(context.db)(actor.user_id);
+  const actorAuthority = await read(db, 'role', { role_name: actor.role_name });
+
+  const lastCroak = await getLastCroak(db)(actor.user_id);
   const authorizePostCroakErr = authorizePostCroak(actor, actorAuthority, lastCroak, !!thread);
   if (authorizePostCroakErr) {
     return authorizePostCroakErr;
   }
 
-  // TODO contentsの中身から、linkを取り出し、OGPを取得してlinkテーブルにいれる
-  // fetchする
-  const links = getLinks(contents.split('\n'));
+  const linkList = getLinks(lines);
+  const linkInformations = await createLinks(linkList);
 
-  const croak = await create(context.db, 'croak', {
-    user_id: actor.user_id;
-    contents: contents,
-    thread: thread,
+  const { croak, links } = await transact(db, (trx) => {
+
+    const croak = await create(trx, 'croak', {
+      user_id: actor.user_id;
+      contents: contents,
+      thread: thread,
+    });
+
+    const links = [];
+    let link;
+    for (const linkInfo of linkInformations) {
+      link = await create(trx, 'link', {
+        croak_id: croak.croak_id,
+        url: linkInfo.url,
+        type: string;
+        title: linkInfo.title,
+        image: linkInfo.image,
+        summary: linkInfo.summary,
+      });
+      links.push(link);
+    }
+
+    return { croak, links };
   });
 
-  const links = [];
-  let link;
-  for (const linkData of linkDataList) {
-    link = await create(context.db, 'link', {
-      croak_id: croak.croak_id,
-      storage_type: STORAGE_TYPE_GCS,
-      source: uploadedSource,
-      name: file.name,
-      content_type: file.type;
-    });
-    links.push(link);
-  }
-
   const { coak_id, contents, thread, posted_date, } = croak;
+  const { croaker_identifier, croaker_name, } = actor;
   return {
     coak_id,
     contents,
     thread,
     posted_date,
-    croaker_identifier: actor.croaker_identifier,
-    croaker_name: actor.croaker_name,
+    croaker_identifier,
+    croaker_name,
     links,
   };
 };
-
-const regexps = [
-  new RegExp('^(https:\/\/)\S+$'g),
-  new RegExp('^.*\s(https:\/\/)\S+$'g),
-  new RegExp('^(https:\/\/)\S+\s.*$'g),
-  new RegExp('^.*\s(https:\/\/)\S+\s.*$'g),
-];
-
-type GetLinks = (lines: string[]) => string[];
-const getLinks = (lines) => lines.flatMap(line => {
-  return regexps.flatMap(regexp => {
-    // TODO 途中
-    const result = regexps.exec(line);
-  })
-});
-
-// const nl2br = (text) => {
-//   const texts = text.split('\n').map((item, index) => {
-//     return (
-//       <React.Fragment key={index}>
-//         {item}<br />
-//       </React.Fragment>
-//     );
-//   });
-//   return <div>{texts}</div>;
-// }
-// 
-// import { createElement, type ReactNode } from 'react'
-// const nl2br = (text: string): ReactNode[] =>
-//   text
-//     .split('\n')
-//     .map((line, index) => [line, createElement('br', { key: index })])
-//     .flat()
-//     .slice(0, -1)
 
 // TODO Fileにどういう情報が入ってるかよくわかっていない
 export type PostFile = (context: Context) => (file: File, thread?: number) => Promise<
@@ -166,9 +153,7 @@ export type PostFile = (context: Context) => (file: File, thread?: number) => Pr
   | ImageCommandError
   | ImageFormatError
 >;
-export const postFile: PostFile = (context) => async (file, thread) => {
-
-  const actor = context.actor;
+export const postFile: PostFile = ({ actor, db, storage }) => async (file, thread) => {
 
   if (!file) {
     return null;
@@ -183,9 +168,9 @@ export const postFile: PostFile = (context) => async (file, thread) => {
     return authorizeMutationErr;
   }
 
-  const actorAuthority = await read(context.db, 'role', { role_name: actor.role_name });
+  const actorAuthority = await read(db, 'role', { role_name: actor.role_name });
 
-  const lastCroak = await getLastCroak(context.db)(actor.user_id);
+  const lastCroak = await getLastCroak(db)(actor.user_id);
   const authorizePostCroakErr = authorizePostCroak(actor, actorAuthority, lastCroak, !!thread);
   if (authorizePostCroakErr) {
     return authorizePostCroakErr;
@@ -203,17 +188,19 @@ export const postFile: PostFile = (context) => async (file, thread) => {
     return converted;
   }
 
-  const uploadedSource = await uploadFile(context.storage)(uploadFilePath, file.extension);
+  const uploadedSource = await uploadFile(storage)(uploadFilePath, file.extension);
   if (uploadedSource instanceof FileError) {
     return uploadedSource;
   }
 
-  const { croak, file } = transact(context.db, (trx) => {
+  const { croak, file } = await transact(db, (trx) => {
+
     const croak = await create(trx, 'croak', {
       user_id: actor.user_id;
       contents: null,
       thread: thread,
     });
+
     const file = await create(trx, 'file', {
       croak_id: croak.croak_id,
       storage_type: STORAGE_TYPE_GCS,
@@ -221,13 +208,11 @@ export const postFile: PostFile = (context) => async (file, thread) => {
       name: file.name,
       content_type: file.type;
     });
-    return {
-      croak,
-      file,
-    };
+
+    return { croak, file };
   });
 
-  const fileUrl = generatePreSignedUrl(context.storage)(uploadedSource);
+  const fileUrl = generatePreSignedUrl(storage)(uploadedSource);
   if (fileUrl instanceof FileError) {
     return fileUrl;
   }
@@ -268,21 +253,21 @@ export const postFile: PostFile = (context) => async (file, thread) => {
 // }
 
 type DeleteCroak = (context: Context) => (croakId: number) => Promise<Croak | AuthorityError>;
-const deleteCroak: DeleteCroak = (context) => async (croakId) => {
-
-  const actor = context.actor;
+const deleteCroak: DeleteCroak = ({ actor, db, storage }) => async (croakId) => {
 
   const authorizeMutationErr = authorizeMutation(actor);
   if (authorizeMutationErr) {
     return authorizeMutationErr;
   }
 
-  const actorAuthority = await read(context.db, 'role', { role_name: actor.role_name });
-  const croak = await read(context.db, 'croak', { croak_id: croakId });
+  return await transact(db, (trx) => {
+    const actorAuthority = await read(trx, 'role', { role_name: actor.role_name });
+    const croak = await read(trx, 'croak', { croak_id: croakId });
 
-  if (!croak.user_id === actor.user_id && !actorAuthority.delete_other_post) {
-    return new AuthorityError(actor.croaker_identifier, 'delete_other_post', '自分以外の投稿を削除することはできません');
-  }
+    if (!croak.user_id === actor.user_id && !actorAuthority.delete_other_post) {
+      return new AuthorityError(actor.croaker_identifier, 'delete_other_post', '自分以外の投稿を削除することはできません');
+    }
 
-  return await delete(context.db, 'croak', { croak_id: croakId });
+    return await delete(db, 'croak', { croak_id: croakId });
+  });
 };

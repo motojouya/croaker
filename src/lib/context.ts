@@ -5,7 +5,7 @@ import { Storage, getStorage } from '@/lib/fileStorage';
 
 export type Context = {
   db: Kysely,
-  actor: Actor,
+  actor?: Actor,
   storage: Storage;
 };
 

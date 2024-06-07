@@ -4,36 +4,6 @@ sessionとdbをbindする関数は必要かも。それで隠蔽してやりた�
 route handlerは、そういうコンテナ的な役割をroute.tsに書きやすいが、server componentは書きづらいので、それを補助するイメージ
 transactionの関数は、caseディレクトリ側に記載するし、用意があるので、大丈夫
 
-### croaks
-- getTopCroaks
-  - /croak/top?offset=<number>
-- searchCroaks
-  - /croak/search/<text>?offset=<number>
-- getThreadCroaks
-  - /croak/thread/<number>?offset=<number>
-
-DBから取得してきてreturn typeに変換する
-```ts
-type return = {
-  croaks: Croak[];
-  head_id: number;
-  tail_id: number;
-  count: number;
-  has_next: bool;
-};
-```
-
-- postCroak
-  - post /croak/text
-    - text
-- postFile
-  - post /croak/file
-    - file
-- deleteCroak
-  - post /croak/delete/<croak_id>
-
-ロジック書いてく
-
 ### croakers
 更新は自分のページだけなので、更新に必要な情報はsessionで足りる。
 更新のエンドポイントを通るときにsessionを更新すれば反映されるはずなので、取得も不要かな
@@ -43,9 +13,11 @@ ownerは、他のユーザのactivitiesを参照できるので、それを取�
 
 - getCroaker
   - croaker identifier
+  - 特に権限制御なし
 - getRecentActivities
   - selfUserId
   - days
+  - 権限はrole参照
 
 ```ts
 type session = {
@@ -70,9 +42,11 @@ type session = {
     - description
     - form_agreement
     - form_agreement=falseでも更新は成功するが、いつまでも投稿はできない
+    - 自分自身しかできない
 
 - func banCrocker
   - post /crocker/<identifier>/ban
+  - 権限はrole参照
 
 ### role & configuration
 server components上で取得して、propsにわたす感じにする
