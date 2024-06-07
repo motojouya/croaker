@@ -45,7 +45,11 @@ const createStorage: CreateStorage = () => {
         const dir = 'files';
         const destination = dir + '/' + to;
         await innerBucket.upload(from, { destination, gzip: true, });
-      }
+      },
+      getPreSignedUrl: async (fileName, options) => {
+        const [ url ] = await innerBucket.file(fileName).getSignedUrl(options);
+        return url;
+      },
     }
   };
 
@@ -64,6 +68,7 @@ export const getStorage: GetStorage = () => {
 
 export type UploadFile = (storage: Storage) => (localFilePath: string, extension: string) => Promise<string | FileError>;
 export const uploadFile: UploadFile = async (localFilePath, extension) => {
+
   try {
     const storageFileName = `${v4()}.${extension}`;
 
@@ -71,7 +76,7 @@ export const uploadFile: UploadFile = async (localFilePath, extension) => {
 
     await bucket.upload(localFilePath, storageFileName);
 
-    return destination;
+    return storageFileName;
 
   } catch (e) {
     return new FileError(
@@ -79,6 +84,27 @@ export const uploadFile: UploadFile = async (localFilePath, extension) => {
       file_path,
       e,
       'ファイルアップロードできませんでした'
+    );
+  }
+}
+
+export type GeneratePreSignedUrl = (storage: storage, filePath: string) => Promise<string | FileError>
+export const generatePreSignedUrl: GeneratePreSignedUrl = (storage, filePath) => {
+
+  try {
+    const bucket = storage.getUploadFileBucket();
+    return await bucket.getPreSignedUrl(filePath, {
+      version: 'v4',
+      action: 'read',
+      expires: Date.now() + (15 * 60 * 1000), // 15 minutes
+    });
+
+  } catch (e) {
+    return new FileError(
+      'preSignedUrl',
+      filePath,
+      e,
+      '署名付きURLを発行できませんでした'
     );
   }
 }
