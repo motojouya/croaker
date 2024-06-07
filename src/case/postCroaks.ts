@@ -1,6 +1,7 @@
 import { Kysely, NotNull, Null } from 'kysely'
 import { add, compareAsc } from 'date-fns';
 
+import { transact } from '@/lib/rdb';
 import { Croak, CroakMini } from '@/rdb/query/croak';
 import { create, delete, read } from '@/lib/repository';
 import { getRoleAuthority } from '@/lib/role'
@@ -88,6 +89,8 @@ export const postCroak: PostCroak = (context) => async (text, thread) => {
   }
 
   // TODO contentsの中身から、linkを取り出し、OGPを取得してlinkテーブルにいれる
+  // fetchする
+  const links = getLinks(contents.split('\n'));
 
   const croak = await create(context.db, 'croak', {
     user_id: actor.user_id;
@@ -119,6 +122,40 @@ export const postCroak: PostCroak = (context) => async (text, thread) => {
     links,
   };
 };
+
+const regexps = [
+  new RegExp('^(https:\/\/)\S+$'g),
+  new RegExp('^.*\s(https:\/\/)\S+$'g),
+  new RegExp('^(https:\/\/)\S+\s.*$'g),
+  new RegExp('^.*\s(https:\/\/)\S+\s.*$'g),
+];
+
+type GetLinks = (lines: string[]) => string[];
+const getLinks = (lines) => lines.flatMap(line => {
+  return regexps.flatMap(regexp => {
+    // TODO 途中
+    const result = regexps.exec(line);
+  })
+});
+
+// const nl2br = (text) => {
+//   const texts = text.split('\n').map((item, index) => {
+//     return (
+//       <React.Fragment key={index}>
+//         {item}<br />
+//       </React.Fragment>
+//     );
+//   });
+//   return <div>{texts}</div>;
+// }
+// 
+// import { createElement, type ReactNode } from 'react'
+// const nl2br = (text: string): ReactNode[] =>
+//   text
+//     .split('\n')
+//     .map((line, index) => [line, createElement('br', { key: index })])
+//     .flat()
+//     .slice(0, -1)
 
 // TODO Fileにどういう情報が入ってるかよくわかっていない
 export type PostFile = (context: Context) => (file: File, thread?: number) => Promise<
@@ -171,21 +208,24 @@ export const postFile: PostFile = (context) => async (file, thread) => {
     return uploadedSource;
   }
 
-  // TODO transactionで囲む。ここから
-  const croak = await create(context.db, 'croak', {
-    user_id: actor.user_id;
-    contents: null,
-    thread: thread,
+  const { croak, file } = transact(context.db, (trx) => {
+    const croak = await create(trx, 'croak', {
+      user_id: actor.user_id;
+      contents: null,
+      thread: thread,
+    });
+    const file = await create(trx, 'file', {
+      croak_id: croak.croak_id,
+      storage_type: STORAGE_TYPE_GCS,
+      source: uploadedSource,
+      name: file.name,
+      content_type: file.type;
+    });
+    return {
+      croak,
+      file,
+    };
   });
-
-  const file = await create(context.db, 'file', {
-    croak_id: croak.croak_id,
-    storage_type: STORAGE_TYPE_GCS,
-    source: uploadedSource,
-    name: file.name,
-    content_type: file.type;
-  });
-  // TODO transactionで囲む。ここまで
 
   const fileUrl = generatePreSignedUrl(context.storage)(uploadedSource);
   if (fileUrl instanceof FileError) {
