@@ -27,7 +27,7 @@ export const getRdb: GetRdb = () => {
   return rdb;
 };
 
-export async function transact<T>(rdb: Kysely, callback: (trx: Transaction) => Promise<T>): Promise<T> {
+export async function transact<T>(db: Kysely, callback: (trx: Transaction) => Promise<T>): Promise<T> {
   try {
     return db.transaction().execute(trx => {
       const result = callback(trx);
@@ -42,6 +42,36 @@ export async function transact<T>(rdb: Kysely, callback: (trx: Transaction) => P
   // kyselyがrollbackはerror throwを想定しているため、callback内で投げて、再度catchする
   } catch (e) {
     return e;
+  }
+}
+
+export type DbDependedFunctions = Record<string, (db: Kyseky) => unknown>; // TODO any? unknown?
+
+export async function transact<T>(db: Kysely, funcs: DbDependedFunctions) {
+  return function <T>(callback: (trx: Transaction) => Promise<T>): Promise<T> {
+
+    try {
+      return db.transaction().execute(trx => {
+
+        const transactedFuncs = {};
+        for (let funcIndex in funcs) {
+          let func = funcs[funcIndex];
+          transactedFuncs[funcIndex] = func(trx)
+        }
+
+        const result = callback(transactedFuncs);
+
+        if (result instanceof Error) {
+          throw result;
+        }
+
+        return result;
+      });
+
+    // kyselyがrollbackはerror throwを想定しているため、callback内で投げて、再度catchする
+    } catch (e) {
+      return e;
+    }
   }
 }
 

@@ -35,43 +35,6 @@ import {
   getLinks,
 } from '@/lib/fetch';
 
-type AuthorizeMutation = (actor?: Actor) => undefined | AuthorityError;
-const authorizeMutation: AuthorizeMutation = (actor) => {
-
-  if (!actor) {
-    return new AuthorityError(null, 'none', 'ログインしてください');
-  }
-
-  if (actor.status == CROAKER_STATUS_BANNED) {
-    return new AuthorityError(actor.croaker_identifier, 'banned', 'ブロックされたユーザです');
-  }
-
-  if (!actor.form_agreement) {
-    return new AuthorityError(actor.croaker_identifier, 'form_agreement', '投稿前にプロフィールの編集とお願いへの同意をしてください');
-  }
-};
-
-type AuthorizePostCroak = (actor: Actor, actorAuthority: Role, lastCroak: CroakMini, isThread: bool) => undefined | AuthorityError;
-const authorizePostCroak: AuthorizePostCroak = (actor, actorAuthority, lastCroak, isThread) => {
-
-  if (actorAuthority.post === POST_AUTHORITY_DISABLE) {
-    return new AuthorityError(actor.croaker_identifier, 'post_disable', '投稿することはできません');
-  }
-
-  if (actorAuthority.post === POST_AUTHORITY_THREAD && !isThread) {
-    return new AuthorityError(actor.croaker_identifier, 'post_thread', 'スレッド上にのみ投稿することができます');
-  }
-
-  const duration = getDuration(actorAuthority.top_post_interval);
-  const croakTimePassed = !!compareAsc(add(lastCroak.posted_date, duration), new Date());
-
-  if (actorAuthority.post === POST_AUTHORITY_TOP && !croakTimePassed) {
-    const durationText = toStringDuration(duration);
-    return new AuthorityError(actor.croaker_identifier, 'post_thread', `前回の投稿から${durationText}以上たってから投稿してください`);
-  }
-
-};
-
 export type PostCroak = (context: Context) => (text: string, thread?: number) => Promise<
   | Omit<Croak, 'has_thread' | 'files'>
   | AuthorityError
@@ -110,17 +73,18 @@ export const postCroak: PostCroak = ({ actor, db, storage }) => async (text, thr
 
     const croak = await create(trx, 'croak', {
       user_id: actor.user_id;
-      contents: contents,
+      contents: lines.join('\n'),
       thread: thread,
     });
 
+    // TODO 並列化
     const links = [];
     let link;
     for (const linkInfo of linkInformations) {
       link = await create(trx, 'link', {
         croak_id: croak.croak_id,
         url: linkInfo.url,
-        type: string;
+        type: linkInfo.type;
         title: linkInfo.title,
         image: linkInfo.image,
         summary: linkInfo.summary,
@@ -252,8 +216,8 @@ export const postFile: PostFile = ({ actor, db, storage }) => async (file, threa
 //   return NextResponse.json(croak);
 // }
 
-type DeleteCroak = (context: Context) => (croakId: number) => Promise<Croak | AuthorityError>;
-const deleteCroak: DeleteCroak = ({ actor, db, storage }) => async (croakId) => {
+export type DeleteCroak = (context: Context) => (croakId: number) => Promise<Croak | AuthorityError>;
+export const deleteCroak: DeleteCroak = ({ actor, db, storage }) => async (croakId) => {
 
   const authorizeMutationErr = authorizeMutation(actor);
   if (authorizeMutationErr) {
@@ -271,3 +235,40 @@ const deleteCroak: DeleteCroak = ({ actor, db, storage }) => async (croakId) => 
     return await delete(db, 'croak', { croak_id: croakId });
   });
 };
+
+type AuthorizeMutation = (actor?: Actor) => undefined | AuthorityError;
+const authorizeMutation: AuthorizeMutation = (actor) => {
+
+  if (!actor) {
+    return new AuthorityError(null, 'none', 'ログインしてください');
+  }
+
+  if (actor.status == CROAKER_STATUS_BANNED) {
+    return new AuthorityError(actor.croaker_identifier, 'banned', 'ブロックされたユーザです');
+  }
+
+  if (!actor.form_agreement) {
+    return new AuthorityError(actor.croaker_identifier, 'form_agreement', '投稿前にプロフィールの編集とお願いへの同意をしてください');
+  }
+};
+
+type AuthorizePostCroak = (actor: Actor, actorAuthority: Role, lastCroak: CroakMini, isThread: bool) => undefined | AuthorityError;
+const authorizePostCroak: AuthorizePostCroak = (actor, actorAuthority, lastCroak, isThread) => {
+
+  if (actorAuthority.post === POST_AUTHORITY_DISABLE) {
+    return new AuthorityError(actor.croaker_identifier, 'post_disable', '投稿することはできません');
+  }
+
+  if (actorAuthority.post === POST_AUTHORITY_THREAD && !isThread) {
+    return new AuthorityError(actor.croaker_identifier, 'post_thread', 'スレッド上にのみ投稿することができます');
+  }
+
+  const duration = getDuration(actorAuthority.top_post_interval);
+  const croakTimePassed = !!compareAsc(add(lastCroak.posted_date, duration), new Date());
+
+  if (actorAuthority.post === POST_AUTHORITY_TOP && !croakTimePassed) {
+    const durationText = toStringDuration(duration);
+    return new AuthorityError(actor.croaker_identifier, 'post_thread', `前回の投稿から${durationText}以上たってから投稿してください`);
+  }
+};
+
