@@ -1,81 +1,50 @@
-import { Kysely } from 'kysely'
-import { getRdb, transact } from '@/lib/rdb'
-import { Actor, getRdb } from '@/lib/rdb' // TODO session
-import { Storage, getStorage } from '@/lib/fileStorage';
+// TODO 関数の引数にしてしまう
+// import { Actor, getSession } from '@/lib/rdb' // TODO session
+// const actor = getSession(); // TODO from session. nullable
 
-export type Context = {
-  db: Kysely,
-  actor?: Actor,
-  storage: Storage;
+export type DependedFunctions = Record<string, () => unknown>; // TODO any? unknown?
+
+export type BindFunction = (func: any, wouldBind: DependedFunctions) => void;
+export const bindFunction: BindFunction = (func: any, wouldBind: DependedFunctions) => {
+  func._functions_would_bind_context = wouldBind;
 };
 
-export type BindFunction = () => void;
-export const bundFunction: BindFunction = (func: any, wouldBind: any) => {
-  func._would_bind_functions_in_di_container = wouldBind;
-};
-
-const injectionKeys = [
-  'db',
-  'storage',
-  'http',
-  'local', // TODO Date, local Files, Random を含むがどうする？
-];
-
-
-type GetArgNames = (func: Function) => string[]
-const getArgNames: GetArgNames = (func) => {
-  const source = func.toString()
-    .replace(/\/\/.*$|\/\*[\s\S]*?\*\/|\s/gm, ''); // strip comments
-  const argNames = source.match(/\((.*?)\)/)[1].split(',');
-
-  if (argNames.length === 1 && argNames[0] === '') {
-    return [];
-  }
-  return argNames;
-}
-
-// TODO 未完成
-export type ContextBinder<T> = (func: T) => ReturnType<T>
-export const contextBinder: ContextBinder = (func) => {
-
-  const { transactionFunctions, ...rest } = func._would_bind_functions_in_di_container;
-
-  const db = getRdb();
-  const actor = getRdb(); // TODO from session. nullable
-  const storage = getStorage();
-
-  const bindedFuncs = {};
-  for (const funcIndex in rest) {
-    const func = rest[funcIndex];
-    const argNames = getArgNames(func);
-
-    const args = [];
-    for (const argName of argNames) {
-      switch (argName) {
-        case 'db': args.push(db); break;
-        case 'storage': args.push(db); break;
-        default: return null; // TODO error 型作る
-      }
-    }
-    bindedFuncs[funcIndex] = func(...args)
-  }
-
-  const inject = {
-    actor,
-    transact: transact(db, transactionFunctions),
-    ...bindedFuncs,
-  };
-
+// TODO funcの型をもっとちゃんと書いたほうがいいはず
+// DependedFunctionsとかでてくるはず
+export type BindContext<T> = (func: T) => ReturnType<T>;
+export const bindContext: BindContext = (func) => {
+  const bindedFuncs = Object.entries(func._functions_would_bind_context).reduce((acc, [key, val]) => {
+    return {
+      ...acc,
+      [key]: val(),
+    };
+  }, {});
   return func(bindedFuncs);
 }
 
-export type ContextBinder<T> = (func: T) => ReturnType<T>
-export const contextBinder: ContextBinder = (func) => {
-  const db = getRdb();
-  const actor = getRdb(); // TODO from session. nullable
-  const storage = getStorage();
-  return func({ db, storage, actor, });
-}
+// import { Kysely } from 'kysely'
+// import { getRdb, transact } from '@/lib/rdb'
+// import { Storage, getStorage } from '@/lib/fileStorage';
+
+// type GetArgNames = (func: Function) => string[]
+// const getArgNames: GetArgNames = (func) => {
+//   const source = func.toString()
+//     .replace(/\/\/.*$|\/\*[\s\S]*?\*\/|\s/gm, ''); // strip comments
+//   const argNames = source.match(/\((.*?)\)/)[1].split(',');
+// 
+//   if (argNames.length === 1 && argNames[0] === '') {
+//     return [];
+//   }
+//   return argNames;
+// }
+
+// export type ContextBinder<T> = (func: T) => ReturnType<T>
+// export const contextBinder: ContextBinder = (func) => {
+//   const db = getRdb();
+//   const actor = getRdb(); // TODO from session. nullable
+//   const storage = getStorage();
+//   return func({ db, storage, actor, });
+// }
 
 // export function contextBinder<T>(func: T): ReturnType<T> {
 //   return function (...argments) {

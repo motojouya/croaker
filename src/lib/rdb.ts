@@ -10,8 +10,8 @@ import { Database as DatabaseType } from '@/rdb/type';
 
 let rdb?: Kysely = undefined;
 
-export type GetRdb = () => Kysely;
-export const getRdb: GetRdb = () => {
+type GetRdb = () => Kysely;
+const getRdb: GetRdb = () => {
   if (!rdb) {
     rdb = new Kysely<DatabaseType>({
       dialect: new SqliteDialect({
@@ -27,37 +27,42 @@ export const getRdb: GetRdb = () => {
   return rdb;
 };
 
-export async function transact<T>(db: Kysely, callback: (trx: Transaction) => Promise<T>): Promise<T> {
-  try {
-    return db.transaction().execute(trx => {
-      const result = callback(trx);
+export type GetDatabase = (funcs?: DbDependedFunctions, transactionFuncs?: DbDependedFunctions) => 
+export const getDatabase: GetDatabase = (funcs, transactionFuncs) => {
 
-      if (result instanceof Error) {
-        throw result;
-      }
+  const db = getRdb();
+  let dbAccess = {};
 
-      return result;
-    });
-
-  // kyselyがrollbackはerror throwを想定しているため、callback内で投げて、再度catchする
-  } catch (e) {
-    return e;
+  if (funcs) {
+    dbAccess = Object.entries(funcs).reduce((acc, [key, val]) => {
+      return {
+        ...acc,
+        [key]: val(db),
+      };
+    }, dbAccess);
   }
-}
+
+  if (transactionFuncs) {
+    dbAccess['transact'] = transact(db, transactionFuncs);
+  }
+
+  return dbAccess;
+};
 
 export type DbDependedFunctions = Record<string, (db: Kyseky) => unknown>; // TODO any? unknown?
 
-export async function transact<T>(db: Kysely, funcs: DbDependedFunctions) {
+async function transact(db: Kysely, funcs: DbDependedFunctions) {
   return function <T>(callback: (trx: Transaction) => Promise<T>): Promise<T> {
 
     try {
       return db.transaction().execute(trx => {
 
-        const transactedFuncs = {};
-        for (let funcIndex in funcs) {
-          let func = funcs[funcIndex];
-          transactedFuncs[funcIndex] = func(trx)
-        }
+        const transactedFuncs = Object.entries(funcs).reduce((acc, [key, val]) => {
+          return {
+            ...acc,
+            [key]: val(trx),
+          };
+        }, {});
 
         const result = callback(transactedFuncs);
 
@@ -74,6 +79,24 @@ export async function transact<T>(db: Kysely, funcs: DbDependedFunctions) {
     }
   }
 }
+
+// export async function transact<T>(db: Kysely, callback: (trx: Transaction) => Promise<T>): Promise<T> {
+//   try {
+//     return db.transaction().execute(trx => {
+//       const result = callback(trx);
+// 
+//       if (result instanceof Error) {
+//         throw result;
+//       }
+// 
+//       return result;
+//     });
+// 
+//   // kyselyがrollbackはerror throwを想定しているため、callback内で投げて、再度catchする
+//   } catch (e) {
+//     return e;
+//   }
+// }
 
 export class RecordAlreadyExistError extends Error {
   constructor(
