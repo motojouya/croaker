@@ -10,8 +10,8 @@ import { Database as DatabaseType } from '@/rdb/type';
 
 let rdb?: Kysely = undefined;
 
-type GetRdb = () => Kysely;
-const getRdb: GetRdb = () => {
+type GetKysely = () => Kysely;
+const getKysely: GetKysely = () => {
   if (!rdb) {
     rdb = new Kysely<DatabaseType>({
       dialect: new SqliteDialect({
@@ -27,14 +27,24 @@ const getRdb: GetRdb = () => {
   return rdb;
 };
 
-export type GetDatabase = (funcs?: DbDependedFunctions, transactionFuncs?: DbDependedFunctions) => 
-export const getDatabase: GetDatabase = (funcs, transactionFuncs) => {
 
-  const db = getRdb();
+
+
+export type GetQuery<Q> = { [K in keyof Q]: (db: Kyseky) => Q[K] };
+
+export type DB<Q, T, R extends unknown> = Q & { transact: Transact<T, R> };
+
+export type Transact<Q, R extends unknown> = (callback: (trx: Q) => Promise<R>) => Promise<R>;
+
+export type DbDependedFunctions = Record<string, (db: Kyseky) => unknown>; // TODO any? unknown?
+
+export function getDatabase<Q, T>(queries?: GetQuery<Q>, transactionQueries?: GetQuery<T>): DB<Q, T> {
+
+  const db = getKysely();
   let dbAccess = {};
 
-  if (funcs) {
-    dbAccess = Object.entries(funcs).reduce((acc, [key, val]) => {
+  if (queries) {
+    dbAccess = Object.entries(queries).reduce((acc, [key, val]) => {
       return {
         ...acc,
         [key]: val(db),
@@ -42,29 +52,27 @@ export const getDatabase: GetDatabase = (funcs, transactionFuncs) => {
     }, dbAccess);
   }
 
-  if (transactionFuncs) {
-    dbAccess['transact'] = transact(db, transactionFuncs);
+  if (transactionQueries) {
+    dbAccess['transact'] = getTransact(db, transactionQueries);
   }
 
   return dbAccess;
 };
 
-export type DbDependedFunctions = Record<string, (db: Kyseky) => unknown>; // TODO any? unknown?
-
-async function transact(db: Kysely, funcs: DbDependedFunctions) {
-  return function <T>(callback: (trx: Transaction) => Promise<T>): Promise<T> {
+async function getTransact<Q, R extends unknown>(db: Kysely, queries: GetQuery<Q>): Transact<Q, R> {
+  return function <R>(callback: (trx: Q) => Promise<R>): Promise<R> {
 
     try {
       return db.transaction().execute(trx => {
 
-        const transactedFuncs = Object.entries(funcs).reduce((acc, [key, val]) => {
+        const transactedQueries = Object.entries(queries).reduce((acc, [key, val]) => {
           return {
             ...acc,
             [key]: val(trx),
           };
         }, {});
 
-        const result = callback(transactedFuncs);
+        const result = callback(transactedQueries);
 
         if (result instanceof Error) {
           throw result;

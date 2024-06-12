@@ -1,9 +1,10 @@
 import { Kysely, NotNull, Null } from 'kysely'
 import { add, compareAsc } from 'date-fns';
 
-import { transact } from '@/lib/rdb';
+import { Session, getSession } from '@/lib/session';
+import { DB, getDatabase } from '@/lib/rdb';
 import { Croak, CroakMini } from '@/rdb/query/croak';
-import { create, delete, read } from '@/lib/repository';
+import { create, delete, read } from '@/rdb/query/base';
 import { getRoleAuthority } from '@/lib/role'
 import { getLastCroak } from '@/rdb/query/getLastCroak';
 import {
@@ -23,7 +24,7 @@ import { STORAGE_TYPE_GCS } from '@/rdb/type/croak';
 import { InvalidArgumentsError, AuthorityError } from '@/lib/validation';
 import { convert } from '@/lib/image';
 import { Storage, uploadFile, generatePreSignedUrl, FileError } from '@/lib/fileStorage';
-import { Context } from '@/lib/context';
+import { ContextFullFunction, setContext } from '@/lib/context';
 import { Actor } from '@/lib/session';
 import {
   CHARACTOR_COUNT_MAX,
@@ -35,12 +36,28 @@ import {
   getLinks,
 } from '@/lib/fetch';
 
-export type PostCroak = (context: Context) => (text: string, thread?: number) => Promise<
-  | Omit<Croak, 'has_thread' | 'files'>
-  | AuthorityError
-  | InvalidArgumentsError
+export type PostCroak = ContextFullFunction<
+  {
+    'session': Session,
+    'db': DB<
+      {
+        'read': ReturnType<typeof read>,
+        'getLastCroak': ReturnType<typeof getLastCroak>,
+      },
+      {
+        'create': ReturnType<typeof create>
+      }
+    >,
+  },
+  (text: string, thread?: number) => Promise<
+    | Omit<Croak, 'has_thread' | 'files'>
+    | AuthorityError
+    | InvalidArgumentsError
+  >
 >;
-export const postCroak: PostCroak = ({ actor, db, storage }) => async (text, thread) => {
+const postCroak: PostCroak = ({ session, db }) => async (text, thread) => {
+
+  const actor = session.getActor();
 
   const lines = trimText(text);
 
@@ -58,9 +75,9 @@ export const postCroak: PostCroak = ({ actor, db, storage }) => async (text, thr
     return authorizeMutationErr;
   }
 
-  const actorAuthority = await read(db, 'role', { role_name: actor.role_name });
+  const actorAuthority = await db.read('role', { role_name: actor.role_name });
 
-  const lastCroak = await getLastCroak(db)(actor.user_id);
+  const lastCroak = await db.getLastCroak(actor.user_id);
   const authorizePostCroakErr = authorizePostCroak(actor, actorAuthority, lastCroak, !!thread);
   if (authorizePostCroakErr) {
     return authorizePostCroakErr;
@@ -69,9 +86,9 @@ export const postCroak: PostCroak = ({ actor, db, storage }) => async (text, thr
   const linkList = getLinks(lines);
   const linkInformations = await createLinks(linkList);
 
-  const { croak, links } = await transact(db, (trx) => {
+  const { croak, links } = await db.transact((trx) => {
 
-    const croak = await create(trx, 'croak', {
+    const croak = await trx.create('croak', {
       user_id: actor.user_id;
       contents: lines.join('\n'),
       thread: thread,
@@ -81,7 +98,7 @@ export const postCroak: PostCroak = ({ actor, db, storage }) => async (text, thr
     const links = [];
     let link;
     for (const linkInfo of linkInformations) {
-      link = await create(trx, 'link', {
+      link = await trx.create('link', {
         croak_id: croak.croak_id,
         url: linkInfo.url,
         type: linkInfo.type;
@@ -107,6 +124,11 @@ export const postCroak: PostCroak = ({ actor, db, storage }) => async (text, thr
     links,
   };
 };
+setContext(postCroak, {
+  'db': () => getDatabase({ read, getLastCroak }, { create }),
+  'session': getSession,
+});
+export postCroak;
 
 // TODO Fileにどういう情報が入ってるかよくわかっていない
 export type PostFile = (context: Context) => (file: File, thread?: number) => Promise<

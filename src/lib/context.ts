@@ -1,25 +1,34 @@
-// TODO 関数の引数にしてしまう
+// TODO 関数の引数にしてしまうか、そもそもgetSessionをbindするかで解決できるはず
 // import { Actor, getSession } from '@/lib/rdb' // TODO session
 // const actor = getSession(); // TODO from session. nullable
 
-export type DependedFunctions = Record<string, () => unknown>; // TODO any? unknown?
+export type GetContext<C> = { [K in keyof C]: () => C[K] };
 
-export type BindFunction = (func: any, wouldBind: DependedFunctions) => void;
-export const bindFunction: BindFunction = (func: any, wouldBind: DependedFunctions) => {
-  func._functions_would_bind_context = wouldBind;
+export type ContextFullFunction<C, R> = {
+  _context_setting?: GetContext<C>;
+  (context: C): R;
 };
 
-// TODO funcの型をもっとちゃんと書いたほうがいいはず
-// DependedFunctionsとかでてくるはず
-export type BindContext<T> = (func: T) => ReturnType<T>;
-export const bindContext: BindContext = (func) => {
-  const bindedFuncs = Object.entries(func._functions_would_bind_context).reduce((acc, [key, val]) => {
+export function setContext<C, R>(
+  func: ContextFullFunction<C, R>,
+  contextSetting: GetContext<C>
+): void {
+  func._context_setting = contextSetting;
+};
+
+export function bindContext<C, R>(func: ContextFullFunction<C, R>): R {
+
+  if (!func._context_setting) {
+    return func({});
+  }
+
+  const context = Object.entries(func._context_setting).reduce((acc, [key, val]) => {
     return {
       ...acc,
       [key]: val(),
     };
   }, {});
-  return func(bindedFuncs);
+  return func(context);
 }
 
 // import { Kysely } from 'kysely'
