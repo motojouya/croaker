@@ -17,7 +17,11 @@ services:
       TZ: Asia/Tokyo
       NODE_ENV: develop
       PORT: 3000
-      RDB_FILE: croaker.sqlite3
+      SQLITE_FILE: croaker.sqlite3 # TODO
+      GOOGLE_CLOUD_PROJECT: '' # TODO
+      GOOGLE_CLOUD_KEY: './key.json' # TODO
+      STORAGE_BUCKET: '' # TODO
+      STORAGE_DIRECTORY: '' # TODO
       # SESSION_SECRET: secret12secret34secret56secret78
       # SESSION_COOKIE_NAME: session-id
       NEXTAUTH_SECRET: "something_secret"

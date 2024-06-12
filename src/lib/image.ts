@@ -3,8 +3,8 @@ import imageMagick from 'imagemagick';
 // npm i -D @types/imagemagick
 // npm i node-imagemagick
 
-export type Convert = (filePath: string) => Promise<string | ImageCommandError | ImageFormatError>;
-export const convert: Convert = async (filePath) => {
+type Convert = (filePath: string) => Promise<string | ImageCommandError | ImageFormatError>;
+const convert: Convert = async (filePath) => {
 
   const imageInfo = getInformation(filePath);
   if (imageInfo instanceof ImageCommandError) {
@@ -44,6 +44,7 @@ export const convert: Convert = async (filePath) => {
 };
 
 export class ImageFormatError extends Error {
+  override readonly name = 'lib.image.ImageFormatError' as const;
   constructor(
     readonly format: string,
     readonly path: string,
@@ -54,6 +55,7 @@ export class ImageFormatError extends Error {
 }
 
 export class ImageCommandError extends Error {
+  override readonly name = 'lib.image.ImageCommandError' as const;
   constructor(
     readonly action: string,
     readonly path: string,
@@ -127,3 +129,8 @@ const resizeJpeg: ResizeJpeg = async (filePath, resizedPath, width) => {
     });
   });
 };
+
+export type ImageFile = {
+  convert: Convert;
+};
+export const getImageFile = () => ({ convert });

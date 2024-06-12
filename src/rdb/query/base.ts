@@ -10,60 +10,47 @@ import {
 } from 'kysely/parser/table-parser';
 import { Database } from '@/rdb/type';
 
-export async function create<TE extends TableExpression<DB, keyof DB>>(
-  db: Kysely,
-  tableName: TE,
-  newRecord: Insertable<FromTables<DB, never, TE>>
-): Promise<FromTables<DB, never, TE>[]> {
-
-  return await db.insertInto(tableName)
-    .values(newRecord)
-    .returningAll()
-    .executeTakeFirstOrThrow();
+export function create(db: Kysely) {
+  return async function <TE extends TableExpression<Database, keyof Database>>(tableName: TE, newRecord: Insertable<FromTables<Database, never, TE>>): Promise<FromTables<Database, never, TE>[]> {
+    return await db.insertInto(tableName)
+      .values(newRecord)
+      .returningAll()
+      .executeTakeFirstOrThrow();
+  };
 }
 
-export async function read<TE extends TableExpression<DB, keyof DB>>(
-  db: Kysely,
-  tableName: TE,
-  criteria: Partial<Selectable<FromTables<DB, never, TE>>>
-): Promise<FromTables<DB, never, TE>[]> {
+export function read(db: Kysely) {
+  return async function <TE extends TableExpression<Database, keyof Database>>(tableName: TE, criteria: Partial<Selectable<FromTables<Database, never, TE>>>): Promise<FromTables<Database, never, TE>[]> {
+    let query = db.selectFrom(tableName);
 
-  let query = db.selectFrom(tableName);
+    for (const prop in criteria) {
+      query = query.where(prop, '=', criteria[prop]);
+    }
 
-  for (const prop in criteria) {
-    query = query.where(prop, '=', criteria[prop]);
-  }
-
-  return await query.selectAll().execute();
+    return await query.selectAll().execute();
+  };
 }
 
-export async function update<TE extends TableExpression<DB, keyof DB>>(
-  db: Kysely,
-  tableName: TE,
-  criteria: Partial<Selectable<FromTables<DB, never, TE>>>,
-  updateWith: Updateable<FromTables<DB, never, TE>>
-): Promise<FromTables<DB, never, TE>[]> {
+export function update(db: Kysely) {
+  return async function <TE extends TableExpression<Database, keyof Database>>(tableName: TE, criteria: Partial<Selectable<FromTables<Database, never, TE>>>, updateWith: Updateable<FromTables<Database, never, TE>>): Promise<FromTables<Database, never, TE>[]> {
+    let command = db.updateTable(tableName).set(updateWith);
 
-  let command = db.updateTable(tableName).set(updateWith);
+    for (const prop in criteria) {
+      command = command.where(prop, '=', criteria[prop]);
+    }
 
-  for (const prop in criteria) {
-    command = command.where(prop, '=', criteria[prop]);
-  }
-
-  return await command.returningAll().execute();
+    return await command.returningAll().execute();
+  };
 }
 
-export async function delete<TE extends TableExpression<DB, keyof DB>>(
-  db: Kysely,
-  tableName: TE,
-  criteria: Partial<Selectable<FromTables<DB, never, TE>>>
-): Promise<FromTables<DB, never, TE>[]> {
+export async function delete(db: Kysely) {
+  return async function <TE extends TableExpression<Database, keyof Database>>(tableName: TE, criteria: Partial<Selectable<FromTables<Database, never, TE>>>): Promise<FromTables<Database, never, TE>[]> {
+    let command = db.deleteFrom(tableName);
 
-  let command = db.deleteFrom(tableName);
+    for (const prop in criteria) {
+      command = command.where(prop, '=', criteria[prop]);
+    }
 
-  for (const prop in criteria) {
-    command = command.where(prop, '=', criteria[prop]);
-  }
-
-  return await command.returningAll().execute();
+    return await command.returningAll().execute();
+  };
 }

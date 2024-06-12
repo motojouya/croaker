@@ -3,13 +3,21 @@ export const CHARACTOR_COUNT_MAX = 140;
 export type TrimText = (text: string) => string[];
 export const trimText: TrimText = (text) => text
   .split('\n')
-  .map(line => line.trimEnd())
-  .filter(line => !!line);
+  .map(line => line.trimEnd());
 
 export type CharCount = (lines: string[]) => number;
-export const charCount: CharCount = (lines) => lines
-  .map(line => [...line].length)
-  .reduce((a, i) => (a + i), 0);
+export const charCount: CharCount = (lines) => {
+
+  if (lines.length === 0) {
+    return 0;
+  }
+
+  const charactorCount = lines
+    .map(line => [...line].length)
+    .reduce((a, i) => (a + i), 0);
+
+  return charactorCount + lines.length - 1;
+}
 
 // const nl2br = (text) => {
 //   const texts = text.split('\n').map((item, index) => {

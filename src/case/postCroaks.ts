@@ -21,9 +21,9 @@ import {
   RoleTable as Role,
 } from '@/rdb/type/master';
 import { STORAGE_TYPE_GCS } from '@/rdb/type/croak';
-import { InvalidArgumentsError, AuthorityError } from '@/lib/validation';
-import { convert } from '@/lib/image';
-import { Storage, uploadFile, generatePreSignedUrl, FileError } from '@/lib/fileStorage';
+import { InvalidArgumentsError } from '@/lib/validation';
+import { ImageFile, getImageFile } from '@/lib/image';
+import { Storage, getStorage, FileError } from '@/lib/fileStorage';
 import { ContextFullFunction, setContext } from '@/lib/context';
 import { Actor } from '@/lib/session';
 import {
@@ -32,20 +32,33 @@ import {
   charCount,
 } from '@/lib/text';
 import {
-  URL_REG_EXP,
   getLinks,
+  Fetcher,
+  getFetcher,
 } from '@/lib/fetch';
+import {
+  AuthorityError,
+  authorizeMutation,
+  authorizePostCroak,
+  authorizePostFile,
+} from '@/lib/authorize';
+import {
+  Local,
+  getLocal,
+} from '@/lib/local';
 
 export type PostCroak = ContextFullFunction<
   {
-    'session': Session,
-    'db': DB<
+    session: Session,
+    fetcher: Fetcher,
+    local: Local,
+    db: DB<
       {
-        'read': ReturnType<typeof read>,
-        'getLastCroak': ReturnType<typeof getLastCroak>,
+        read: ReturnType<typeof read>,
+        getLastCroak: ReturnType<typeof getLastCroak>,
       },
       {
-        'create': ReturnType<typeof create>
+        create: ReturnType<typeof create>
       }
     >,
   },
@@ -55,7 +68,7 @@ export type PostCroak = ContextFullFunction<
     | InvalidArgumentsError
   >
 >;
-const postCroak: PostCroak = ({ session, db }) => async (text, thread) => {
+export const postCroak: PostCroak = ({ session, db, local, fetcher }) => async (text, thread) => {
 
   const actor = session.getActor();
 
@@ -63,7 +76,7 @@ const postCroak: PostCroak = ({ session, db }) => async (text, thread) => {
 
   const charactorCount = charCount(lines);
   if (charactorCount < 1 || CHARACTOR_COUNT_MAX < charactorCount) {
-    return new InvalidArgumentsError(actor.croaker_identifier, 'text', text, 'textは1以上140文字までです');
+    return new InvalidArgumentsError(actor.croaker_identifier, 'text', text, `textは1以上${CHARACTOR_COUNT_MAX}文字までです`);
   }
 
   if (thread && thread < 1) {
@@ -76,17 +89,18 @@ const postCroak: PostCroak = ({ session, db }) => async (text, thread) => {
   }
 
   const actorAuthority = await db.read('role', { role_name: actor.role_name });
-
   const lastCroak = await db.getLastCroak(actor.user_id);
-  const authorizePostCroakErr = authorizePostCroak(actor, actorAuthority, lastCroak, !!thread);
+
+  const authorizePostCroakErr = authorizePostCroak(actor, actorAuthority, lastCroak, local.now(), !!thread);
   if (authorizePostCroakErr) {
     return authorizePostCroakErr;
   }
 
   const linkList = getLinks(lines);
-  const linkInformations = await createLinks(linkList);
+  const ogps = await fetcher.fetchOgp(linkList);
 
-  const { croak, links } = await db.transact((trx) => {
+  // TODO こういう保存をする関数としてqueryに定義する。directoryわけてcommandにしてもいいかも
+  const croak = await db.transact((trx) => {
 
     const croak = await trx.create('croak', {
       user_id: actor.user_id;
@@ -97,22 +111,22 @@ const postCroak: PostCroak = ({ session, db }) => async (text, thread) => {
     // TODO 並列化
     const links = [];
     let link;
-    for (const linkInfo of linkInformations) {
+    for (const ogp of ogps) {
       link = await trx.create('link', {
         croak_id: croak.croak_id,
-        url: linkInfo.url,
-        type: linkInfo.type;
-        title: linkInfo.title,
-        image: linkInfo.image,
-        summary: linkInfo.summary,
+        url: ogp.url,
+        type: ogp.type;
+        title: ogp.title,
+        image: ogp.image,
+        summary: ogp.summary,
       });
       links.push(link);
     }
 
-    return { croak, links };
+    return { ...croak, links };
   });
 
-  const { coak_id, contents, thread, posted_date, } = croak;
+  const { coak_id, contents, thread, posted_date, links } = croak;
   const { croaker_identifier, croaker_name, } = actor;
   return {
     coak_id,
@@ -124,22 +138,43 @@ const postCroak: PostCroak = ({ session, db }) => async (text, thread) => {
     links,
   };
 };
+
 setContext(postCroak, {
-  'db': () => getDatabase({ read, getLastCroak }, { create }),
-  'session': getSession,
+  db: () => getDatabase({ read, getLastCroak }, { create }),
+  session: getSession,
+  fetcher: getFetcher,
+  local: getLocal,
 });
-export postCroak;
 
 // TODO Fileにどういう情報が入ってるかよくわかっていない
-export type PostFile = (context: Context) => (file: File, thread?: number) => Promise<
-  | Omit<Croak, 'has_thread' | 'links'>
-  | AuthorityError
-  | InvalidArgumentsError
-  | FileError
-  | ImageCommandError
-  | ImageFormatError
+export type PostFile = ContextFullFunction<
+  {
+    session: Session,
+    imageFile: ImageFile,
+    storage: Storage,
+    local: Local,
+    db: DB<
+      {
+        read: ReturnType<typeof read>,
+        getLastCroak: ReturnType<typeof getLastCroak>,
+      },
+      {
+        create: ReturnType<typeof create>
+      }
+    >,
+  },
+  (file: File, thread?: number) => Promise<
+    | Omit<Croak, 'has_thread' | 'links'>
+    | AuthorityError
+    | InvalidArgumentsError
+    | FileError
+    | ImageCommandError
+    | ImageFormatError
+  >,
 >;
-export const postFile: PostFile = ({ actor, db, storage }) => async (file, thread) => {
+export const postFile: PostFile = ({ session, db, storage, local, imageFile }) => async (file, thread) => {
+
+  const actor = session.getActor();
 
   if (!file) {
     return null;
@@ -154,19 +189,20 @@ export const postFile: PostFile = ({ actor, db, storage }) => async (file, threa
     return authorizeMutationErr;
   }
 
-  const actorAuthority = await read(db, 'role', { role_name: actor.role_name });
+  const actorAuthority = await db.read('role', { role_name: actor.role_name });
+  const lastCroak = await db.getLastCroak(actor.user_id);
 
-  const lastCroak = await getLastCroak(db)(actor.user_id);
-  const authorizePostCroakErr = authorizePostCroak(actor, actorAuthority, lastCroak, !!thread);
+  const authorizePostCroakErr = authorizePostCroak(actor, actorAuthority, lastCroak, local.now(), !!thread);
   if (authorizePostCroakErr) {
     return authorizePostCroakErr;
   }
 
-  if (!actorAuthority.post_file) {
-    return new AuthorityError(actor.croaker_identifier, 'post_file', 'ファイルをアップロードすることはできません');
+  const authorizePostFileErr = authorizePostFile(actor, actorAuthority);
+  if (authorizePostFileErr) {
+    return authorizePostFileErr;
   }
 
-  const uploadFilePath = convert(file.name);
+  const uploadFilePath = await imageFile.convert(file.name);
   if (
     converted instanceof ImageCommandError ||
     converted instanceof ImageFormatError
@@ -174,20 +210,20 @@ export const postFile: PostFile = ({ actor, db, storage }) => async (file, threa
     return converted;
   }
 
-  const uploadedSource = await uploadFile(storage)(uploadFilePath, file.extension);
+  const uploadedSource = await storage.uploadFile(uploadFilePath, file.extension);
   if (uploadedSource instanceof FileError) {
     return uploadedSource;
   }
 
-  const { croak, file } = await transact(db, (trx) => {
+  const croak = await db.transact((trx) => {
 
-    const croak = await create(trx, 'croak', {
+    const croak = await trx.create('croak', {
       user_id: actor.user_id;
       contents: null,
       thread: thread,
     });
 
-    const file = await create(trx, 'file', {
+    const file = await trx.create('file', {
       croak_id: croak.croak_id,
       storage_type: STORAGE_TYPE_GCS,
       source: uploadedSource,
@@ -195,15 +231,15 @@ export const postFile: PostFile = ({ actor, db, storage }) => async (file, threa
       content_type: file.type;
     });
 
-    return { croak, file };
+    return { ...croak, files: [file] };
   });
 
-  const fileUrl = generatePreSignedUrl(storage)(uploadedSource);
+  const fileUrl = storage.generatePreSignedUrl(uploadedSource);
   if (fileUrl instanceof FileError) {
     return fileUrl;
   }
 
-  const { coak_id, contents, thread, posted_date, } = croak;
+  const { coak_id, contents, thread, posted_date, files, } = croak;
   const { croaker_identifier, croaker_name, } = actor;
   return {
     coak_id,
@@ -212,13 +248,21 @@ export const postFile: PostFile = ({ actor, db, storage }) => async (file, threa
     posted_date,
     croaker_identifier,
     croaker_name,
-    files: [{
+    files: files.map(file => {
       name: file.name,
       url: fileUrl,
       content_type: file.content_type,
-    }],
+    }),
   };
 };
+
+setContext(postFile, {
+  db: () => getDatabase({ read, getLastCroak }, { create }),
+  session: getSession,
+  storage: getStorage,
+  imageFile: getImageFile,
+  local: getLocal,
+});
 
 // import { NextResponse } from "next/server";
 // import { postFile } from "@/case/postCroaks";
@@ -238,59 +282,38 @@ export const postFile: PostFile = ({ actor, db, storage }) => async (file, threa
 //   return NextResponse.json(croak);
 // }
 
-export type DeleteCroak = (context: Context) => (croakId: number) => Promise<Croak | AuthorityError>;
-export const deleteCroak: DeleteCroak = ({ actor, db, storage }) => async (croakId) => {
+export type DeleteCroak = ContextFullFunction<
+  {
+    session: Session,
+    db: DB<{}, {
+      read: ReturnType<typeof read>,
+      update: ReturnType<typeof update>,
+    }>,
+  },
+  (croakId: number) => Promise<Croak | AuthorityError>
+>;
+export const deleteCroak: DeleteCroak = ({ session, db }) => async (croakId) => {
+
+  const actor = session.getActor();
 
   const authorizeMutationErr = authorizeMutation(actor);
   if (authorizeMutationErr) {
     return authorizeMutationErr;
   }
 
-  return await transact(db, (trx) => {
+  return await db.transact(() => {
     const actorAuthority = await read(trx, 'role', { role_name: actor.role_name });
-    const croak = await read(trx, 'croak', { croak_id: croakId });
+    const croak = await trx.read('croak', { croak_id: croakId });
 
     if (!croak.user_id === actor.user_id && !actorAuthority.delete_other_post) {
       return new AuthorityError(actor.croaker_identifier, 'delete_other_post', '自分以外の投稿を削除することはできません');
     }
 
-    return await delete(db, 'croak', { croak_id: croakId });
+    return await trx.update('croak', { croak_id: croakId }, { deleted_date: new Date() }); // TODO dbのnowのほうがいい
   });
 };
 
-type AuthorizeMutation = (actor?: Actor) => undefined | AuthorityError;
-const authorizeMutation: AuthorizeMutation = (actor) => {
-
-  if (!actor) {
-    return new AuthorityError(null, 'none', 'ログインしてください');
-  }
-
-  if (actor.status == CROAKER_STATUS_BANNED) {
-    return new AuthorityError(actor.croaker_identifier, 'banned', 'ブロックされたユーザです');
-  }
-
-  if (!actor.form_agreement) {
-    return new AuthorityError(actor.croaker_identifier, 'form_agreement', '投稿前にプロフィールの編集とお願いへの同意をしてください');
-  }
-};
-
-type AuthorizePostCroak = (actor: Actor, actorAuthority: Role, lastCroak: CroakMini, isThread: bool) => undefined | AuthorityError;
-const authorizePostCroak: AuthorizePostCroak = (actor, actorAuthority, lastCroak, isThread) => {
-
-  if (actorAuthority.post === POST_AUTHORITY_DISABLE) {
-    return new AuthorityError(actor.croaker_identifier, 'post_disable', '投稿することはできません');
-  }
-
-  if (actorAuthority.post === POST_AUTHORITY_THREAD && !isThread) {
-    return new AuthorityError(actor.croaker_identifier, 'post_thread', 'スレッド上にのみ投稿することができます');
-  }
-
-  const duration = getDuration(actorAuthority.top_post_interval);
-  const croakTimePassed = !!compareAsc(add(lastCroak.posted_date, duration), new Date());
-
-  if (actorAuthority.post === POST_AUTHORITY_TOP && !croakTimePassed) {
-    const durationText = toStringDuration(duration);
-    return new AuthorityError(actor.croaker_identifier, 'post_thread', `前回の投稿から${durationText}以上たってから投稿してください`);
-  }
-};
-
+setContext(deleteCroak, {
+  db: () => getDatabase(undefined, { read, update }),
+  session: getSession,
+});

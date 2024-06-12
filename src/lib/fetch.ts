@@ -5,14 +5,16 @@ export const URL_REG_EXP = new RegExp('^https:\/\/\S+$');
 export type GetLinks = (lines: string[]) => string[];
 export const getLinks = (lines) => lines.filter(line => URL_REG_EXP.test(line));
 
-type LinkInformation = {
+export type Ogp = {
   url?: string,
   title?: string,
   image?: string,
   summary?: string,
+  type?: string;
 };
 
-const getOgp = (dom: JSDOM) => {
+type GetOgp = (dom: JSDOM) => Record<string, string>;
+const getOgp: GetOgp = (dom) => {
   const meta = dom.window.document.querySelectorAll("head > meta");
   return Array.from(meta)
     .filter((element) => element.hasAttribute("property"))
@@ -30,8 +32,8 @@ const getOgp = (dom: JSDOM) => {
     }, {});
 }
 
-export type CreateLinks = (links: string[]) => Promise<LinkInformation[]>;
-export const createLinks = async (links) => {
+type FetchOgp = (links: string[]) => Promise<Ogp[]>;
+const fetchOgp: FetchOgp = async (links) => {
 
   const requests = links.map(link => new Promise(async (resolve) => {
     try {
@@ -46,7 +48,7 @@ export const createLinks = async (links) => {
       }
 
       if (contentType.startWith('image/')) {
-        resolve({ image: link });
+        resolve({ image: link, source: link, type: contentType });
       }
 
       if (!contentType.startWith('text/')) {
@@ -65,6 +67,7 @@ export const createLinks = async (links) => {
 
       resolve({
         ...ogp,
+        type: contentType,
         source: link,
       });
 
@@ -74,10 +77,17 @@ export const createLinks = async (links) => {
   }));
 
   const results = await Promise.allSettled(requests);
-  return results.filter(result => !!result).map(({ title, image, description, source }) => ({
+  return results.filter(result => !!result).map(({ title, image, description, type, source }) => ({
     title,
     image,
+    type,
     summary: description,
     url: source,
   }));
 };
+
+export type Fetcher = {
+  fetchOgp: FetchOgp;
+};
+export type GetFetcher = () => Fetcher;
+export const getFetcher: GetFetcher = () => ({ fetchOgp });

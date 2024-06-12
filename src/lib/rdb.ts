@@ -8,14 +8,14 @@ import { Database as DatabaseType } from '@/rdb/type';
 // that the database interface has all the fields that Auth.js expects.
 // import { KyselyAuth } from "@auth/kysely-adapter"
 
-let rdb?: Kysely = undefined;
+let db?: Kysely = undefined;
 
 type GetKysely = () => Kysely;
 const getKysely: GetKysely = () => {
-  if (!rdb) {
-    rdb = new Kysely<DatabaseType>({
+  if (!db) {
+    db = new Kysely<DatabaseType>({
       dialect: new SqliteDialect({
-        database: new Database('db.sqlite'),
+        database: new Database(process.env.SQLITE_FILE),
       })
     });
     // rdb = new KyselyAuth<DatabaseType>({
@@ -24,32 +24,25 @@ const getKysely: GetKysely = () => {
     //   })
     // });
   }
-  return rdb;
+  return db;
 };
 
+export type GetQuery<Q extends object> = { [K in keyof Q]: (db: Kyseky) => Q[K] };
 
+export type Transact<Q extends object> = <R>(callback: (trx: Q) => Promise<R>) => Promise<R>;
 
+export type DB<Q extends object, T extends object> = Q & { transact?: Transact<T> };
 
-export type GetQuery<Q> = { [K in keyof Q]: (db: Kyseky) => Q[K] };
-
-export type DB<Q, T, R extends unknown> = Q & { transact: Transact<T, R> };
-
-export type Transact<Q, R extends unknown> = (callback: (trx: Q) => Promise<R>) => Promise<R>;
-
-export type DbDependedFunctions = Record<string, (db: Kyseky) => unknown>; // TODO any? unknown?
-
-export function getDatabase<Q, T>(queries?: GetQuery<Q>, transactionQueries?: GetQuery<T>): DB<Q, T> {
+export function getDatabase<Q extends object = {}, T extends object = {}>(queries?: GetQuery<Q>, transactionQueries?: GetQuery<T>): DB<Q, T> {
 
   const db = getKysely();
   let dbAccess = {};
 
   if (queries) {
-    dbAccess = Object.entries(queries).reduce((acc, [key, val]) => {
-      return {
-        ...acc,
-        [key]: val(db),
-      };
-    }, dbAccess);
+    dbAccess = Object.entries(queries).reduce((acc, [key, val]) => ({
+      ...acc,
+      [key]: val(db),
+    }), dbAccess);
   }
 
   if (transactionQueries) {
@@ -59,18 +52,16 @@ export function getDatabase<Q, T>(queries?: GetQuery<Q>, transactionQueries?: Ge
   return dbAccess;
 };
 
-async function getTransact<Q, R extends unknown>(db: Kysely, queries: GetQuery<Q>): Transact<Q, R> {
-  return function <R>(callback: (trx: Q) => Promise<R>): Promise<R> {
+function getTransact<Q extends object>(db: Kysely, queries: GetQuery<Q>): Transact<Q> {
+  return async function <R>(callback: (trx: Q) => Promise<R>): Promise<R> {
 
     try {
       return db.transaction().execute(trx => {
 
-        const transactedQueries = Object.entries(queries).reduce((acc, [key, val]) => {
-          return {
-            ...acc,
-            [key]: val(trx),
-          };
-        }, {});
+        const transactedQueries = Object.entries(queries).reduce((acc, [key, val]) => ({
+          ...acc,
+          [key]: val(trx),
+        }), {});
 
         const result = callback(transactedQueries);
 
@@ -88,25 +79,8 @@ async function getTransact<Q, R extends unknown>(db: Kysely, queries: GetQuery<Q
   }
 }
 
-// export async function transact<T>(db: Kysely, callback: (trx: Transaction) => Promise<T>): Promise<T> {
-//   try {
-//     return db.transaction().execute(trx => {
-//       const result = callback(trx);
-// 
-//       if (result instanceof Error) {
-//         throw result;
-//       }
-// 
-//       return result;
-//     });
-// 
-//   // kyselyがrollbackはerror throwを想定しているため、callback内で投げて、再度catchする
-//   } catch (e) {
-//     return e;
-//   }
-// }
-
 export class RecordAlreadyExistError extends Error {
+  override readonly name = 'lib.db.RecordAlreadyExistError' as const;
   constructor(
     readonly table: string,
     readonly data: object,
@@ -117,6 +91,7 @@ export class RecordAlreadyExistError extends Error {
 }
 
 export class RecordNotFoundError extends Error {
+  override readonly name = 'lib.db.RecordNotFoundError' as const;
   constructor(
     readonly table: string,
     readonly keys: object,
