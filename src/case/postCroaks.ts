@@ -7,6 +7,9 @@ import { Croak, CroakMini } from '@/rdb/query/croak';
 import { create, delete, read } from '@/rdb/query/base';
 import { getRoleAuthority } from '@/lib/role'
 import { getLastCroak } from '@/rdb/query/getLastCroak';
+import { createTextCroak } from '@/rdb/command/createTextCroak';
+import { createFileCroak } from '@/rdb/command/createFileCroak';
+import { deleteCroak } from '@/rdb/command/deleteCroak';
 import {
   Duration,
   getDuration,
@@ -47,21 +50,37 @@ import {
   getLocal,
 } from '@/lib/local';
 
+// export type PostCroak = ContextFullFunction<
+//   {
+//     session: Session,
+//     fetcher: Fetcher,
+//     local: Local,
+//     db: DB<
+//       {
+//         read: ReturnType<typeof read>,
+//         getLastCroak: ReturnType<typeof getLastCroak>,
+//       },
+//       {
+//         create: ReturnType<typeof create>
+//       }
+//     >,
+//   },
+//   (text: string, thread?: number) => Promise<
+//     | Omit<Croak, 'has_thread' | 'files'>
+//     | AuthorityError
+//     | InvalidArgumentsError
+//   >
+// >;
+
+const postCroakContext = {
+  db: () => getDatabase({ read, getLastCroak }, { createTextCroak }),
+  session: getSession,
+  fetcher: getFetcher,
+  local: getLocal,
+} as const;
+
 export type PostCroak = ContextFullFunction<
-  {
-    session: Session,
-    fetcher: Fetcher,
-    local: Local,
-    db: DB<
-      {
-        read: ReturnType<typeof read>,
-        getLastCroak: ReturnType<typeof getLastCroak>,
-      },
-      {
-        create: ReturnType<typeof create>
-      }
-    >,
-  },
+  typeof postCroakContext,
   (text: string, thread?: number) => Promise<
     | Omit<Croak, 'has_thread' | 'files'>
     | AuthorityError
@@ -90,6 +109,7 @@ export const postCroak: PostCroak = ({ session, db, local, fetcher }) => async (
 
   const actorAuthority = await db.read('role', { role_name: actor.role_name });
   const lastCroak = await db.getLastCroak(actor.user_id);
+  // TODO RecordNotFoundErrorが出るはず
 
   const authorizePostCroakErr = authorizePostCroak(actor, actorAuthority, lastCroak, local.now(), !!thread);
   if (authorizePostCroakErr) {
@@ -99,32 +119,20 @@ export const postCroak: PostCroak = ({ session, db, local, fetcher }) => async (
   const linkList = getLinks(lines);
   const ogps = await fetcher.fetchOgp(linkList);
 
-  // TODO こういう保存をする関数としてqueryに定義する。directoryわけてcommandにしてもいいかも
-  const croak = await db.transact((trx) => {
+  const createCroak = {
+    user_id: actor.user_id;
+    contents: lines.join('\n'),
+    thread: thread,
+  };
+  const createLinks = ogps.map(ogp => ({
+    url: ogp.url,
+    type: ogp.type;
+    title: ogp.title,
+    image: ogp.image,
+    summary: ogp.summary,
+  }));
 
-    const croak = await trx.create('croak', {
-      user_id: actor.user_id;
-      contents: lines.join('\n'),
-      thread: thread,
-    });
-
-    // TODO 並列化
-    const links = [];
-    let link;
-    for (const ogp of ogps) {
-      link = await trx.create('link', {
-        croak_id: croak.croak_id,
-        url: ogp.url,
-        type: ogp.type;
-        title: ogp.title,
-        image: ogp.image,
-        summary: ogp.summary,
-      });
-      links.push(link);
-    }
-
-    return { ...croak, links };
-  });
+  const croak = await db.transact((trx) => trx.createTextCroak(createCroak, createLinks));
 
   const { coak_id, contents, thread, posted_date, links } = croak;
   const { croaker_identifier, croaker_name, } = actor;
@@ -139,30 +147,44 @@ export const postCroak: PostCroak = ({ session, db, local, fetcher }) => async (
   };
 };
 
-setContext(postCroak, {
-  db: () => getDatabase({ read, getLastCroak }, { create }),
-  session: getSession,
-  fetcher: getFetcher,
-  local: getLocal,
-});
+setContext(postCroak, postCroakContext);
 
-// TODO Fileにどういう情報が入ってるかよくわかっていない
+// export type PostFile = ContextFullFunction<
+//   {
+//     session: Session,
+//     imageFile: ImageFile,
+//     storage: Storage,
+//     local: Local,
+//     db: DB<
+//       {
+//         read: ReturnType<typeof read>,
+//         getLastCroak: ReturnType<typeof getLastCroak>,
+//       },
+//       {
+//         create: ReturnType<typeof create>
+//       }
+//     >,
+//   },
+//   (file: File, thread?: number) => Promise<
+//     | Omit<Croak, 'has_thread' | 'links'>
+//     | AuthorityError
+//     | InvalidArgumentsError
+//     | FileError
+//     | ImageCommandError
+//     | ImageFormatError
+//   >,
+// >;
+
+const postFileContext = {
+  db: () => getDatabase({ read, getLastCroak }, { createFileCroak }),
+  session: getSession,
+  storage: getStorage,
+  imageFile: getImageFile,
+  local: getLocal,
+} as const;
+
 export type PostFile = ContextFullFunction<
-  {
-    session: Session,
-    imageFile: ImageFile,
-    storage: Storage,
-    local: Local,
-    db: DB<
-      {
-        read: ReturnType<typeof read>,
-        getLastCroak: ReturnType<typeof getLastCroak>,
-      },
-      {
-        create: ReturnType<typeof create>
-      }
-    >,
-  },
+  typeof postFileContext,
   (file: File, thread?: number) => Promise<
     | Omit<Croak, 'has_thread' | 'links'>
     | AuthorityError
@@ -172,6 +194,7 @@ export type PostFile = ContextFullFunction<
     | ImageFormatError
   >,
 >;
+// TODO Fileにどういう情報が入ってるかよくわかっていない
 export const postFile: PostFile = ({ session, db, storage, local, imageFile }) => async (file, thread) => {
 
   const actor = session.getActor();
@@ -191,6 +214,7 @@ export const postFile: PostFile = ({ session, db, storage, local, imageFile }) =
 
   const actorAuthority = await db.read('role', { role_name: actor.role_name });
   const lastCroak = await db.getLastCroak(actor.user_id);
+  // TODO RecordNotFoundErrorが出るはず
 
   const authorizePostCroakErr = authorizePostCroak(actor, actorAuthority, lastCroak, local.now(), !!thread);
   if (authorizePostCroakErr) {
@@ -215,24 +239,19 @@ export const postFile: PostFile = ({ session, db, storage, local, imageFile }) =
     return uploadedSource;
   }
 
-  const croak = await db.transact((trx) => {
+  const createCroak = {
+    user_id: actor.user_id;
+    contents: null,
+    thread: thread,
+  };
+  const createFile = {
+    storage_type: STORAGE_TYPE_GCS,
+    source: uploadedSource,
+    name: file.name,
+    content_type: file.type;
+  };
 
-    const croak = await trx.create('croak', {
-      user_id: actor.user_id;
-      contents: null,
-      thread: thread,
-    });
-
-    const file = await trx.create('file', {
-      croak_id: croak.croak_id,
-      storage_type: STORAGE_TYPE_GCS,
-      source: uploadedSource,
-      name: file.name,
-      content_type: file.type;
-    });
-
-    return { ...croak, files: [file] };
-  });
+  const croak = await db.transact((trx) => trx.createFileCroak(createCroak, createFile));
 
   const fileUrl = storage.generatePreSignedUrl(uploadedSource);
   if (fileUrl instanceof FileError) {
@@ -256,13 +275,7 @@ export const postFile: PostFile = ({ session, db, storage, local, imageFile }) =
   };
 };
 
-setContext(postFile, {
-  db: () => getDatabase({ read, getLastCroak }, { create }),
-  session: getSession,
-  storage: getStorage,
-  imageFile: getImageFile,
-  local: getLocal,
-});
+setContext(postFile, postFileContext);
 
 // import { NextResponse } from "next/server";
 // import { postFile } from "@/case/postCroaks";
@@ -282,15 +295,25 @@ setContext(postFile, {
 //   return NextResponse.json(croak);
 // }
 
+// export type DeleteCroak = ContextFullFunction<
+//   {
+//     session: Session,
+//     db: DB<{}, {
+//       read: ReturnType<typeof read>,
+//       update: ReturnType<typeof update>,
+//     }>,
+//   },
+//   (croakId: number) => Promise<Croak | AuthorityError>
+// >;
+
+const deleteCroakContext = {
+  db: () => getDatabase(null, { read, deleteCroak }),
+  session: getSession,
+} as const;
+
 export type DeleteCroak = ContextFullFunction<
-  {
-    session: Session,
-    db: DB<{}, {
-      read: ReturnType<typeof read>,
-      update: ReturnType<typeof update>,
-    }>,
-  },
-  (croakId: number) => Promise<Croak | AuthorityError>
+  typeof deleteCroakContext,
+  (croakId: number) => Promise<Croak | AuthorityError>,
 >;
 export const deleteCroak: DeleteCroak = ({ session, db }) => async (croakId) => {
 
@@ -301,19 +324,17 @@ export const deleteCroak: DeleteCroak = ({ session, db }) => async (croakId) => 
     return authorizeMutationErr;
   }
 
-  return await db.transact(() => {
-    const actorAuthority = await read(trx, 'role', { role_name: actor.role_name });
+  return await db.transact((trx) => {
+    const actorAuthority = await trx.read('role', { role_name: actor.role_name });
     const croak = await trx.read('croak', { croak_id: croakId });
+    // TODO RecordNotFoundErrorが出るはず
 
     if (!croak.user_id === actor.user_id && !actorAuthority.delete_other_post) {
       return new AuthorityError(actor.croaker_identifier, 'delete_other_post', '自分以外の投稿を削除することはできません');
     }
 
-    return await trx.update('croak', { croak_id: croakId }, { deleted_date: new Date() }); // TODO dbのnowのほうがいい
+    return await trx.deleteCroak(croakId);
   });
 };
 
-setContext(deleteCroak, {
-  db: () => getDatabase(undefined, { read, update }),
-  session: getSession,
-});
+setContext(deleteCroak, deleteCroakContext);

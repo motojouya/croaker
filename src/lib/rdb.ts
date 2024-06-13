@@ -27,13 +27,28 @@ const getKysely: GetKysely = () => {
   return db;
 };
 
-export type GetQuery<Q extends object> = { [K in keyof Q]: (db: Kyseky) => Q[K] };
+export type Query<T extends object> = {
+  [K in keyof Q]: (
+    Q[K] extends ((db: Kyseky) => infer Q)
+      ? Q
+      : never
+  )
+};
+// export type GetQuery<Q extends object> = { [K in keyof Q]: (db: Kyseky) => Q[K] };
 
-export type Transact<Q extends object> = <R>(callback: (trx: Q) => Promise<R>) => Promise<R>;
+export type Transact<T extends object> = <R>(callback: (trx: Query<T>) => Promise<R>) => Promise<R>;
 
-export type DB<Q extends object, T extends object> = Q & { transact?: Transact<T> };
+export type DB<Q extends object, T extends object> = Query<Q> & {
+  transact: (
+    T extends Record<never, never>
+      ? undefined
+      : Transact<T>
+  )
+};
 
-export function getDatabase<Q extends object = {}, T extends object = {}>(queries?: GetQuery<Q>, transactionQueries?: GetQuery<T>): DB<Q, T> {
+export function getDatabase<T extends object>(queries: null, transactionQueries: T): DB<Record<never, never>, T>;
+export function getDatabase<Q extends object>(queries: Q, transactionQueries: null): DB<Q, Record<never, never>>;
+export function getDatabase<Q extends object, T extends object>(queries: Q | null, transactionQueries: T | null): DB<Q, T> {
 
   const db = getKysely();
   let dbAccess = {};
@@ -52,8 +67,8 @@ export function getDatabase<Q extends object = {}, T extends object = {}>(querie
   return dbAccess;
 };
 
-function getTransact<Q extends object>(db: Kysely, queries: GetQuery<Q>): Transact<Q> {
-  return async function <R>(callback: (trx: Q) => Promise<R>): Promise<R> {
+function getTransact<T extends object>(db: Kysely, queries: T): Transact<T> {
+  return async function <R>(callback: (trx: Query<T>) => Promise<R>): Promise<R> {
 
     try {
       return db.transaction().execute(trx => {
