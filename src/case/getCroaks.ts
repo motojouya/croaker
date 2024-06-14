@@ -97,6 +97,8 @@ const getCroaks: GetCroaks = async (storage, query) => {
   return getCroakList(croaks);
 };
 
+export type FunctionResult = CroakList | FileError;
+
 /*
  * top
  */
@@ -107,7 +109,7 @@ const getTopCroakContext = {
 
 export type GetTopCroak = ContextFullFunction<
   typeof getTopCroakContext,
-  (reverse?: boolean, offsetCursor?: number) => Promise<CroakList | FileError>
+  (reverse?: boolean, offsetCursor?: number) => Promise<FunctionResult>
 >;
 export const getTopCroaks: GetTopCroak =
   ({ storage, db }) =>
@@ -126,7 +128,7 @@ const getThreadCroaksContext = {
 
 export type GetThreadCroaks = ContextFullFunction<
   typeof getThreadCroaksContext,
-  (threadId: number, reverse?: boolean, offsetCursor?: number) => Promise<CroakList | FileError>
+  (threadId: number, reverse?: boolean, offsetCursor?: number) => Promise<FunctionResult>
 >;
 export const getThreadCroaks: GetThreadCroaks =
   ({ storage, db }) =>
@@ -145,7 +147,7 @@ const searchCroaksContext = {
 
 export type SearchCroaks = ContextFullFunction<
   typeof searchCroaksContext,
-  (text: number, reverse?: boolean, offsetCursor?: number) => Promise<CroakList | FileError>
+  (text: number, reverse?: boolean, offsetCursor?: number) => Promise<FunctionResult>
 >;
 export const searchCroaks: SearchCroaks =
   ({ storage, db }) =>

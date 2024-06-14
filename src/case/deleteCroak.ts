@@ -17,6 +17,8 @@ import { AuthorityError, authorizeMutation } from '@/lib/authorize';
 //   (croakId: number) => Promise<Croak | AuthorityError>
 // >;
 
+export type FunctionResult = Croak | AuthorityError;
+
 const deleteCroakContext = {
   db: () => getDatabase(null, { read, deleteCroak }),
   session: getSession,
@@ -24,7 +26,7 @@ const deleteCroakContext = {
 
 export type DeleteCroak = ContextFullFunction<
   typeof deleteCroakContext,
-  (croakId: number) => Promise<Croak | AuthorityError>,
+  (croakId: number) => Promise<FunctionResult>,
 >;
 export const deleteCroak: DeleteCroak = ({ session, db }) => async (croakId) => {
 

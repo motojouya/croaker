@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3'
 import { Kysely, SqliteDialect, Transaction } from 'kysely';
 import { Database as DatabaseType } from '@/rdb/type';
+import { HandleableError } from '@/lib/error';
 
 // This adapter exports a wrapper of the original `Kysely` class called `KyselyAuth`,
 // that can be used to provide additional type-safety.
@@ -89,12 +90,15 @@ function getTransact<T extends object>(db: Kysely, queries: T): Transact<T> {
 
     // kyselyがrollbackはerror throwを想定しているため、callback内で投げて、再度catchする
     } catch (e) {
-      return e;
+      if (e instanceof HandleableError) {
+        return e;
+      }
+      throw e;
     }
   }
 }
 
-export class RecordAlreadyExistError extends Error {
+export class RecordAlreadyExistError extends HandleableError {
   override readonly name = 'lib.db.RecordAlreadyExistError' as const;
   constructor(
     readonly table: string,
@@ -105,7 +109,7 @@ export class RecordAlreadyExistError extends Error {
   }
 }
 
-export class RecordNotFoundError extends Error {
+export class RecordNotFoundError extends HandleableError {
   override readonly name = 'lib.db.RecordNotFoundError' as const;
   constructor(
     readonly table: string,

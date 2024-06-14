@@ -1,5 +1,6 @@
 import { Storage as GoogleCloudStorage, UploadOptions } from '@google-cloud/storage';
 import { v4 } from 'uuid';
+import { HandleableError } from '@/lib/error';
 
 type StorageConfig = {
   storage: GoogleCloudStorage;
@@ -88,7 +89,7 @@ export const getStorage: GetStorage = () => {
   };
 };
 
-export class FileError extends Error {
+export class FileError extends HandleableError {
   override readonly name = 'lib.fileStorage.FileError' as const;
   constructor(
     readonly action: string,

@@ -2,6 +2,7 @@ import { v4 } from 'uuid';
 import imageMagick from 'imagemagick';
 // npm i -D @types/imagemagick
 // npm i node-imagemagick
+import { HandleableError } from '@/lib/error';
 
 type Convert = (filePath: string) => Promise<string | ImageCommandError | ImageFormatError>;
 const convert: Convert = async (filePath) => {
@@ -43,7 +44,7 @@ const convert: Convert = async (filePath) => {
   return resizedFilePath;
 };
 
-export class ImageFormatError extends Error {
+export class ImageFormatError extends HandleableError {
   override readonly name = 'lib.image.ImageFormatError' as const;
   constructor(
     readonly format: string,
@@ -54,7 +55,7 @@ export class ImageFormatError extends Error {
   }
 }
 
-export class ImageCommandError extends Error {
+export class ImageCommandError extends HandleableError {
   override readonly name = 'lib.image.ImageCommandError' as const;
   constructor(
     readonly action: string,

@@ -43,6 +43,14 @@ import { getLocal } from '@/lib/local';
 //   >,
 // >;
 
+export type FunctionResult =
+  | Omit<Croak, 'has_thread' | 'links'>
+  | AuthorityError
+  | InvalidArgumentsError
+  | FileError
+  | ImageCommandError
+  | ImageFormatError;
+
 const postFileContext = {
   db: () => getDatabase({ read, getLastCroak }, { createFileCroak }),
   session: getSession,
@@ -53,14 +61,7 @@ const postFileContext = {
 
 export type PostFile = ContextFullFunction<
   typeof postFileContext,
-  (file: File, thread?: number) => Promise<
-    | Omit<Croak, 'has_thread' | 'links'>
-    | AuthorityError
-    | InvalidArgumentsError
-    | FileError
-    | ImageCommandError
-    | ImageFormatError
-  >,
+  (file: File, thread?: number) => Promise<FunctionResult>
 >;
 // TODO Fileにどういう情報が入ってるかよくわかっていない
 export const postFile: PostFile = ({ session, db, storage, local, imageFile }) => async (file, thread) => {
@@ -72,7 +73,7 @@ export const postFile: PostFile = ({ session, db, storage, local, imageFile }) =
   }
 
   if (thread && thread < 1) {
-    return new InvalidArgumentsError(actor.croaker_identifier, 'thread', thread, 'threadは1以上の整数です');
+    return new InvalidArgumentsError('thread', thread, 'threadは1以上の整数です');
   }
 
   const authorizeMutationErr = authorizeMutation(actor);
@@ -146,21 +147,3 @@ export const postFile: PostFile = ({ session, db, storage, local, imageFile }) =
 };
 
 setContext(postFile, postFileContext);
-
-// import { NextResponse } from "next/server";
-// import { postFile } from "@/case/postCroaks";
-//
-// export async function POST(request: Request) {
-//
-//   const formData = await request.formData();
-//   const file = formData.get("file") as File;
-//
-//   // const arrayBuffer = await file.arrayBuffer();
-//   // const buffer = Buffer.from(arrayBuffer);
-//   // const buffer = new Uint8Array(arrayBuffer);
-//   // await fs.writeFile(`./public/uploads/${file.name}`, buffer);
-//
-//   const croak = postFile(file);
-//
-//   return NextResponse.json(croak);
-// }

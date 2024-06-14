@@ -14,8 +14,9 @@ import {
   RoleTable as Role,
 } from '@/rdb/type/master';
 import { Actor } from '@/lib/session';
+import { HandleableError } from '@/lib/error';
 
-export class AuthorityError extends Error {
+export class AuthorityError extends HandleableError {
   override readonly name = 'lib.authorize.AuthorityError' as const;
   constructor(
     readonly croaker_identifier: string,

@@ -41,6 +41,11 @@ import { getLocal } from '@/lib/local';
 //   >
 // >;
 
+export type FunctionResult =
+    | Omit<Croak, 'has_thread' | 'files'>
+    | AuthorityError
+    | InvalidArgumentsError;
+
 const postCroakContext = {
   db: () => getDatabase({ read, getLastCroak }, { createTextCroak }),
   session: getSession,
@@ -50,11 +55,7 @@ const postCroakContext = {
 
 export type PostCroak = ContextFullFunction<
   typeof postCroakContext,
-  (text: string, thread?: number) => Promise<
-    | Omit<Croak, 'has_thread' | 'files'>
-    | AuthorityError
-    | InvalidArgumentsError
-  >
+  (text: string, thread?: number) => Promise<FunctionResult>
 >;
 export const postCroak: PostCroak = ({ session, db, local, fetcher }) => async (text, thread) => {
 
@@ -64,11 +65,11 @@ export const postCroak: PostCroak = ({ session, db, local, fetcher }) => async (
 
   const charactorCount = charCount(lines);
   if (charactorCount < 1 || CHARACTOR_COUNT_MAX < charactorCount) {
-    return new InvalidArgumentsError(actor.croaker_identifier, 'text', text, `textは1以上${CHARACTOR_COUNT_MAX}文字までです`);
+    return new InvalidArgumentsError('text', text, `textは1以上${CHARACTOR_COUNT_MAX}文字までです`);
   }
 
   if (thread && thread < 1) {
-    return new InvalidArgumentsError(actor.croaker_identifier, 'thread', thread, 'threadは1以上の整数です');
+    return new InvalidArgumentsError('thread', thread, 'threadは1以上の整数です');
   }
 
   const authorizeMutationErr = authorizeMutation(actor);
