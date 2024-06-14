@@ -4,10 +4,10 @@ import {
   CROAKER_STATUS_BANNED,
 } from '@/rdb/type/croak'
 
-export type Thread = (db: Kysely) => (threadId: number, cursor: number, limit: number) => Promise<Croak[]>;
-export const thread: Thread = (db) => async (threadId, offsetCursor, limit) => {
+export type Thread = (db: Kysely) => (threadId: number, reverse: boolean, offsetCursor: number, limit: number) => Promise<Croak[]>;
+export const thread: Thread = (db) => async (threadId, reverse, offsetCursor, limit) => {
 
-  const croaks = await getCroaks(db)(threadId, offsetCursor, limit);
+  const croaks = await getCroaks(db)(threadId, reverse, offsetCursor, limit);
 
   const croakIds = croaks.map(croak => croak.croak_id);
 
@@ -24,8 +24,8 @@ export const thread: Thread = (db) => async (threadId, offsetCursor, limit) => {
   }));
 }
 
-type GetCroaks = (db: Kysely) => (threadId: number, cursor: number, limit: number) => Promise<Omit<Croak, 'links' | 'files'>[]>;
-const getCroaks: GetCroaks = (db) => async (threadId, cursor, limit) => {
+type GetCroaks = (db: Kysely) => (threadId: number, reverse: boolean, offsetCursor: number, limit: number) => Promise<Omit<Croak, 'links' | 'files'>[]>;
+const getCroaks: GetCroaks = (db) => async (threadId, reverse, offsetCursor, limit) => {
   return await db
     .selectFrom('croak')
     .select([
@@ -44,7 +44,8 @@ const getCroaks: GetCroaks = (db) => async (threadId, cursor, limit) => {
     .where('croaker.status', '=', CROAKER_STATUS_ACTIVE)
     .where('croak.delete_date', NotNull)
     .where('croak.thread', threadId)
-    .where('croak.id', '>', offsetCursor)
+    .where('croak.id', reverse ? '>' : '<', offsetCursor)
+    .orderBy('croak.id', reverse ? 'ASC' : 'DESC');
     .limit(limit)
     .execute();
 };

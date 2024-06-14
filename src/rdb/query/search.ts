@@ -8,10 +8,10 @@ import {
   getLinks,
 } from '@/rdb/query/croak';
 
-export type Search = (db: Kysely) => (search: string, cursor: number, limit: number) => Promise<Croak[]>;
-export const search: Search = (db) => async (search, offsetCursor, limit) => {
+export type Search = (db: Kysely) => (search: string, reverse: boolean, offsetCursor: number, limit: number) => Promise<Croak[]>;
+export const search: Search = (db) => async (search, reverse, offsetCursor, limit) => {
 
-  const croaks = await getCroaks(db)(search, offsetCursor, limit);
+  const croaks = await getCroaks(db)(search, reverse, offsetCursor, limit);
 
   const croakIds = croaks.map(croak => croak.croak_id);
 
@@ -28,8 +28,8 @@ export const search: Search = (db) => async (search, offsetCursor, limit) => {
   }));
 }
 
-type GetCroaks = (db: Kysely) => (search: string, cursor: number, limit: number) => Promise<Omit<Croak, 'links' | 'files'>[]>;
-const getCroaks: GetCroaks = (db) => async (search, cursor, limit) => {
+type GetCroaks = (db: Kysely) => (search: string, reverse: boolean, offsetCursor: number, limit: number) => Promise<Omit<Croak, 'links' | 'files'>[]>;
+const getCroaks: GetCroaks = (db) => async (search, reverse, offsetCursor, limit) => {
   return await db
     .selectFrom('croak')
     .select([
@@ -64,11 +64,12 @@ const getCroaks: GetCroaks = (db) => async (search, cursor, limit) => {
     .where('croaker.status', '=', CROAKER_STATUS_ACTIVE)
     .where('croak.delete_date', NotNull)
     .where('croak.thread', Null)
-    .where('croak.id', '>', offsetCursor)
+    .where('croak.id', reverse ? '>' : '<', offsetCursor)
     .where((eb) => eb.or([
       eb('croak.contents', 'like', `%${search}%`), // TODO
       eb('thread.exist_count', '>', 0),
     ]))
+    .orderBy('croak.id', reverse ? 'ASC' : 'DESC');
     .limit(limit)
     .execute();
 };

@@ -42,7 +42,7 @@ export const authorizeMutation: AuthorizeMutation = (actor) => {
   }
 };
 
-export type AuthorizePostCroak = (actor: Actor, actorAuthority: Role, lastCroak: CroakMini, now: Date, isThread: bool) => undefined | AuthorityError;
+export type AuthorizePostCroak = (actor: Actor, actorAuthority: Role, lastCroak: CroakMini | null, now: Date, isThread: bool) => undefined | AuthorityError;
 export const authorizePostCroak: AuthorizePostCroak = (actor, actorAuthority, lastCroak, isThread) => {
 
   if (actorAuthority.post === POST_AUTHORITY_DISABLE) {
@@ -53,12 +53,14 @@ export const authorizePostCroak: AuthorizePostCroak = (actor, actorAuthority, la
     return new AuthorityError(actor.croaker_identifier, 'post_thread', 'スレッド上にのみ投稿することができます');
   }
 
-  const duration = getDuration(actorAuthority.top_post_interval);
-  const croakTimePassed = !!compareAsc(add(lastCroak.posted_date, duration), now);
+  if (lastCroak) {
+    const duration = getDuration(actorAuthority.top_post_interval);
+    const croakTimePassed = !!compareAsc(add(lastCroak.posted_date, duration), now);
 
-  if (actorAuthority.post === POST_AUTHORITY_TOP && !croakTimePassed) {
-    const durationText = toStringDuration(duration);
-    return new AuthorityError(actor.croaker_identifier, 'post_thread', `前回の投稿から${durationText}以上たってから投稿してください`);
+    if (actorAuthority.post === POST_AUTHORITY_TOP && !croakTimePassed) {
+      const durationText = toStringDuration(duration);
+      return new AuthorityError(actor.croaker_identifier, 'post_thread', `前回の投稿から${durationText}以上たってから投稿してください`);
+    }
   }
 };
 

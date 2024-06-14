@@ -8,10 +8,10 @@ import {
   getLinks,
 } from '@/rdb/query/croak';
 
-export type Top = (db: Kysely) => (offsetCursor: number, limit: number) => Promise<Croak[]>;
-export const top: Top = (db) => async (offsetCursor, limit) => {
+export type Top = (db: Kysely) => (reverse: boolean, offsetCursor: number, limit: number) => Promise<Croak[]>;
+export const top: Top = (db) => async (reverse, offsetCursor, limit) => {
 
-  const croaks = await getCroaks(db)(offsetCursor, limit);
+  const croaks = await getCroaks(db)(reverse, offsetCursor, limit);
 
   const croakIds = croaks.map(croak => croak.croak_id);
 
@@ -28,8 +28,8 @@ export const top: Top = (db) => async (offsetCursor, limit) => {
   }));
 }
 
-type GetCroaks = (db: Kysely) => (offsetCursor: number, limit: number) => Promise<Omit<Croak, 'links' | 'files'>[]>;
-const getCroaks: GetCroaks = (db) => async (offsetCursor, limit) => {
+type GetCroaks = (db: Kysely) => (reverse: boolean, offsetCursor: number, limit: number) => Promise<Omit<Croak, 'links' | 'files'>[]>;
+const getCroaks: GetCroaks = (db) => async (reverse, offsetCursor, limit) => {
   return await db
     .selectFrom('croak')
     .select([
@@ -61,7 +61,8 @@ const getCroaks: GetCroaks = (db) => async (offsetCursor, limit) => {
     .where('croaker.status', '=', CROAKER_STATUS_ACTIVE)
     .where('croak.delete_date', NotNull)
     .where('croak.thread', Null)
-    .where('croak.id', '>', offsetCursor)
+    .where('croak.id', reverse ? '>' : '<', offsetCursor)
+    .orderBy('croak.id', reverse ? 'ASC' : 'DESC');
     .limit(limit)
     .execute();
 };
