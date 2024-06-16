@@ -14,157 +14,180 @@ export class FormFileError extends HandleableError {
   }
 }
 
-function getRouteHandler<S extends JSONSchema, Q extends JSONSchema, B extends JSONSchema, F extends JSONSchema, R>(
-  ss: S, qs: Q, bs: B, fs: F, fn: string, cb: (s: FromSchema<S>, q: FromSchema<Q>, b: FromSchema<B>, f: FromSchema<F>, file: File) => Promise<R>
-);
-function getRouteHandler<S extends JSONSchema, Q extends JSONSchema, B extends JSONSchema, F extends JSONSchema, R>(
-  ss: S, qs: Q, bs: B, fs: F, fn: null, cb: (s: FromSchema<S>, q: FromSchema<Q>, b: FromSchema<B>, f: FromSchema<F>, file: null) => Promise<R>
-);
-function getRouteHandler<S extends JSONSchema, Q extends JSONSchema, B extends JSONSchema, R>(
-  ss: S, qs: Q, bs: B, fs: null, fn: string, cb: (s: FromSchema<S>, q: FromSchema<Q>, b: FromSchema<B>, f: null, file: File) => Promise<R>
-);
-function getRouteHandler<S extends JSONSchema, Q extends JSONSchema, B extends JSONSchema, R>(
-  ss: S, qs: Q, bs: B, fs: null, fn: null, cb: (s: FromSchema<S>, q: FromSchema<Q>, b: FromSchema<B>, f: null, file: null) => Promise<R>
-);
-function getRouteHandler<S extends JSONSchema, Q extends JSONSchema, F extends JSONSchema, R>(
-  ss: S, qs: Q, bs: null, fs: F, fn: string, cb: (s: FromSchema<S>, q: FromSchema<Q>, b: null, f: FromSchema<F>, file: File) => Promise<R>
-);
-function getRouteHandler<S extends JSONSchema, Q extends JSONSchema, F extends JSONSchema, R>(
-  ss: S, qs: Q, bs: null, fs: F, fn: null, cb: (s: FromSchema<S>, q: FromSchema<Q>, b: null, f: FromSchema<F>, file: null) => Promise<R>
-);
-function getRouteHandler<S extends JSONSchema, Q extends JSONSchema, R>(
-  ss: S, qs: Q, bs: null, fs: null, fn: string, cb: (s: FromSchema<S>, q: FromSchema<Q>, b: null, f: null, file: File) => Promise<R>
-);
-function getRouteHandler<S extends JSONSchema, Q extends JSONSchema, R>(
-  ss: S, qs: Q, bs: null, fs: null, fn: null, cb: (s: FromSchema<S>, q: FromSchema<Q>, b: null, f: null, file: null) => Promise<R>
-);
-function getRouteHandler<S extends JSONSchema, B extends JSONSchema, F extends JSONSchema, R>(
-  ss: S, qs: null, bs: B, fs: F, fn: string, cb: (s: FromSchema<S>, q: null, b: FromSchema<B>, f: FromSchema<F>, file: File) => Promise<R>
-);
-function getRouteHandler<S extends JSONSchema, B extends JSONSchema, F extends JSONSchema, R>(
-  ss: S, qs: null, bs: B, fs: F, fn: null, cb: (s: FromSchema<S>, q: null, b: FromSchema<B>, f: FromSchema<F>, file: null) => Promise<R>
-);
-function getRouteHandler<S extends JSONSchema, B extends JSONSchema, R>(
-  ss: S, qs: null, bs: B, fs: null, fn: string, cb: (s: FromSchema<S>, q: null, b: FromSchema<B>, f: null, file: File) => Promise<R>
-);
-function getRouteHandler<S extends JSONSchema, B extends JSONSchema, R>(
-  ss: S, qs: null, bs: B, fs: null, fn: null, cb: (s: FromSchema<S>, q: null, b: FromSchema<B>, f: null, file: null) => Promise<R>
-);
-function getRouteHandler<S extends JSONSchema, F extends JSONSchema, R>(
-  ss: S, qs: null, bs: null, fs: F, fn: string, cb: (s: FromSchema<S>, q: null, b: null, f: FromSchema<F>, file: File) => Promise<R>
-);
-function getRouteHandler<S extends JSONSchema, F extends JSONSchema, R>(
-  ss: S, qs: null, bs: null, fs: F, fn: null, cb: (s: FromSchema<S>, q: null, b: null, f: FromSchema<F>, file: null) => Promise<R>
-);
-function getRouteHandler<S extends JSONSchema, R>(
-  ss: S, qs: null, bs: null, fs: null, fn: string, cb: (s: FromSchema<S>, q: null, b: null, f: null, file: File) => Promise<R>
-);
-function getRouteHandler<S extends JSONSchema, R>(
-  ss: S, qs: null, bs: null, fs: null, fn: null, cb: (s: FromSchema<S>, q: null, b: null, f: null, file: null) => Promise<R>
-);
-function getRouteHandler<Q extends JSONSchema, B extends JSONSchema, F extends JSONSchema, R>(
-  ss: null, qs: Q, bs: B, fs: F, fn: string, cb: (s: null, q: FromSchema<Q>, b: FromSchema<B>, f: FromSchema<F>, file: File) => Promise<R>
-);
-function getRouteHandler<Q extends JSONSchema, B extends JSONSchema, F extends JSONSchema, R>(
-  ss: null, qs: Q, bs: B, fs: F, fn: null, cb: (s: null, q: FromSchema<Q>, b: FromSchema<B>, f: FromSchema<F>, file: null) => Promise<R>
-);
-function getRouteHandler<Q extends JSONSchema, B extends JSONSchema, R>(
-  ss: null, qs: Q, bs: B, fs: null, fn: string, cb: (s: null, q: FromSchema<Q>, b: FromSchema<B>, f: null, file: File) => Promise<R>
-);
-function getRouteHandler<Q extends JSONSchema, B extends JSONSchema, R>(
-  ss: null, qs: Q, bs: B, fs: null, fn: null, cb: (s: null, q: FromSchema<Q>, b: FromSchema<B>, f: null, file: null) => Promise<R>
-);
-function getRouteHandler<Q extends JSONSchema, F extends JSONSchema, R>(
-  ss: null, qs: Q, bs: null, fs: F, fn: string, cb: (s: null, q: FromSchema<Q>, b: null, f: FromSchema<F>, file: File) => Promise<R>
-);
-function getRouteHandler<Q extends JSONSchema, F extends JSONSchema, R>(
-  ss: null, qs: Q, bs: null, fs: F, fn: null, cb: (s: null, q: FromSchema<Q>, b: null, f: FromSchema<F>, file: null) => Promise<R>
-);
-function getRouteHandler<Q extends JSONSchema, R>(
-  ss: null, qs: Q, bs: null, fs: null, fn: string, cb: (s: null, q: FromSchema<Q>, b: null, f: null, file: File) => Promise<R>
-);
-function getRouteHandler<Q extends JSONSchema, R>(
-  ss: null, qs: Q, bs: null, fs: null, fn: null, cb: (s: null, q: FromSchema<Q>, b: null, f: null, file: null) => Promise<R>
-);
-function getRouteHandler<B extends JSONSchema, F extends JSONSchema, R>(
-  ss: null, qs: null, bs: B, fs: F, fn: string, cb: (s: null, q: null, b: FromSchema<B>, f: FromSchema<F>, file: File) => Promise<R>
-);
-function getRouteHandler<B extends JSONSchema, F extends JSONSchema, R>(
-  ss: null, qs: null, bs: B, fs: F, fn: null, cb: (s: null, q: null, b: FromSchema<B>, f: FromSchema<F>, file: null) => Promise<R>
-);
-function getRouteHandler<B extends JSONSchema, R>(
-  ss: null, qs: null, bs: B, fs: null, fn: string, cb: (s: null, q: null, b: FromSchema<B>, f: null, file: File) => Promise<R>
-);
-function getRouteHandler<B extends JSONSchema, R>(
-  ss: null, qs: null, bs: B, fs: null, fn: null, cb: (s: null, q: null, b: FromSchema<B>, f: null, file: null) => Promise<R>
-);
-function getRouteHandler<F extends JSONSchema, R>(
-  ss: null, qs: null, bs: null, fs: F, fn: string, cb: (s: null, q: null, b: null, f: FromSchema<F>, file: File) => Promise<R>
-);
-function getRouteHandler<F extends JSONSchema, R>(
-  ss: null, qs: null, bs: null, fs: F, fn: null, cb: (s: null, q: null, b: null, f: FromSchema<F>, file: null) => Promise<R>
-);
-function getRouteHandler<R>(
-  ss: null, qs: null, bs: null, fs: null, fn: string, cb: (s: null, q: null, b: null, f: null, file: File) => Promise<R>
-);
-function getRouteHandler<R>(
-  ss: null, qs: null, bs: null, fs: null, fn: null, cb: (s: null, q: null, b: null, f: null, file: null) => Promise<R>
-);
+function handle<R>(callback: () => Promise<R>) {
+  try {
+    const result = await callback(pathArgs, queryArgs, bodyArgs, formArgs, file);
 
-function getRouteHandler<
-  S extends JSONSchema,
-  Q extends JSONSchema,
-  B extends JSONSchema,
-  F extends JSONSchema,
-  R
->(
-  segmentSchema: S | null,
-  querySchema: Q | null,
-  bodySchema: B | null,
-  formSchema: F | null,
-  fileName: string | null,
-  callback: (segment: FromSchema<S> | null, query: FromSchema<Q> | null, body: FromSchema<B> | null, form: FromSchema<F> | null, file: File | null) => Promise<R>
+    if (result instanceof HandleableError) {
+      return NextResponse.json(result.toJson());
+    }
+
+    if (result instanceof Error) {
+      return new NextResponse(result.message, { status: 500 });
+    }
+
+    return NextResponse.json(result);
+
+  } catch (e) {
+    return new NextResponse(e.message, { status: 500 });
+  }
+}
+
+function getRouteHandler<R>(pathSchema: null, callback: (path: null) => Promise<R>);
+function getRouteHandler<P extends JSONSchema, R>(pathSchema: P, callback: (path: FromSchema<P>) => Promise<R>);
+function getRouteHandler<P extends JSONSchema, R>(pathSchema: P | null, callback: (path: FromSchema<P> | null) => Promise<R>) {
+  async function (req: NextRequest, { params }) {
+
+    const jsonSchema = getJsonSchema();
+
+    let pathArgs: FromSchema<P> | InvalidArgumentsError | JsonSchemaError | null = null;
+    if (pathSchema) {
+      pathArgs = jsonSchema.getKeyValue(pathSchema, (key) => parames[key]);
+      if (
+        pathArgs instanceof InvalidArgumentsError
+        pathArgs instanceof JsonSchemaError
+      ) {
+        return NextResponse.json(pathArgs.toJson());
+      }
+    }
+
+    return handle(() => callback(pathArgs));
+  }
+}
+
+function getQueryHandler<Q extends JSONSchema, R>(
+  pathSchema: null,
+  querySchema: Q,
+  callback: (path: null, query: FromSchema<Q>) => Promise<R>
+);
+function getQueryHandler<P extends JSONSchema, Q extends JSONSchema, R>(
+  pathSchema: P,
+  querySchema: Q,
+  callback: (path: FromSchema<P>, query: FromSchema<Q>) => Promise<R>
+);
+function getQueryHandler<S extends JSONSchema, Q extends JSONSchema, R>(
+  pathSchema: S | null,
+  querySchema: Q,
+  callback: (path: FromSchema<P> | null, query: FromSchema<Q>) => Promise<R>
 ) {
   async function (req: NextRequest, { params }) {
 
     const jsonSchema = getJsonSchema();
 
-    let segmentArgs: FromSchema<S> | null = null;
-    if (segmentSchema) {
-      segmentArgs = jsonSchema.getKeyValue(segmentSchema, (key) => parames[key]);
+    let pathArgs: FromSchema<P> | InvalidArgumentsError | JsonSchemaError | null = null;
+    if (pathSchema) {
+      pathArgs = jsonSchema.getKeyValue(pathSchema, (key) => parames[key]);
       if (
-        segmentArgs instanceof InvalidArgumentsError
-        segmentArgs instanceof JsonSchemaError
+        pathArgs instanceof InvalidArgumentsError
+        pathArgs instanceof JsonSchemaError
       ) {
-        return NextResponse.json(segmentArgs.toJson());
+        return NextResponse.json(pathArgs.toJson());
       }
     }
 
-    let queryArgs: FromSchema<Q> | null = null;
-    if (querySchema) {
-      const searchParams = req.nextUrl.searchParams;
-      queryArgs = jsonSchema.getKeyValue(querySchema, searchParams.get);
+    const searchParams = req.nextUrl.searchParams;
+    const queryArgs = jsonSchema.getKeyValue(querySchema, searchParams.get);
+    if (
+      queryArgs instanceof InvalidArgumentsError
+      queryArgs instanceof JsonSchemaError
+    ) {
+      return NextResponse.json(queryArgs.toJson());
+    }
+
+    return handle(() => callback(pathArgs, queryArgs));
+  }
+}
+
+function getBodyHandler<B extends JSONSchema, R>(
+  pathSchema: null,
+  bodySchema: B,
+  callback: (path: null, body: FromSchema<B>) => Promise<R>
+);
+function getBodyHandler<P extends JSONSchema, B extends JSONSchema, R>(
+  pathSchema: P,
+  bodySchema: B,
+  callback: (path: FromSchema<P>, body: FromSchema<B>) => Promise<R>
+);
+function getBodyHandler<P extends JSONSchema, B extends JSONSchema, R>(
+  pathSchema: P | null,
+  bodySchema: B,
+  callback: (path: FromSchema<P> | null, body: FromSchema<B>) => Promise<R>
+) {
+  async function (req: NextRequest, { params }) {
+
+    const jsonSchema = getJsonSchema();
+
+    let pathArgs: FromSchema<P> | InvalidArgumentsError | JsonSchemaError | null = null;
+    if (pathSchema) {
+      pathArgs = jsonSchema.getKeyValue(pathSchema, (key) => parames[key]);
       if (
-        queryArgs instanceof InvalidArgumentsError
-        queryArgs instanceof JsonSchemaError
+        pathArgs instanceof InvalidArgumentsError
+        pathArgs instanceof JsonSchemaError
       ) {
-        return NextResponse.json(queryArgs.toJson());
+        return NextResponse.json(pathArgs.toJson());
       }
     }
 
-    let bodyArgs: FromSchema<B> | null = null;
-    if (bodySchema) {
-      const body = await request.json()
+    const body = await request.json()
 
-      const validateSchema = jsonSchema.compile(bodySchema);
-      if (!validateSchema(body)) {
-        // @ts-ignore
-        const { errors } = validateSchema;
-        console.debug(errors);
-        const jsonSchemaError = new JsonSchemaError(errors.propertyName, errors.data, errors, errors.message);
-        return NextResponse.json(jsonSchemaError.toJson());
+    const validateSchema = jsonSchema.compile(bodySchema);
+    if (!validateSchema(body)) {
+      // @ts-ignore
+      const { errors } = validateSchema;
+      console.debug(errors);
+      const jsonSchemaError = new JsonSchemaError(errors.propertyName, errors.data, errors, errors.message);
+      return NextResponse.json(jsonSchemaError.toJson());
+    }
+
+    bodyArgs = body;
+
+    return handle(() => callback(pathArgs, bodyArgs));
+  }
+}
+
+function getFormHandler<F extends JSONSchema, R>(
+  pathSchema: null, formSchema: F, fileName: null,
+  callback: (path: null, form: FromSchema<F>, file: null) => Promise<R>
+);
+function getFormHandler<R>(
+  pathSchema: null, formSchema: null, fileName: string,
+  callback: (path: null, form: null, file: File) => Promise<R>
+);
+function getFormHandler<F extends JSONSchema, R>(
+  pathSchema: null, formSchema: F, fileName: string,
+  callback: (path: null, form: FromSchema<F>, file: File) => Promise<R>
+);
+function getFormHandler<P extends JSONSchema, F extends JSONSchema, R>(
+  pathSchema: P, formSchema: F, fileName: null,
+  callback: (path: FromSchema<P>, form: FromSchema<F>, file: null) => Promise<R>
+);
+function getFormHandler<P extends JSONSchema, R>(
+  pathSchema: P, formSchema: null, fileName: string,
+  callback: (path: FromSchema<P>, form: null, file: File) => Promise<R>
+);
+function getFormHandler<P extends JSONSchema, F extends JSONSchema, R>(
+  pathSchema: P, formSchema: F, fileName: string,
+  callback: (path: FromSchema<P>, form: FromSchema<F>, file: File) => Promise<R>
+);
+function getFormHandler<P extends JSONSchema, F extends JSONSchema, R>(
+  pathSchema: P | null,
+  formSchema: F | null,
+  fileName: string | null,
+  callback: (path: FromSchema<P> | null, form: FromSchema<F> | null, file: File | null) => Promise<R>
+) {
+  async function (req: NextRequest, { params }) {
+
+    const jsonSchema = getJsonSchema();
+
+    let pathArgs: FromSchema<P> | null = null;
+    if (pathSchema) {
+      pathArgs = jsonSchema.getKeyValue(pathSchema, (key) => parames[key]);
+      if (
+        pathArgs instanceof InvalidArgumentsError
+        pathArgs instanceof JsonSchemaError
+      ) {
+        return NextResponse.json(pathArgs.toJson());
       }
-      bodyArgs = body;
     }
 
     let formArgs: FromSchema<F> | null = null;
@@ -182,7 +205,7 @@ function getRouteHandler<
         }
       }
 
-      if (file) {
+      if (fileName) {
         file = formData.get(fileName) as File;
         // TODO is File を実装する
         // if (isFile(file)) {
@@ -197,22 +220,7 @@ function getRouteHandler<
       }
     }
 
-    try {
-      const result = await callback(segmentArgs, queryArgs, bodyArgs, formArgs, file);
-
-      if (result instanceof HandleableError) {
-        return NextResponse.json(result.toJson());
-      }
-
-      if (result instanceof Error) {
-        return new NextResponse(result.message, { status: 500 });
-      }
-
-      return NextResponse.json(result);
-
-    } catch (e) {
-      return new NextResponse(e.message, { status: 500 });
-    }
+    return handle(() => callback(pathArgs, formArgs, file));
   }
 }
 
@@ -244,11 +252,11 @@ function getRouteHandler<
 //   }
 // };
 //
-// const segmentSchema = {} as const satisfies JSONSchema;
+// const pathSchema = {} as const satisfies JSONSchema;
 // const bodySchema = {} as const satisfies JSONSchema;
 //
 // export const POST = getRouteHandler(
-//   segmentSchema,
+//   pathSchema,
 //   null,
 //   bodySchema,
 //   null,
