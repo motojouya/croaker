@@ -1,5 +1,4 @@
 import { add, compareAsc } from 'date-fns';
-
 import { CroakMini } from '@/rdb/query/croak';
 import {
   getDuration,
@@ -15,17 +14,6 @@ import {
 } from '@/rdb/type/master';
 import { Actor } from '@/lib/session';
 import { HandleableError } from '@/lib/error';
-
-export class AuthorityError extends HandleableError {
-  override readonly name = 'lib.authorize.AuthorityError' as const;
-  constructor(
-    readonly croaker_identifier: string,
-    readonly authority: string,
-    readonly message: string,
-  ) {
-    super();
-  }
-}
 
 export type AuthorizeMutation = (actor?: Actor) => undefined | AuthorityError;
 export const authorizeMutation: AuthorizeMutation = (actor) => {
@@ -43,7 +31,12 @@ export const authorizeMutation: AuthorizeMutation = (actor) => {
   }
 };
 
-export type AuthorizePostCroak = (actor: Actor, actorAuthority: Role, lastCroak: CroakMini | null, now: Date, isThread: bool) => undefined | AuthorityError;
+export type AuthorizePostCroak = (
+  actor: Actor,
+  actorAuthority: Role,
+  lastCroak: CroakMini | null,
+  now: Date, isThread: bool
+) => undefined | AuthorityError;
 export const authorizePostCroak: AuthorizePostCroak = (actor, actorAuthority, lastCroak, isThread) => {
 
   if (actorAuthority.post === POST_AUTHORITY_DISABLE) {
@@ -71,3 +64,14 @@ export const authorizePostFile: AuthorizePostFile = (actor, actorAuthority) => {
     return new AuthorityError(actor.croaker_identifier, 'post_file', 'ファイルをアップロードすることはできません');
   }
 };
+
+export class AuthorityError extends HandleableError {
+  override readonly name = 'lib.authorize.AuthorityError' as const;
+  constructor(
+    readonly croaker_identifier: string,
+    readonly authority: string,
+    readonly message: string,
+  ) {
+    super();
+  }
+}
