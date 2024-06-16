@@ -1,5 +1,10 @@
 export const CHARACTOR_COUNT_MAX = 140;
 
+export const URL_REG_EXP = new RegExp('^https:\/\/\S+$');
+
+export type GetLinks = (lines: string[]) => string[];
+export const getLinks = (lines) => lines.filter(line => URL_REG_EXP.test(line));
+
 export type TrimText = (text: string) => string[];
 export const trimText: TrimText = (text) => text
   .split('\n')

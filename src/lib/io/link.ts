@@ -1,10 +1,5 @@
 import { JSDOM } from 'jsdom';
 
-export const URL_REG_EXP = new RegExp('^https:\/\/\S+$');
-
-export type GetLinks = (lines: string[]) => string[];
-export const getLinks = (lines) => lines.filter(line => URL_REG_EXP.test(line));
-
 export type Ogp = {
   url?: string,
   title?: string,

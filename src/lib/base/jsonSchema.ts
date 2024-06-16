@@ -3,6 +3,13 @@ import addFormats from 'ajv-formats';
 import { $Compiler, wrapCompilerAsTypeGuard } from 'json-schema-to-ts';
 import { HandleableError } from '@/lib/error';
 
+const JSON_SCHEMA_TYPE_OBJECT = 'object';
+const JSON_SCHEMA_TYPE_ARRAY = 'array';
+const JSON_SCHEMA_TYPE_STRING = 'string';
+const JSON_SCHEMA_TYPE_INTEGER = 'integer';
+const JSON_SCHEMA_TYPE_NUMBER = 'number';
+const JSON_SCHEMA_TYPE_BOOLEAN = 'boolean';
+
 let jsonSchema;
 
 const getJsonSchema = () => {
@@ -19,32 +26,6 @@ const getJsonSchema = () => {
   }
   return jsonSchema;
 };
-
-const JSON_SCHEMA_TYPE_OBJECT = 'object';
-const JSON_SCHEMA_TYPE_ARRAY = 'array';
-const JSON_SCHEMA_TYPE_STRING = 'string';
-const JSON_SCHEMA_TYPE_INTEGER = 'integer';
-const JSON_SCHEMA_TYPE_NUMBER = 'number';
-const JSON_SCHEMA_TYPE_BOOLEAN = 'boolean';
-
-const PRIMITIVE_TYPES = [
-  JSON_SCHEMA_TYPE_STRING,
-  JSON_SCHEMA_TYPE_INTEGER,
-  JSON_SCHEMA_TYPE_NUMBER,
-  JSON_SCHEMA_TYPE_BOOLEAN,
-];
-
-export class JsonSchemaError extends HandleableError {
-  override readonly name = 'lib.jsonSchema.JsonSchemaError' as const;
-  constructor(
-    readonly property_name: string,
-    readonly value: string,
-    readonly error: Error,
-    readonly message: string,
-  ) {
-    super();
-  }
-}
 
 function getKeyValue(schemaCompiler) {
   return function <T extends JSONSchema>(schema: T, get: (key: string) => string | null | undefined): FromSchema<T> | InvalidArgumentsError | JsonSchemaError {
@@ -144,3 +125,14 @@ function getKeyValue(schemaCompiler) {
   }
 }
 
+export class JsonSchemaError extends HandleableError {
+  override readonly name = 'lib.jsonSchema.JsonSchemaError' as const;
+  constructor(
+    readonly property_name: string,
+    readonly value: string,
+    readonly error: Error,
+    readonly message: string,
+  ) {
+    super();
+  }
+}
