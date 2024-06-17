@@ -65,6 +65,20 @@ export const authorizePostFile: AuthorizePostFile = (actor, actorAuthority) => {
   }
 };
 
+export type AuthorizeShowOtherActivities = (actor: Actor, actorAuthority: Role) => undefined | AuthorityError;
+export const authorizeShowOtherActivities: AuthorizeShowOtherActivities = (actor, actorAuthority) => {
+  if (!actorAuthority.show_other_activities) {
+    return new AuthorityError(actor.croaker_identifier, 'show_other_activities', '他のユーザの活動まとめを参照することはできません');
+  }
+};
+
+export type AuthorizeBanPower = (actor: Actor, actorAuthority: Role) => undefined | AuthorityError;
+export const authorizeBanPower: AuthorizeBanPower = (actor, actorAuthority) => {
+  if (!actorAuthority.ban_power) {
+    return new AuthorityError(actor.croaker_identifier, 'ban_power', '他のユーザのアカウントを停止することはできません');
+  }
+};
+
 export class AuthorityError extends HandleableError {
   override readonly name = 'lib.authorize.AuthorityError' as const;
   constructor(

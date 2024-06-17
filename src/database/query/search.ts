@@ -1,4 +1,4 @@
-import { Kysely, NotNull, Null } from 'kysely'
+{ Kysely, NotNull, Null } from 'kysely'
 import {
   CROAKER_STATUS_ACTIVE,
   CROAKER_STATUS_BANNED,
@@ -42,7 +42,7 @@ const getCroaks: GetCroaks = (db) => async (search, reverse, offsetCursor, limit
       'croak.posted_date as posted_date',
     ])
     .innerJoin('croaker', (join) => {
-      join.onRef('croak.user_id', '=', 'croaker.user_id');
+      join.onRef('croak.croaker_identifier', '=', 'croaker.identifier');
     })
     .leftJoin(
       (eb) => {

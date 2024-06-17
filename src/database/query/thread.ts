@@ -38,7 +38,7 @@ const getCroaks: GetCroaks = (db) => async (threadId, reverse, offsetCursor, lim
       'croak.posted_date as posted_date',
     ])
     .innerJoin('croaker', (join) => {
-      join.onRef('croak.user_id', '=', 'croaker.user_id');
+      join.onRef('croak.croaker_identifier', '=', 'croaker.identifier');
     })
     .where('croak.delete_date', NotNull)
     .where('croaker.status', '=', CROAKER_STATUS_ACTIVE)

@@ -25,7 +25,7 @@ export type CroakerUpdate = Updateable<CroakerTable>
 
 export interface CroakTable {
   croak_id: GeneratedAlways<number>;
-  user_id: string;
+  croaker_identifier: string;
   contents: string | null;
   file_path: string | null;
   thread: number | null;

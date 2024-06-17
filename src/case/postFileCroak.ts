@@ -86,7 +86,7 @@ export const postFile: PostFile = ({ session, db, storage, local, imageFile }) =
     throw new Error('user role is not assigned!');
   }
 
-  const lastCroak = await db.getLastCroak(actor.user_id);
+  const lastCroak = await db.getLastCroak(actor.croaker_identifier);
   const authorizePostCroakErr = authorizePostCroak(actor, actorAuthority, lastCroak, local.now(), !!thread);
   if (authorizePostCroakErr) {
     return authorizePostCroakErr;

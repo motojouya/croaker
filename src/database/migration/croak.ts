@@ -21,7 +21,7 @@ export async function up(db: Kysely<any>): Promise<void> {
   await db.schema
     .createTable('croak')
     .addColumn('croak_id', 'serial', (col) => col.primaryKey())
-    .addColumn('user_id', 'text', (col) => col.notNull()) // foreign key
+    .addColumn('croaker_identifier', 'text', (col) => col.notNull()) // foreign key
     .addColumn('content', 'text')
     .addColumn('thread', 'integer') // nullable top levelの場合にnull
     .addColumn('posted_date', 'timestamp', (col) =>

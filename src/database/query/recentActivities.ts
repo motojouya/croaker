@@ -2,8 +2,8 @@ import { Kysely, NotNull, Null } from 'kysely'
 import { CROAKER_STATUS_ACTIVE } from '@/rdb/type/croak'
 import { CroakMini } from '@/rdb/query/croak';
 
-export type RecentActivities = (db: Kysely) => (selfUserId: string, days: number) => Promise<CroakMini[]>;
-export const recentActivities: RecentActivities = (db) => async (selfUserId, days) => {
+export type RecentActivities = (db: Kysely) => (selfIdentifier: string, days: number) => Promise<CroakMini[]>;
+export const recentActivities: RecentActivities = (db) => async (selfIdentifier, days) => {
   return await db
     .selectFrom('croak')
     .select([
@@ -15,19 +15,19 @@ export const recentActivities: RecentActivities = (db) => async (selfUserId, day
       'croaker.name as croaker_name',
     ])
     .innerJoin('croaker', (join) => {
-      join.onRef('croak.user_id', '=', 'croaker.user_id');
+      join.onRef('croak.croaker_identifier', '=', 'croaker.identifier');
     })
     .innerJoin(
       (eb) => {
         eb
           .selectFrom('croak')
           .select([
-            'croak.user_id as user_id',
+            'croak.croaker_identifier as croaker_identifier',
             'max(croak.croak_id) as max_croak_id',
           ])
           .where('croak.posted_date', '>', '7 days ago') // TODO
           .where('croak.delete_date', NotNull)
-          .groupBy('croak.user_id')
+          .groupBy('croak.croaker_identifier')
           .as('su');
       },
       (join) => {
@@ -37,7 +37,7 @@ export const recentActivities: RecentActivities = (db) => async (selfUserId, day
     .where('croak.posted_date', '>', '7 days ago') // TODO
     .where('croak.delete_date', NotNull)
     .where('croaker.status', '=', CROAKER_STATUS_ACTIVE)
-    .where('croaker.user_id', '=', selfUserId)
+    .where('croaker.croaker_identifier', '=', selfIdentifier)
     .orderBy(['croak.croak_id desc'])
     .execute();
 };

@@ -2,8 +2,8 @@ import { Kysely, NotNull, Null } from 'kysely'
 import { CROAKER_STATUS_ACTIVE } from '@/rdb/type/croak'
 import { CroakMini } from '@/rdb/query/croak';
 
-export type GetLastCroak = (db: Kysely) => (selfUserId: string) => Promise<CroakMini[]>;
-export const getLastCroak: GetLastCroak = (db) => async (selfUserId) => {
+export type GetLastCroak = (db: Kysely) => (selfIdentifier: string) => Promise<CroakMini[]>;
+export const getLastCroak: GetLastCroak = (db) => async (selfIdentifier) => {
   return await db
     .selectFrom('croak')
     .select([
@@ -16,10 +16,10 @@ export const getLastCroak: GetLastCroak = (db) => async (selfUserId) => {
       'croaker.name as croaker_name',
     ])
     .innerJoin('croaker', (join) => {
-      join.onRef('croak.user_id', '=', 'croaker.user_id');
+      join.onRef('croak.croaker_identifier', '=', 'croaker.identifier');
     })
     .where('croak.delete_date', NotNull)
-    .where('croaker.user_id', '=', selfUserId)
+    .where('croaker.identifier', '=', selfUserId)
     .orderBy(['croak.croak_id desc'])
     .limit(1)
     .execute();
