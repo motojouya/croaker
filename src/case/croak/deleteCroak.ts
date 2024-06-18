@@ -1,8 +1,8 @@
 import { getSession } from '@/lib/session';
-import { getDatabase, RecordNotFoundError } from '@/lib/rdb';
+import { getDatabase, RecordNotFoundError, sqlNow } from '@/lib/rdb';
 import { Croak } from '@/rdb/query/croak';
-import { read } from '@/rdb/query/base';
-import { deleteCroak } from '@/rdb/command/deleteCroak';
+import { read, update } from '@/rdb/query/base';
+// import { deleteCroak } from '@/rdb/command/deleteCroak';
 import { ContextFullFunction, setContext } from '@/lib/context';
 import { AuthorityError, authorizeMutation } from '@/lib/authorize';
 
@@ -20,7 +20,7 @@ import { AuthorityError, authorizeMutation } from '@/lib/authorize';
 export type FunctionResult = Croak | AuthorityError;
 
 const deleteCroakContext = {
-  db: () => getDatabase(null, { read, deleteCroak }),
+  db: () => getDatabase(null, { read, update }), // deleteCroakを使わない
   session: getSession,
 } as const;
 
@@ -53,7 +53,8 @@ export const deleteCroak: DeleteCroak = ({ session, db }) => async (croakId) => 
       return new AuthorityError(actor.croaker_identifier, 'delete_other_post', '自分以外の投稿を削除することはできません');
     }
 
-    return await trx.deleteCroak(croakId);
+    //return await trx.deleteCroak(croakId);
+    return await trx.update('croak', { croak_id: croakId }, { deleted_date: sqlNow() });
   });
 };
 

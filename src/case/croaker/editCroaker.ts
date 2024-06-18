@@ -1,5 +1,5 @@
 import { getSession } from '@/lib/session';
-import { getDatabase, RecordNotFoundError } from '@/lib/database/base';
+import { getDatabase, RecordNotFoundError, sqlNow } from '@/lib/database/base';
 import { CroakerTable } from '@/database/type/croak';
 import { read, update } from '@/database/crud';
 import { InvalidArgumentsError } from '@/lib/base/validation';
@@ -49,7 +49,7 @@ export const editCroaker: EditCroaker = ({ session, db }) => async (name, descri
       name: name,
       description: description,
       form_agreement: croakers[0].form_agreement || !!formAgreement,
-      // TODO updated_date: now(), できればDBの自動更新にしたい
+      updated_date: sqlNow(), // trigger不要のはず
     });
 
     const { 'user_id', ...rest } = croaker;

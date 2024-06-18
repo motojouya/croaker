@@ -1,8 +1,8 @@
 import { getSession } from '@/lib/next/session';
-import { getDatabase, RecordNotFoundError } from '@/database/base';
+import { getDatabase, RecordNotFoundError, sqlNow } from '@/database/base';
 import { CroakerTable, CROAKER_STATUS_BANNED } from '@/database/type/croak';
 import { read, update } from '@/database/query/base';
-import { deleteUserCroaks } from '@/database/command/deleteUserCroaks';
+// import { deleteUserCroaks } from '@/database/command/deleteUserCroaks';
 import { ContextFullFunction, setContext } from '@/lib/context';
 import { AuthorityError, authorizeMutation, authorizeBanPower } from '@/lib/authorize';
 
@@ -22,7 +22,7 @@ export type Croaker = Omit<CroakerTable, 'user_id'>;
 export type FunctionResult = Croaker | AuthorityError;
 
 const banCroakerContext = {
-  db: () => getDatabase({ read }, { read, update, deleteUserCroaks }),
+  db: () => getDatabase({ read }, { read, update }), // deleteUserCroaks は使わない
   session: getSession,
 } as const;
 
@@ -61,9 +61,10 @@ export const banCroaker: BanCroaker = ({ session, db }) => async (croakerIdentif
     }
     const croaker = croakers[0];
 
-    const croakerUpdated = await trx.update({ identifier: croakerIdentifier }, { status: CROAKER_STATUS_BANNED });
+    const croakerUpdated = await trx.update('croaker', { identifier: croakerIdentifier }, { status: CROAKER_STATUS_BANNED });
 
-    await trx.deleteUserCroaks({ identifier: croakerIdentifier });
+    // await trx.deleteUserCroaks({ identifier: croakerIdentifier });
+    await trx.update('croak', { identifier: croakerIdentifier }, { deleted_date: sqlNow() });
 
     const { user_id, ...rest } = croakerUpdated;
     return rest;

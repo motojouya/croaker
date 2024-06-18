@@ -18,7 +18,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     )
     .execute();
 
-// TODO trigger
+// TODO trigger 不要だと思うが、sql`now()`が機能しないときはいる
 // CREATE TRIGGER update_croaker UPDATE ON croaker
 //   BEGIN
 //     UPDATE croaker SET updated_date = now() where identifier = old.identifier;

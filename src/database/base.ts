@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3'
-import { Kysely, SqliteDialect, Transaction } from 'kysely';
+import { Kysely, SqliteDialect, Transaction, sql } from 'kysely';
 import { Database as DatabaseType } from '@/rdb/type';
 import { HandleableError } from '@/lib/error';
 
@@ -97,6 +97,8 @@ function getTransact<T extends object>(db: Kysely, queries: T): Transact<T> {
     }
   }
 }
+
+export const sqlNow = () => sql`now()`;
 
 export class RecordAlreadyExistError extends HandleableError {
   override readonly name = 'lib.db.RecordAlreadyExistError' as const;
