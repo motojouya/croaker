@@ -18,7 +18,8 @@ import { HandleableError } from '@/lib/error';
 export type AuthorizeMutation = (actor?: Actor) => undefined | AuthorityError;
 export const authorizeMutation: AuthorizeMutation = (actor) => {
 
-  if (!actor) {
+  const basicErr = authorizeBasically(actor);
+  if (basicErr) {
     return new AuthorityError(null, 'none', 'ログインしてください');
   }
 
@@ -76,6 +77,13 @@ export type AuthorizeBanPower = (actor: Actor, actorAuthority: Role) => undefine
 export const authorizeBanPower: AuthorizeBanPower = (actor, actorAuthority) => {
   if (!actorAuthority.ban_power) {
     return new AuthorityError(actor.croaker_identifier, 'ban_power', '他のユーザのアカウントを停止することはできません');
+  }
+};
+
+export type AuthorizeBasically = (actor?: Actor) => undefined | AuthorityError;
+export const authorizeBasically: AuthorizeBasically = (actor) => {
+  if (!actor) {
+    return new AuthorityError(null, 'none', 'ログインしてください');
   }
 };
 

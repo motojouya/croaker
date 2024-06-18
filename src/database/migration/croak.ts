@@ -18,6 +18,12 @@ export async function up(db: Kysely<any>): Promise<void> {
     )
     .execute();
 
+// TODO trigger
+// CREATE TRIGGER update_croaker UPDATE ON croaker
+//   BEGIN
+//     UPDATE croaker SET updated_date = now() where identifier = old.identifier;
+//   END;
+
   await db.schema
     .createTable('croak')
     .addColumn('croak_id', 'serial', (col) => col.primaryKey())
