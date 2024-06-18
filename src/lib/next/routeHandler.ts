@@ -4,15 +4,25 @@ import { getJsonSchema, getKeyValue, JsonSchemaError } from '@/lib/jsonSchema'
 import { InvalidArgumentsError } from '@/lib/validation';
 import { HandleableError } from '@/lib/error';
 
-export class FormFileError extends HandleableError {
-  override readonly name = 'lib.routeHandler.FileError' as const;
-  constructor(
-    readonly property_name: string,
-    readonly message: string,
-  ) {
-    super();
+export type FetchType = typeof fetch;
+
+export function executeFetch<R>(callback: () => Promise<ReturnType<FetchType>>) {
+  try {
+    const res = await callback();
+
+    if (res.status >= 500) {
+      console.log('server error!');
+      throw new Error('server error!');
+    }
+
+    const result = await res.json();
+    return result as R;
+
+  } catch (e) {
+    console.log('network error!');
+    throw e;
   }
-}
+};
 
 function handle<R>(callback: () => Promise<R>) {
   try {
@@ -224,42 +234,12 @@ function getFormHandler<P extends JSONSchema, F extends JSONSchema, R>(
   }
 }
 
-// example こんな感じになるはず
-//
-// import { FunctionResult, postTextCroak } from '@/case/postTextCroak';
-// import { bindContext } from '@/lib/context';
-//
-// export type ResponseType = FunctionResult;
-//
-// export const getFetcher = (f: typeof fetch) => async (contents: string, thread?: number): Promise<ResponseType> => {
-//   try {
-//     let path = '/croak';
-//     if (thread) {
-//       path = `/croak/${thread}`;
-//     }
-//
-//     const res = await f(path, {
-//       method: 'POST',
-//       body: { contents },
-//     });
-//
-//     const result = await res.json();
-//     return result as ResponseType;
-//
-//   } catch (e) {
-//     // TODO
-//     throw e;
-//   }
-// };
-//
-// const pathSchema = {} as const satisfies JSONSchema;
-// const bodySchema = {} as const satisfies JSONSchema;
-//
-// export const POST = getRouteHandler(
-//   pathSchema,
-//   null,
-//   bodySchema,
-//   null,
-//   null,
-//   (s, q, b, f, file) => bindContext(postTextCroak)(b.contents, s.thread)
-// );
+export class FormFileError extends HandleableError {
+  override readonly name = 'lib.routeHandler.FileError' as const;
+  constructor(
+    readonly property_name: string,
+    readonly message: string,
+  ) {
+    super();
+  }
+}
