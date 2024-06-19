@@ -27,7 +27,7 @@ export function bindContext<T extends object, F>(func: ContextFullFunction<T, F>
   const context = Object.entries(func._context_setting).reduce((acc, [key, val]) => ({
     ...acc,
     [key]: val(),
-  }), {});
+  }), {}) as Context<T>; // TODO ここas大丈夫？
 
   return func(context);
 }

@@ -12,7 +12,7 @@ const JSON_SCHEMA_TYPE_BOOLEAN = 'boolean';
 
 let jsonSchema;
 
-const getJsonSchema = () => {
+export const getJsonSchema = () => {
   if (!jsonSchema) {
     const ajv = new Ajv();
     addFormats(ajv);

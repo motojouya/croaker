@@ -1,6 +1,7 @@
 import { FunctionResult, deleteCroak } from '@/case/croak/deleteCroak';
 import { bindContext } from '@/lib/base/context';
 import { FetchType, getRouteHandler, executeFetch } from '@/lib/next/routeHandler';
+import type { JSONSchema } from "json-schema-to-ts";
 
 export type ResponseType = FunctionResult;
 
@@ -14,7 +15,7 @@ const pathSchema = {
 
 export const POST = getRouteHandler(
   pathSchema,
-  (p, b) => bindContext(deleteCroak)(p.croak_id)
+  (p) => bindContext(deleteCroak)(p.croak_id)
 );
 
 export type FetchAPI = (thread: number) => Promise<ResponseType>;

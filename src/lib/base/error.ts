@@ -15,6 +15,8 @@ export abstract class HandleableError extends Error {
         continue;
       }
 
+      // TODO 大丈夫？
+      // @ts-ignore
       const val = this[key];
 
       if (val instanceof HandleableError) {
@@ -43,10 +45,10 @@ export abstract class HandleableError extends Error {
   }
 
   eq(arg: any): arg is this {
-    if (!value) {
+    if (!arg) {
       return false;
     }
-    if (typeof value !== 'object') {
+    if (typeof arg !== 'object') {
       return false;
     }
     return this.name === arg.name;
