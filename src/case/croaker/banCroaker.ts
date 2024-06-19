@@ -3,8 +3,8 @@ import { getDatabase, RecordNotFoundError, sqlNow } from '@/database/base';
 import { CroakerTable, CROAKER_STATUS_BANNED } from '@/database/type/croak';
 import { read, update } from '@/database/query/base';
 // import { deleteUserCroaks } from '@/database/command/deleteUserCroaks';
-import { ContextFullFunction, setContext } from '@/lib/context';
-import { AuthorityError, authorizeMutation, authorizeBanPower } from '@/lib/authorize';
+import { ContextFullFunction, setContext } from '@/lib/base/context';
+import { AuthorityError, authorizeMutation, authorizeBanPower } from '@/domain/authorize';
 
 // export type DeleteCroak = ContextFullFunction<
 //   {
@@ -50,7 +50,7 @@ export const banCroaker: BanCroaker = ({ session, db }) => async (croakerIdentif
     return authorizeBanPowerErr;
   }
 
-  return await db.transact((trx) => {
+  return await db.transact(async (trx) => {
 
     const croakers = await trx.read('croaker', { identifier: croakerIdentifier });
     if (croakers !== 1) {

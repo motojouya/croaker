@@ -1,23 +1,24 @@
 import { getSession } from '@/lib/session';
-import { getDatabase } from '@/lib/rdb';
-import { Croak } from '@/rdb/query/croak';
-import { read } from '@/rdb/query/base';
-import { getLastCroak } from '@/rdb/query/getLastCroak';
-import { createTextCroak } from '@/rdb/command/createTextCroak';
-import { InvalidArgumentsError } from '@/lib/validation';
-import { ContextFullFunction, setContext } from '@/lib/context';
+import { getDatabase } from '@/lib/database/base';
+import { Croak } from '@/database/query/croak';
+import { read } from '@/database/query/base';
+import { getLastCroak } from '@/database/query/getLastCroak';
+import { createTextCroak } from '@/database/command/createTextCroak';
+import { InvalidArgumentsError } from '@/lib/base/validation';
+import { ContextFullFunction, setContext } from '@/lib/base/context';
 import {
   CHARACTOR_COUNT_MAX,
   trimText,
   charCount,
-} from '@/lib/text';
-import { getLinks, getFetcher } from '@/lib/fetch';
+  getLinks,
+} from '@/domain/text';
+import { getFetcher } from '@/lib/io/link';
 import {
   AuthorityError,
   authorizeMutation,
   authorizePostCroak,
-} from '@/lib/authorize';
-import { getLocal } from '@/lib/local';
+} from '@/domain/authorize';
+import { getLocal } from '@/lib/io/local';
 
 // export type PostCroak = ContextFullFunction<
 //   {
@@ -92,13 +93,13 @@ export const postCroak: PostCroak = ({ session, db, local, fetcher }) => async (
   const ogps = await fetcher.fetchOgp(linkList);
 
   const createCroak = {
-    user_id: actor.user_id;
+    user_id: actor.user_id,
     contents: lines.join('\n'),
     thread: thread,
   };
   const createLinks = ogps.map(ogp => ({
     url: ogp.url,
-    type: ogp.type;
+    type: ogp.type,
     title: ogp.title,
     image: ogp.image,
     summary: ogp.summary,
@@ -106,10 +107,10 @@ export const postCroak: PostCroak = ({ session, db, local, fetcher }) => async (
 
   const croak = await db.transact((trx) => trx.createTextCroak(createCroak, createLinks));
 
-  const { coak_id, contents, thread, posted_date, links } = croak;
+  const { croak_id, contents, thread, posted_date, links } = croak;
   const { croaker_identifier, croaker_name, } = actor;
   return {
-    coak_id,
+    croak_id,
     contents,
     thread,
     posted_date,

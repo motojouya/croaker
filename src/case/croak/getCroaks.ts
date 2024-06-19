@@ -1,11 +1,9 @@
-import { Kysely } from 'kysely'
-import { Croak as CroakFromDB } from '@/rdb/query/croak';
-import { top } from '@/rdb/query/top';
-import { search } from '@/rdb/query/search';
-import { thread } from '@/rdb/query/thread';
-import { Context } from '@/lib/context';
-import { Storage } from '@/lib/fileStorage';
-import { ContextFullFunction, setContext } from '@/lib/context';
+import { Croak as CroakFromDB } from '@/database/query/croak';
+import { top } from '@/database/query/top';
+import { search } from '@/database/query/search';
+import { thread } from '@/database/query/thread';
+import { Storage } from '@/lib/io/fileStorage';
+import { Context, ContextFullFunction, setContext } from '@/lib/base/context';
 
 export type Resource = {
   name: string;
@@ -46,7 +44,7 @@ const setFileUrl: SetFileUrl = async (storage, croaksFromTable) => {
         } else {
           files.push({
             name: file.name,
-            url: fileUrl
+            url: fileUrl,
             content_type: file.content_type,
           });
         }

@@ -1,10 +1,10 @@
 import { getSession } from '@/lib/session';
-import { getDatabase, RecordNotFoundError, sqlNow } from '@/lib/rdb';
-import { Croak } from '@/rdb/query/croak';
-import { read, update } from '@/rdb/query/base';
-// import { deleteCroak } from '@/rdb/command/deleteCroak';
-import { ContextFullFunction, setContext } from '@/lib/context';
-import { AuthorityError, authorizeMutation } from '@/lib/authorize';
+import { getDatabase, RecordNotFoundError, sqlNow } from '@/database/base';
+import { Croak } from '@/database/query/croak';
+import { read, update } from '@/database/crud';
+// import { deleteCroak } from '@/database/command/deleteCroak';
+import { ContextFullFunction, setContext } from '@/lib/base/context';
+import { AuthorityError, authorizeMutation } from '@/domain/authorize';
 
 // export type DeleteCroak = ContextFullFunction<
 //   {
@@ -37,7 +37,7 @@ export const deleteCroak: DeleteCroak = ({ session, db }) => async (croakId) => 
     return authorizeMutationErr;
   }
 
-  return await db.transact((trx) => {
+  return await db.transact(async (trx) => {
 
     const actorAuthority = await trx.read('role', { role_name: actor.role_name });
     if (!actorAuthority) {

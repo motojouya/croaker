@@ -1,21 +1,21 @@
 import { getSession } from '@/lib/session';
-import { getDatabase } from '@/lib/rdb';
-import { Croak } from '@/rdb/query/croak';
-import { read } from '@/rdb/query/base';
-import { getLastCroak } from '@/rdb/query/getLastCroak';
-import { createFileCroak } from '@/rdb/command/createFileCroak';
-import { STORAGE_TYPE_GCS } from '@/rdb/type/croak';
-import { InvalidArgumentsError } from '@/lib/validation';
-import { getImageFile } from '@/lib/image';
-import { getStorage, FileError } from '@/lib/fileStorage';
-import { ContextFullFunction, setContext } from '@/lib/context';
+import { getDatabase } from '@/lib/database/base';
+import { Croak } from '@/database/query/croak';
+import { read } from '@/database/query/base';
+import { getLastCroak } from '@/database/query/getLastCroak';
+import { createFileCroak } from '@/database/command/createFileCroak';
+import { STORAGE_TYPE_GCS } from '@/database/type/croak';
+import { InvalidArgumentsError } from '@/lib/base/validation';
+import { getImageFile } from '@/lib/io/image';
+import { getStorage, FileError } from '@/lib/io/fileStorage';
+import { ContextFullFunction, setContext } from '@/lib/base/context';
 import {
   AuthorityError,
   authorizeMutation,
   authorizePostCroak,
   authorizePostFile,
-} from '@/lib/authorize';
-import { getLocal } from '@/lib/local';
+} from '@/domain/authorize';
+import { getLocal } from '@/lib/io/local';
 
 // export type PostFile = ContextFullFunction<
 //   {
@@ -111,7 +111,7 @@ export const postFile: PostFile = ({ session, db, storage, local, imageFile }) =
   }
 
   const createCroak = {
-    user_id: actor.user_id;
+    user_id: actor.user_id,
     contents: null,
     thread: thread,
   };
@@ -119,7 +119,7 @@ export const postFile: PostFile = ({ session, db, storage, local, imageFile }) =
     storage_type: STORAGE_TYPE_GCS,
     source: uploadedSource,
     name: file.name,
-    content_type: file.type;
+    content_type: file.type,
   };
 
   const croak = await db.transact((trx) => trx.createFileCroak(createCroak, createFile));

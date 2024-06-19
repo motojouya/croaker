@@ -15,7 +15,7 @@ const pathSchema = {
 export const POST = getFormHandler(
   pathSchema,
   null,
-  'file'
+  'file',
   (p, f, file) => bindContext(postFileCroak)(file, p.croak_id)
 );
 

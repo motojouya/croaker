@@ -29,7 +29,7 @@ export const createCroaker: CreateCroaker = ({ db, local }) => async (user_id, n
   }
   const defaultRole = role[0];
 
-  return db.transact((trx) => {
+  return db.transact(async (trx) => {
 
     const croakers = await trx.read('croaker', { user_id: user_id });
     if (croakers.length === 1) {

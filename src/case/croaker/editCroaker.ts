@@ -38,7 +38,7 @@ export const editCroaker: EditCroaker = ({ session, db }) => async (name, descri
     return new InvalidArgumentsError('name', name, '名前を入力してください');
   }
 
-  return db.transact((trx) => {
+  return db.transact(async (trx) => {
 
     const croakers = trx.read({ identifier: actor.identifier });
     if (croakers.length !== 1) {

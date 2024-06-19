@@ -1,14 +1,14 @@
 import { getSession } from '@/lib/session';
-import { getDatabase } from '@/lib/database';
+import { getDatabase } from '@/lib/database/base';
 import { CroakMini } from '@/database/query/croak';
 import { read } from '@/database/crud';
 import { recentActivities } from '@/database/query/recentActivities';
-import { ContextFullFunction, setContext } from '@/lib/context';
+import { ContextFullFunction, setContext } from '@/lib/base/context';
 import {
   AuthorityError,
   authorizeMutation,
   authorizeShowOtherActivities,
-} from '@/lib/authorize';
+} from '@/domain/authorize';
 
 const RECENT_ACTIVITIES_DAYS = 10;
 

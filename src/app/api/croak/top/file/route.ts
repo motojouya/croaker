@@ -7,7 +7,7 @@ export type ResponseType = FunctionResult;
 export const POST = getFormHandler(
   null,
   null,
-  'file'
+  'file',
   (p, f, file) => bindContext(postFileCroak)(file)
 );
 
