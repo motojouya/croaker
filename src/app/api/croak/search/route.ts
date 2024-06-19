@@ -20,9 +20,10 @@ export const GET = getQueryHandler(
   (p, q) => bindContext(searchCroaks)(q.text, q.reverse, q.offset_cursor)
 );
 
-export type GetFetcher = (f: FetchType) => (text: string, reverse: boolean, offsetCursor?: number) => Promise<ResponseType>;
-export const getFetcher = (f) => async (text, reverse, offsetCursor) => {
-  return executeFetch<ResponseType>(() => {
-    return f(`/api/croak/search?text=${text}&reverse=${reverse}&offset_cursor=${offsetCursor}`);
+export type FetchAPI = (text: string, reverse: boolean, offsetCursor?: number) => Promise<ResponseType>;
+export const fetchAPI: FetchAPI = async (text, reverse, offsetCursor) => {
+  const result = await executeFetch(() => {
+    return fetch(`/api/croak/search?text=${text}&reverse=${reverse}&offset_cursor=${offsetCursor}`);
   });
+  return result as ResponseType;
 };

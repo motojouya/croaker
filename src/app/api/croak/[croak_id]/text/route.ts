@@ -26,12 +26,13 @@ export const POST = getBodyHandler(
   (p, b) => bindContext(postTextCroak)(b.contents, p.croak_id)
 );
 
-export type GetFetcher = (f: FetchType) => (thread: number, contents: string) => Promise<ResponseType>;
-export const getFetcher = (f) => async (thread, contents) => {
-  return executeFetch<ResponseType>(() => {
-    return f(`/api/croak/${thread}/text`, {
+export type FetchAPI = (thread: number, contents: string) => Promise<ResponseType>;
+export const fetchAPI: FetchAPI = async (thread, contents) => {
+  const result = await executeFetch(() => {
+    return fetch(`/api/croak/${thread}/text`, {
       method: 'POST',
       body: { contents },
     })
   });
+  return result as ResponseType;
 };

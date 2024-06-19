@@ -6,7 +6,7 @@ import { HandleableError } from '@/lib/error';
 
 export type FetchType = typeof fetch;
 
-export function executeFetch<R>(callback: () => Promise<ReturnType<FetchType>>) {
+export function executeFetch(callback: () => Promise<ReturnType<FetchType>>) {
   try {
     const res = await callback();
 
@@ -15,8 +15,7 @@ export function executeFetch<R>(callback: () => Promise<ReturnType<FetchType>>) 
       throw new Error('server error!');
     }
 
-    const result = await res.json();
-    return result as R;
+    return await res.json();
 
   } catch (e) {
     console.log('network error!');

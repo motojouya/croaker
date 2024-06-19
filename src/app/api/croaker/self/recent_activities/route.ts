@@ -9,9 +9,10 @@ export const GET = getRouteHandler(
   (p) => bindContext(getRecentActivities)()
 );
 
-export type GetFetcher = (f: FetchType) => (reverse: boolean, offsetCursor?: number) => Promise<ResponseType>;
-export const getFetcher = (f) => async (reverse, offsetCursor) => {
-  return executeFetch<ResponseType>(() => {
-    return f(`/api/croaker/self/recent_activities`);
+export type FetchAPI = () => Promise<ResponseType>;
+export const fetchAPI: FetchAPI = async () => {
+  const result = await executeFetch(() => {
+    return fetch(`/api/croaker/self/recent_activities`);
   });
+  return result as ResponseType;
 };

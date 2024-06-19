@@ -17,11 +17,12 @@ export const POST = getRouteHandler(
   (p, b) => bindContext(deleteCroak)(p.croak_id)
 );
 
-export type GetFetcher = (f: FetchType) => (thread: number) => Promise<ResponseType>;
-export const getFetcher = (f) => async (thread) => {
-  return executeFetch<ResponseType>(() => {
-    return f(`/api/croak/${thread}/delete`, {
+export type FetchAPI = (thread: number) => Promise<ResponseType>;
+export const fetchAPI: FetchAPI = async (thread) => {
+  const result = await executeFetch(() => {
+    return fetch(`/api/croak/${thread}/delete`, {
       method: 'POST',
     })
   });
+  return result as ResponseType;
 };

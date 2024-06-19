@@ -19,9 +19,10 @@ export const GET = getQueryHandler(
   (p, q) => bindContext(getTopCroaks)(q.reverse, q.offset_cursor)
 );
 
-export type GetFetcher = (f: FetchType) => (reverse: boolean, offsetCursor?: number) => Promise<ResponseType>;
-export const getFetcher = (f) => async (reverse, offsetCursor) => {
-  return executeFetch<ResponseType>(() => {
-    return f(`/api/croak/top?reverse=${reverse}&offset_cursor=${offsetCursor}`);
+export type FetchAPI = (reverse: boolean, offsetCursor?: number) => Promise<ResponseType>;
+export const fetchAPI: FetchAPI = async (reverse, offsetCursor) => {
+  const result = await executeFetch(() => {
+    return fetch(`/api/croak/top?reverse=${reverse}&offset_cursor=${offsetCursor}`);
   });
+  return result as ResponseType;
 };

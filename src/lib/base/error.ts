@@ -17,7 +17,19 @@ export abstract class HandleableError extends Error {
 
       const val = this[key];
 
+      if (val instanceof HandleableError) {
+        json = {
+          ...json,
+          [key]: val.toJson(),
+        };
+        continue;
+      }
+
       if (val instanceof Error) {
+        json = {
+          ...json,
+          [key]: val.message,
+        };
         continue;
       }
 
@@ -31,10 +43,22 @@ export abstract class HandleableError extends Error {
   }
 
   eq(arg: any): arg is this {
+    if (!value) {
+      return false;
+    }
+    if (typeof value !== 'object') {
+      return false;
+    }
     return this.name === arg.name;
   }
 }
 
 export function eq<E extends HandleableError>(error: E, value: any): value is E {
+  if (!value) {
+    return false;
+  }
+  if (typeof value !== 'object') {
+    return false;
+  }
   return error.name === value.name;
 }

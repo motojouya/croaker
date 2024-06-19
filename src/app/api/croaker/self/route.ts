@@ -20,10 +20,10 @@ export const POST = getBodyHandler(
   (p) => bindContext(editCroaker)(p.identifier)
 );
 
-export type GetFetcher = (f: FetchType) => (name: string, description: string, formAgreement?: boolean) => Promise<ResponseType>;
-export const getFetcher = (f) => async (name, description, formAgreement) => {
-  return executeFetch<ResponseType>(() => {
-    return f(`/api/croaker/self`, {
+export type FetchAPI = (name: string, description: string, formAgreement?: boolean) => Promise<ResponseType>;
+export const fetchAPI: FetchAPI = async (name, description, formAgreement) => {
+  const result = await executeFetch(() => {
+    return fetch(`/api/croaker/self`, {
       method: 'POST',
       body: {
         name,
@@ -32,4 +32,5 @@ export const getFetcher = (f) => async (name, description, formAgreement) => {
       },
     })
   });
+  return result as ResponseType;
 };

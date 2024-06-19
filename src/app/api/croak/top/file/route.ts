@@ -11,16 +11,18 @@ export const POST = getFormHandler(
   (p, f, file) => bindContext(postFileCroak)(file)
 );
 
-export type GetFetcher = (f: FetchType) => (file: File) => Promise<ResponseType>;
-export const getFetcher = (f) => async (file) => {
+export type FetchAPI = (file: File) => Promise<ResponseType>;
+export const fetchAPI: FetchAPI = async (file) => {
 
   const formData = new FormData();
   formData.append("file", file, file.name);
 
-  return executeFetch<ResponseType>(() => {
-    return f(`/api/croak/top/file`, {
+  const result = await executeFetch<ResponseType>(() => {
+    return fetch(`/api/croak/top/file`, {
       method: 'POST',
       body: formData,
     })
   });
+
+  return result as ResponseType;
 };

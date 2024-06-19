@@ -17,12 +17,13 @@ export const POST = getRouteHandler(
   (p) => bindContext(banCroaker)(p.identifier)
 );
 
-export type GetFetcher = (f: FetchType) => (identifier: string) => Promise<ResponseType>;
-export const getFetcher = (f) => async (identifier) => {
-  return executeFetch<ResponseType>(() => {
-    return f(`/api/croaker/${identifier}/ban`, {
+export type FetchAPI = (identifier: string) => Promise<ResponseType>;
+export const fetchAPI: FetchAPI = async (identifier) => {
+  const result = await executeFetch(() => {
+    return fetch(`/api/croaker/${identifier}/ban`, {
       method: 'POST',
     })
   });
+  return result as ResponseType;
 };
 
