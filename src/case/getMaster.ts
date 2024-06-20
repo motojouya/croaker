@@ -2,22 +2,24 @@ import { getDatabase } from '@/database/base';
 import { RoleTable, ConfigurationTable } from '@/database/type/master';
 import { read } from '@/database/crud';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
+import { ClientCroaker } from '@/authorization/base';
+import { getCroakerUser } from '@/database/query/getCroakerUser';
 
 export type Master = {
   configuration: ConfigurationTable;
-  roles: RoleTable[];
+  croaker: ClientCroaker;
 };
 export type FunctionResult = Master;
 
 const getMasterContext = {
-  db: () => getDatabase({ read }, null),
+  db: () => getDatabase({ read, getCroakerUser }, null),
 } as const;
 
 export type GetMaster = ContextFullFunction<
   typeof getMasterContext,
-  () => Promise<FunctionResult>
+  (identifier: Identifier) => () => Promise<FunctionResult>
 >;
-export const getMaster: GetMaster = ({ db }) => async () => {
+export const getMaster: GetMaster = ({ db }) => (identifier) => async () => {
 
   const configs = await db.read('configuration', {});
   if (configs.length !== 1) {
@@ -25,12 +27,28 @@ export const getMaster: GetMaster = ({ db }) => async () => {
   }
   const configuration = configs[0];
 
-  const roles = await db.read('role', {});
-  if (roles.length === 0) {
-    throw new Error('no role records!');
+  if (identifier.type === 'anonymous') {
+    return {
+      configuration,
+      croaker: { type: 'anonymous' };
+    };
   }
 
-  return { configuration, roles };
+  const croaker = await db.getCroakerUser(identifier.user_id);
+  if (!croaker) {
+    return {
+      configuration,
+      croaker: { type: 'logined' };
+    };
+  }
+
+  return {
+    configuration,
+    croaker: {
+      type: 'registered',
+      value: croaker,
+    };
+  };
 };
 
 setContext(getMaster, getMasterContext);

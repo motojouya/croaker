@@ -1,9 +1,10 @@
 import { getDatabase } from '@/database/base';
 import { CroakerTable } from '@/database/type/croak';
 import { read } from '@/database/crud';
+import { getCroaker } from '@/database/getCroaker';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
 
-export type Croaker = Omit<CroakerTable, 'user_id'>;
+export type Croaker = Omit<CroakerTable, 'user_id' | 'role_id'>;
 export type FunctionResult = Croaker | null;
 
 const getCroakerContext = {
@@ -12,17 +13,14 @@ const getCroakerContext = {
 
 export type GetCroaker = ContextFullFunction<
   typeof getCroakerContext,
-  (croaker_identifier: string) => Promise<FunctionResult>
+  (identifier: Identifier) => (croakerId: string) => Promise<FunctionResult>
 >;
-export const getCroaker: GetCroaker = ({ db }) => async (croaker_identifier) => {
-
-  const croaker = await db.read('croaker', { identifier: croaker_identifier });
-  if (croaker.length !== 1 || croaker[0].deleted_date !== null) {
+export const getCroaker: GetCroaker = ({ db }) => (identifier) => async (croakerId) => {
+  const croaker = await db.getCroaker(croaker_id);
+  if (!croaker) {
     return null;
   }
-
-  const { user_id, ...rest } = croaker[0];
-  return { ...rest };
+  return croaker;
 };
 
 setContext(getCroaker, getCroakerContext);

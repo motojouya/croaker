@@ -1,49 +1,39 @@
-import { getSession } from '@/lib/session';
 import { getDatabase } from '@/lib/database/base';
 import { CroakMini } from '@/database/query/croak';
-import { read } from '@/database/crud';
 import { recentActivities } from '@/database/query/recentActivities';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
-import {
-  AuthorityError,
-  authorizeMutation,
-  authorizeShowOtherActivities,
-} from '@/domain/authorize';
+import { Identifier, AuthorityError, authorize } from '@/authorization/base';
+import { getCroakerUser } from '@/database/getCroakerUser';
+import { AUTHORIZE_FORM_AGREEMENT } from '@/authorization/validation/formAgreement'; 
+import { AUTHORIZE_BANNED } from '@/authorization/validation/banned'; 
+import { AUTHORIZE_SHOW_OTHER_ACTIVITIES } from '@/authorization/validation/showOtherActivities'; 
 
 const RECENT_ACTIVITIES_DAYS = 10;
 
 export type FunctionResult = CroakMini[] | AuthorityError;
 
 const getRecentActivitiesContext = {
-  db: () => getDatabase({ recentActivities, read }, null),
-  session: getSession,
+  db: () => getDatabase({ getCroakerUser, recentActivities }, null),
 } as const;
 
 export type GetRecentActivities = ContextFullFunction<
   typeof getRecentActivitiesContext,
-  () => Promise<FunctionResult>
+  (identifier: Identifier) => () => Promise<FunctionResult>
 >;
-export const getRecentActivities: GetRecentActivities = ({ session, db }) => async () => {
+export const getRecentActivities: GetRecentActivities = ({ db }) => (identifier) => async () => {
 
-  const actor = session.getActor();
-
-  const authorizeMutationErr = authorizeMutation(actor);
-  if (authorizeMutationErr) {
-    return authorizeMutationErr;
+  if (identifier.type === 'anonymous') {
+    return new AuthorityError(null, 'login', 'ログインしてください');
   }
 
-  const actorAuthorities = await db.read('role', { role_name: actor.role_name });
-  if (actorAuthorities.length !== 1) {
-    throw new Error('user role is not assigned!');
-  }
-  const actorAuthority = actorAuthorities[0];
+  const croaker = await db.getCroakerUser(identifier.user_id);
 
-  const authorizeShowOtherActivitiesErr = authorizeShowOtherActivities(actor, actorAuthority);
-  if (authorizeShowOtherActivitiesErr) {
-    return authorizeShowOtherActivitiesErr;
+  const authorizeErr = await authorize(croaker, [AUTHORIZE_FORM_AGREEMENT, AUTHORIZE_BANNED, AUTHORIZE_SHOW_OTHER_ACTIVITIES]);
+  if (authorizeErr) {
+    return authorizeErr;
   }
 
-  return db.recentActivities(actor.croaker_identifier, RECENT_ACTIVITIES_DAYS);
+  return db.recentActivities(croaker.croaker_id, RECENT_ACTIVITIES_DAYS);
 };
 
 setContext(getRecentActivities, getRecentActivitiesContext);

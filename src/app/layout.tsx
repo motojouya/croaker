@@ -3,7 +3,10 @@ import { Inter } from "next/font/google";
 import { Inter as FontSans } from "next/font/google"
 import "@/app/globals.css"
 import { cn } from "@/lib/utils"
-import { SessionProvider } from "next-auth/react"
+import { MasterProvider } from "@/app/MasterProvider"
+import { auth } from 'next-auth';
+import { bindContext } from '@/lib/base/context';
+import { getIdentifier } from '@/lib/next/routeHandler';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,12 +20,16 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+  const identifier = getIdentifier(auth());
+  const { configuration, croaker } = await bindContext(getMaster)(identifier)();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn(inter.className)}>
-        <SessionProvider session={session}>
+        <MasterProvider configuration={configuration} croaker={croaker}>
           {children}
-        </SessionProvider>
+        </MasterProvider>
       </body>
     </html>
   );

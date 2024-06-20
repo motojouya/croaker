@@ -1,58 +1,64 @@
-import { getSession } from '@/lib/session';
 import { getDatabase, RecordNotFoundError, sqlNow } from '@/lib/database/base';
 import { CroakerTable } from '@/database/type/croak';
 import { read, update } from '@/database/crud';
+import { getCroakerUser } from '@/database/query/getCroakerUser';
 import { InvalidArgumentsError } from '@/lib/base/validation';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
-import {
-  AuthorityError,
-  authorizeBasically,
-} from '@/lib/authorize';
 import { getLocal } from '@/lib/local';
+import {
+  Identifier,
+  AuthorityError,
+  authorize,
+} from '@/authorization/base';
+import { trimName, trimDescription } from '@/domain/text';
 
 export type FunctionResult =
-    | Omit<CroakerTable, 'user_id' | 'files'>
+    | Omit<CroakerTable, 'user_id'>
     | AuthorityError
     | InvalidArgumentsError
     | RecordNotFoundError;
 
 const editCroakerContext = {
-  db: () => getDatabase(null, { read, update }),
-  session: getSession,
+  db: () => getDatabase(null, { getCroakerUser, read, update }),
 } as const;
 
 export type EditCroaker = ContextFullFunction<
   typeof editCroakerContext,
-  (name: string, description: string, formAgreement?: boolean) => Promise<FunctionResult>
+  (identifier: Identifier) => (name: string, description: string, formAgreement?: boolean) => Promise<FunctionResult>
 >;
-export const editCroaker: EditCroaker = ({ session, db }) => async (name, description, formAgreement) => {
+export const editCroaker: EditCroaker = ({ db }) => (identifier) => async (name, description, formAgreement) => {
 
-  const actor = session.getActor();
-
-  const basicErr = authorizeBasically(actor);
-  if (basicErr) {
-    return basicErr;
+  if (identifier.type === 'anonymous') {
+    return new AuthorityError(null, 'login', 'ログインしてください');
   }
 
-  if (!name || [...name].length === 0) {
-    return new InvalidArgumentsError('name', name, '名前を入力してください');
-  }
+  return await db.transact(async (trx) => {
 
-  return db.transact(async (trx) => {
+    const croaker = await trx.getCroakerUser(identifier.user_id);
 
-    const croakers = trx.read({ identifier: actor.identifier });
-    if (croakers.length !== 1) {
-      return new RecordNotFoundError('croaker', { identifier: actor.identifier }, '存在しないユーザです');
+    const authorizeErr = await authorize(croaker);
+    if (authorizeErr) {
+      return authorizeErr;
     }
 
-    const croaker = trx.update({ identifier: actor.identifier }, {
-      name: name,
-      description: description,
-      form_agreement: croakers[0].form_agreement || !!formAgreement,
+    const trimedName = trimName(name);
+    if (trimedName instanceof InvalidArgumentsError) {
+      return trimedName;
+    }
+
+    const trimedDescription = trimDescription(description);
+    if (trimedDescription instanceof InvalidArgumentsError) {
+      return trimedDescription;
+    }
+
+    const croakerResult = await trx.update('croaker', { croaker_id: croaker.croaker_id }, {
+      name: trimedName,
+      description: trimedDescription,
+      form_agreement: croaker.form_agreement || !!formAgreement,
       updated_date: sqlNow(), // trigger不要のはず
     });
 
-    const { 'user_id', ...rest } = croaker;
+    const { 'user_id', ...rest } = croakerResult;
     return rest;
   });
 };

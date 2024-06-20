@@ -1,52 +1,60 @@
 import { getDatabase } from '@/lib/database/base';
 import { CroakerTable } from '@/database/type/croak';
+import { RoleTable } from '@/database/type/master';
 import { read, create } from '@/database/crud';
+import { getCroakerUser } from '@/database/query/getCroakerUser';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
 import { getLocal } from '@/lib/io/local';
+import { Identifier, AuthorityError } from '@/domain/authorize';
+import { InvalidArgumentsError } from '@/lib/base/validation';
+import { trimName, trimDescription } from '@/domain/text';
 
-export type FunctionResult = Omit<CroakerTable, 'user_id'>;
+export type FunctionResult = Omit<CroakerTable, 'user_id'> | InvalidArgumentsError;
 
 const createCroakerContext = {
-  db: () => getDatabase({ read }, { read, create }),
+  db: () => getDatabase(null, { read, create, getCroakerUser }),
   local: getLocal,
 } as const;
 
 export type CreateCroaker = ContextFullFunction<
   typeof createCroakerContext,
-  (user_id: string, name: string) => Promise<FunctionResult>
+  (identifier: Identifier) => (name: string, description: string, formAgreement?: boolean) => Promise<FunctionResult>
 >;
-export const createCroaker: CreateCroaker = ({ db, local }) => async (user_id, name) => {
+export const createCroaker: CreateCroaker = ({ db, local }) => (identifier) => async (name, description, formAgreement) => {
 
-  const configurations = trx.read('configuration', {});
-  if (configurations.length !== 1) {
-    throw new Error('configuration should be single record!');
+  if (identifier.type === 'anonymous') {
+    return new AuthorityError(null, 'login', 'ログインしてください');
   }
-  const configurations = configuration[0];
-
-  const roles = trx.read('role', { role_id: configuration.default_role_id });
-  if (roles.length !== 1) {
-    throw new Error('default role should be single result!');
-  }
-  const defaultRole = role[0];
 
   return db.transact(async (trx) => {
 
-    const croakers = await trx.read('croaker', { user_id: user_id });
-    if (croakers.length === 1) {
-      const { user_id, ...rest } = croakers[0];
-      return rest;
+    const croaker = await trx.getCroakerUser(identifier.user_id);
+    if (croaker) {
+      return new InvalidArgumentsError('croaker', croaker, 'すでに登録済みです');
     }
 
-    const identifier = await getIdentifier(trx, local);
+    const defaultRole = await getDefaultRole(trx);
+
+    const trimedName = trimName(name);
+    if (trimedName instanceof InvalidArgumentsError) {
+      return trimedName;
+    }
+
+    const trimedDescription = trimDescription(description);
+    if (trimedDescription instanceof InvalidArgumentsError) {
+      return trimedDescription;
+    }
+
+    const croakId = await getCroakerId(trx, local);
 
     const croaker = await trx.create('croaker', {
       user_id: user_id,
-      identifier: identifier,
-      name: name,
-      description: '',
+      croak_id: croakId,
+      name: trimedName,
+      description: trimedDescription,
       status: CROAKER_STATUS_ACTIVE,
       role_id: defaultRole.id,
-      form_agreement: false,
+      form_agreement: !!formAgreement,
     });
 
     const { 'user_id', ...rest } = croaker;
@@ -54,21 +62,35 @@ export const createCroaker: CreateCroaker = ({ db, local }) => async (user_id, n
   });
 };
 
-type ParamDB = DB<{ read: ReturnType<typeof read> }, {
-  read: ReturnType<typeof read>;
-  create: ReturnType<typeof create>;
-}>;
-type getIdentifier = (db: ParamDB, local: Local) => Promise<string>
-const getIdentifier = async (db, local) => {
+type ReadableDB = { read: ReturnType<typeof read> };
+
+type GetDefaultRole = (db: ReadableDB) => Promise<RoleTable>
+const getDefaultRole: GetDefaultRole = (db) => {
+
+  const configurations = db.read('configuration', {});
+  if (configurations.length !== 1) {
+    throw new Error('configuration should be single record!');
+  }
+  const configuration = configuration[0];
+
+  const roles = db.read('role', { role_id: configuration.default_role_id });
+  if (roles.length !== 1) {
+    throw new Error('default role should be single result!');
+  }
+  return role[0];
+};
+
+type GetCroakerId = (db: ReadableDB, local: Local) => Promise<string>
+const getCroakerId: GetCroakerId = async (db, local) => {
 
   let tryCount = 0;
-  while (tryCount < 100) {
+  while (tryCount < 10) {
 
-    const identifier = local.getIdentifier();
-    const croakers = await db.read('croaker', { identifier: identifier });
+    const croakerId = local.getIdentifier();
+    const croakers = await db.read('croaker', { croaker_id: croakerId });
 
     if (croakers.length === 0) {
-      return identifier;
+      return croakerId;
     }
     tryCount++;
   }

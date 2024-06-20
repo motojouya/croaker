@@ -1,10 +1,13 @@
-import { getSession } from '@/lib/next/session';
 import { getDatabase, RecordNotFoundError, sqlNow } from '@/database/base';
 import { CroakerTable, CROAKER_STATUS_BANNED } from '@/database/type/croak';
 import { read, update } from '@/database/query/base';
 // import { deleteUserCroaks } from '@/database/command/deleteUserCroaks';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
-import { AuthorityError, authorizeMutation, authorizeBanPower } from '@/domain/authorize';
+import { Identifier, AuthorityError, authorize } from '@/authorization/base';
+import { getCroakerUser } from '@/database/getCroakerUser';
+import { AUTHORIZE_FORM_AGREEMENT } from '@/authorization/validation/formAgreement'; 
+import { AUTHORIZE_BANNED } from '@/authorization/validation/banned'; 
+import { AUTHORIZE_BAN_POWER } from '@/authorization/validation/banPower'; 
 
 // export type DeleteCroak = ContextFullFunction<
 //   {
@@ -22,49 +25,42 @@ export type Croaker = Omit<CroakerTable, 'user_id'>;
 export type FunctionResult = Croaker | AuthorityError;
 
 const banCroakerContext = {
-  db: () => getDatabase({ read }, { read, update }), // deleteUserCroaks は使わない
-  session: getSession,
+  db: () => getDatabase({ getCroakerUser }, { read, update }), // deleteUserCroaks は使わない
 } as const;
 
 export type BanCroaker = ContextFullFunction<
   typeof banCroakerContext,
-  (croakerIdentifier: string) => Promise<FunctionResult>,
+  (identifier: Identifier) => (croakerId: string) => Promise<FunctionResult>,
 >;
-export const banCroaker: BanCroaker = ({ session, db }) => async (croakerIdentifier) => {
+export const banCroaker: BanCroaker = ({ db }) => (identifier) => async (croakerId) => {
 
-  const actor = session.getActor();
-
-  const authorizeMutationErr = authorizeMutation(actor);
-  if (authorizeMutationErr) {
-    return authorizeMutationErr;
+  if (identifier.type === 'anonymous') {
+    return new AuthorityError(null, 'login', 'ログインしてください');
   }
 
-  const actorAuthorities = await db.read('role', { role_name: actor.role_name });
-  if (actorAuthorities !== 1) {
-    throw new Error('user role is not assigned!');
-  }
-  const actorAuthority = actorAuthorities[0];
+  const croaker = await db.getCroakerUser(identifier.user_id);
 
-  const authorizeBanPowerErr = authorizeBanPower(actor, actorAuthority);
-  if (authorizeBanPowerErr) {
-    return authorizeBanPowerErr;
+  const authorizeErr = await authorize(croaker, [AUTHORIZE_FORM_AGREEMENT, AUTHORIZE_BANNED, AUTHORIZE_BAN_POWER]);
+  if (authorizeErr) {
+    return authorizeErr;
   }
 
   return await db.transact(async (trx) => {
 
-    const croakers = await trx.read('croaker', { identifier: croakerIdentifier });
+    const croakers = await trx.read('croaker', { croaker_id: croakerId });
     if (croakers !== 1) {
-      return new RecordNotFoundError('croaker', { croaker_identifier: croakerIdentifier }, '存在しないユーザです');
-    }
-    if (croakers[0].status === CROAKER_STATUS_BANNED) {
-      return new RecordNotFoundError('croaker', { croaker_identifier: croakerIdentifier }, 'すでに停止されたユーザです');
+      return new RecordNotFoundError('croaker', { croaker_id: croakerId }, '存在しないユーザです');
     }
     const croaker = croakers[0];
 
-    const croakerUpdated = await trx.update('croaker', { identifier: croakerIdentifier }, { status: CROAKER_STATUS_BANNED });
+    if (croaker.status === CROAKER_STATUS_BANNED) {
+      return new RecordNotFoundError('croaker', { croaker_id: croakerId }, 'すでに停止されたユーザです');
+    }
+
+    const croakerUpdated = await trx.update('croaker', { croaker_id: croakerId }, { status: CROAKER_STATUS_BANNED });
 
     // await trx.deleteUserCroaks({ identifier: croakerIdentifier });
-    await trx.update('croak', { identifier: croakerIdentifier }, { deleted_date: sqlNow() });
+    await trx.update('croak', { croaker_id: croakerId }, { deleted_date: sqlNow() });
 
     const { user_id, ...rest } = croakerUpdated;
     return rest;

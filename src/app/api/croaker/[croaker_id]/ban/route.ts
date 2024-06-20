@@ -7,20 +7,20 @@ export type ResponseType = FunctionResult;
 const pathSchema = {
   type: 'object',
   properties: {
-    identifier: { type: 'string' }
+    croaker_id: { type: 'string' }
   },
-  required: ['identifier'],
+  required: ['croaker_id'],
 } as const satisfies JSONSchema;
 
 export const POST = getRouteHandler(
   pathSchema,
-  (p) => bindContext(banCroaker)(p.identifier)
+  (identifier, p) => bindContext(banCroaker)(identifier)(p.croaker_id)
 );
 
-export type FetchAPI = (identifier: string) => Promise<ResponseType>;
-export const fetchAPI: FetchAPI = async (identifier) => {
+export type FetchAPI = (croaker_id: string) => Promise<ResponseType>;
+export const fetchAPI: FetchAPI = async (croaker_id) => {
   const result = await executeFetch(() => {
-    return fetch(`/api/croaker/${identifier}/ban`, {
+    return fetch(`/api/croaker/${croaker_id}/ban`, {
       method: 'POST',
     })
   });

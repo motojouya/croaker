@@ -10,7 +10,7 @@ export const CROAKER_STATUS_BANNED = 'BANNED';
 
 export interface CroakerTable {
   user_id: string;
-  identifier: string;
+  croaker_id: string;
   name: string;
   description: string;
   status: string;
@@ -25,7 +25,7 @@ export type CroakerUpdate = Updateable<CroakerTable>
 
 export interface CroakTable {
   croak_id: GeneratedAlways<number>;
-  croaker_identifier: string;
+  croaker_id: string;
   contents: string | null;
   file_path: string | null;
   thread: number | null;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Session } from 'next-auth';
-import { getServerSession } from "next-auth/next"
+import { auth } from "next-auth/next"
 import type { FromSchema, JSONSchema } from "json-schema-to-ts";
 import { getJsonSchema, JsonSchemaError } from '@/lib/base/jsonSchema'
 import { InvalidArgumentsError } from '@/lib/base/validation';
@@ -27,12 +27,8 @@ export function executeFetch(callback: () => ReturnType<FetchType>) {
   }
 };
 
-type GetSession = () => Promise<Session>;
-const getSession = () => getServerSession(options);
-
-export type GetIdentifier = () => Promise<Identifier>;
-export const getIdentifier: GetIdentifier = async () => {
-  const session = await getSession();
+export type GetIdentifier = (session?: Session) => Identifier;
+export const getIdentifier: GetIdentifier = (session) => {
   if (session) {
     return { type: 'anonymous' };
   } else {
@@ -40,9 +36,9 @@ export const getIdentifier: GetIdentifier = async () => {
   }
 };
 
-function handle<R>(callback: (identifier: Identifier) => Promise<R>) {
+function handle<R>(session?: Session, callback: (identifier: Identifier) => Promise<R>) {
   try {
-    const identifier = await getIdentifier();
+    const identifier = getIdentifier(session);
 
     const result = await callback(identifier);
 
@@ -68,7 +64,7 @@ function handle<R>(callback: (identifier: Identifier) => Promise<R>) {
 export function getRouteHandler<R>(pathSchema: null, callback: (identifier: Identifier, path: null) => Promise<R>);
 export function getRouteHandler<P extends JSONSchema, R>(pathSchema: P, callback: (identifier: Identifier, path: FromSchema<P>) => Promise<R>);
 export function getRouteHandler<P extends JSONSchema, R>(pathSchema: P | null, callback: (identifier: Identifier, path: FromSchema<P> | null) => Promise<R>) {
-  async function (req: NextRequest, { params }) {
+  return auth(async function (req: NextRequest, { params }) {
 
     const jsonSchema = getJsonSchema();
 
@@ -83,8 +79,8 @@ export function getRouteHandler<P extends JSONSchema, R>(pathSchema: P | null, c
       }
     }
 
-    return handle((identifier) => callback(identifier, pathArgs));
-  }
+    return handle(req.auth, (identifier) => callback(identifier, pathArgs));
+  });
 }
 
 export function getQueryHandler<Q extends JSONSchema, R>(
@@ -102,7 +98,7 @@ export function getQueryHandler<S extends JSONSchema, Q extends JSONSchema, R>(
   querySchema: Q,
   callback: (identifier: Identifier, path: FromSchema<P> | null, query: FromSchema<Q>) => Promise<R>
 ) {
-  async function (req: NextRequest, { params }) {
+  return auth(async function (req: NextRequest, { params }) {
 
     const jsonSchema = getJsonSchema();
 
@@ -126,8 +122,8 @@ export function getQueryHandler<S extends JSONSchema, Q extends JSONSchema, R>(
       return NextResponse.json(queryArgs.toJson());
     }
 
-    return handle((identifier) => callback(identifier, pathArgs, queryArgs));
-  }
+    return handle(req.auth, (identifier) => callback(identifier, pathArgs, queryArgs));
+  });
 }
 
 export function getBodyHandler<B extends JSONSchema, R>(
@@ -145,7 +141,7 @@ export function getBodyHandler<P extends JSONSchema, B extends JSONSchema, R>(
   bodySchema: B,
   callback: (identifier: Identifier, path: FromSchema<P> | null, body: FromSchema<B>) => Promise<R>
 ) {
-  async function (req: NextRequest, { params }) {
+  return auth(async function (req: NextRequest, { params }) {
 
     const jsonSchema = getJsonSchema();
 
@@ -173,8 +169,8 @@ export function getBodyHandler<P extends JSONSchema, B extends JSONSchema, R>(
 
     bodyArgs = body;
 
-    return handle((identifier) => callback(identifier, pathArgs, bodyArgs));
-  }
+    return handle(req.auth, (identifier) => callback(identifier, pathArgs, bodyArgs));
+  };
 }
 
 export function getFormHandler<F extends JSONSchema, R>(
@@ -207,7 +203,7 @@ export function getFormHandler<P extends JSONSchema, F extends JSONSchema, R>(
   fileName: string | null,
   callback: (identifier: Identifier, path: FromSchema<P> | null, form: FromSchema<F> | null, file: File | null) => Promise<R>
 ) {
-  async function (req: NextRequest, { params }) {
+  return auth(async function (req: NextRequest, { params }) {
 
     const jsonSchema = getJsonSchema();
 
@@ -252,8 +248,8 @@ export function getFormHandler<P extends JSONSchema, F extends JSONSchema, R>(
       }
     }
 
-    return handle((identifier) => callback(identifier, pathArgs, formArgs, file));
-  }
+    return handle(req.auth, (identifier) => callback(identifier, pathArgs, formArgs, file));
+  });
 }
 
 export class FormFileError extends HandleableError {

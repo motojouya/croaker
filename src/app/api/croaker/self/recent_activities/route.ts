@@ -6,7 +6,7 @@ export type ResponseType = FunctionResult;
 
 export const GET = getRouteHandler(
   null,
-  (p) => bindContext(getRecentActivities)()
+  (identifier, p) => bindContext(getRecentActivities)(identifier)()
 );
 
 export type FetchAPI = () => Promise<ResponseType>;

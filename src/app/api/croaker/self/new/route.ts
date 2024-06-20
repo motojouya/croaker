@@ -1,4 +1,4 @@
-import { FunctionResult, editCroaker } from '@/case/croaker/editCroaker';
+import { FunctionResult, createCroaker } from '@/case/croaker/createCroaker';
 import { bindContext } from '@/lib/base/context';
 import { FetchType, getBodyHandler, executeFetch } from '@/lib/next/routeHandler';
 
@@ -17,13 +17,13 @@ const bodySchema = {
 export const POST = getBodyHandler(
   null,
   bodySchema,
-  (p) => bindContext(editCroaker)(p.identifier)
+  (identifier, b) => bindContext(createCroaker)(identifier)(b.name, b.description, b.form_agreement)
 );
 
 export type FetchAPI = (name: string, description: string, formAgreement?: boolean) => Promise<ResponseType>;
 export const fetchAPI: FetchAPI = async (name, description, formAgreement) => {
   const result = await executeFetch(() => {
-    return fetch(`/api/croaker/self`, {
+    return fetch(`/api/croaker/self/new`, {
       method: 'POST',
       body: {
         name,

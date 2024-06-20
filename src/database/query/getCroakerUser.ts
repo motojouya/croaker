@@ -1,28 +1,8 @@
 import { Kysely } from 'kysely'
+import type { Croaker } from '@/database/quer/getCroaker';
 
-export type Role = {
-  name: string;
-  ban_power: boolean;
-  delete_other_post: boolean;
-  post: string;
-  post_file: boolean;
-  top_post_interval: number;
-  show_other_activities: boolean;
-};
-
-export type Croaker = {
-  croaker_id: string;
-  croaker_name: string;
-  description: string;
-  status: string;
-  form_agreement: boolean;
-  created_date: Date;
-  updated_date: Date;
-  role: Role;
-}
-
-export type GetCroaker = (db: Kysely) => (croakerId: string) => Promise<Croaker | null>;
-export const getCroaker: GetCroaker = (db) => async (croakerId) => {
+export type GetCroakerUser = (db: Kysely) => (userId: string) => Promise<Croaker | null>;
+export const getCroakerUser: GetCroakerUser = (db) => async (userId) => {
 
   const results = await db
     .selectFrom('croaker')
@@ -45,11 +25,11 @@ export const getCroaker: GetCroaker = (db) => async (croakerId) => {
     .innerJoin('role', (join) => {
       join.onRef('croaker.role_id', '=', 'role.role_id');
     })
-    .where('croaker.croaker_id', '=', croakerId)
+    .where('croaker.user_id', '=', userId)
     .execute();
 
   if (results.length > 1) {
-    throw new Error('croaker is unique by croaker_id!');
+    throw new Error('croaker is unique by user_id!');
   }
 
   if (results.length === 0) {

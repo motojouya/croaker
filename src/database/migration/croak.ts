@@ -4,7 +4,7 @@ export async function up(db: Kysely<any>): Promise<void> {
   await db.schema
     .createTable('croaker')
     .addColumn('user_id', 'text', (col) => col.primaryKey()) // foreign key
-    .addColumn('identifier', 'text', (col) => col.unique())
+    .addColumn('croaker_id', 'text', (col) => col.unique())
     .addColumn('name', 'text', (col) => col.notNull())
     .addColumn('description', 'text')
     .addColumn('status', 'text', (col) => col.notNull()) // active or banned
@@ -27,7 +27,7 @@ export async function up(db: Kysely<any>): Promise<void> {
   await db.schema
     .createTable('croak')
     .addColumn('croak_id', 'serial', (col) => col.primaryKey())
-    .addColumn('croaker_identifier', 'text', (col) => col.notNull()) // foreign key
+    .addColumn('croaker_id', 'text', (col) => col.notNull()) // foreign key
     .addColumn('content', 'text')
     .addColumn('thread', 'integer') // nullable top levelの場合にnull
     .addColumn('posted_date', 'timestamp', (col) =>
