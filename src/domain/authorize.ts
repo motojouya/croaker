@@ -15,6 +15,10 @@ import {
 import { Actor } from '@/lib/session';
 import { HandleableError } from '@/lib/error';
 
+export type IdentifierAnonymous = { type: 'anonymous' };
+export type IdentifierUserId = { type: 'user_id', user_id: string };
+export type Identifier = ActorAnonymous | ActorUserId;
+
 export type AuthorizeMutation = (actor?: Actor) => undefined | AuthorityError;
 export const authorizeMutation: AuthorizeMutation = (actor) => {
 

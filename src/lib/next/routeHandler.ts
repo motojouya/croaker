@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Session } from 'next-auth';
+import { getServerSession } from "next-auth/next"
 import type { FromSchema, JSONSchema } from "json-schema-to-ts";
 import { getJsonSchema, JsonSchemaError } from '@/lib/base/jsonSchema'
 import { InvalidArgumentsError } from '@/lib/base/validation';
 import { HandleableError } from '@/lib/base/error';
+import { options } from '@/lib/next/nextAuthOptions';
+import type { Identifier } from '@/domain/authorize';
 
 export type FetchType = typeof fetch;
 
@@ -23,9 +27,24 @@ export function executeFetch(callback: () => ReturnType<FetchType>) {
   }
 };
 
-function handle<R>(callback: () => Promise<R>) {
+type GetSession = () => Promise<Session>;
+const getSession = () => getServerSession(options);
+
+export type GetIdentifier = () => Promise<Identifier>;
+export const getIdentifier: GetIdentifier = async () => {
+  const session = await getSession();
+  if (session) {
+    return { type: 'anonymous' };
+  } else {
+    return { type: 'user_id', user_id: sesion.user.id };
+  }
+};
+
+function handle<R>(callback: (identifier: Identifier) => Promise<R>) {
   try {
-    const result = await callback();
+    const identifier = await getIdentifier();
+
+    const result = await callback(identifier);
 
     if (result instanceof HandleableError) {
       return NextResponse.json(result.toJson());
@@ -46,9 +65,9 @@ function handle<R>(callback: () => Promise<R>) {
   }
 }
 
-export function getRouteHandler<R>(pathSchema: null, callback: (path: null) => Promise<R>);
-export function getRouteHandler<P extends JSONSchema, R>(pathSchema: P, callback: (path: FromSchema<P>) => Promise<R>);
-export function getRouteHandler<P extends JSONSchema, R>(pathSchema: P | null, callback: (path: FromSchema<P> | null) => Promise<R>) {
+export function getRouteHandler<R>(pathSchema: null, callback: (identifier: Identifier, path: null) => Promise<R>);
+export function getRouteHandler<P extends JSONSchema, R>(pathSchema: P, callback: (identifier: Identifier, path: FromSchema<P>) => Promise<R>);
+export function getRouteHandler<P extends JSONSchema, R>(pathSchema: P | null, callback: (identifier: Identifier, path: FromSchema<P> | null) => Promise<R>) {
   async function (req: NextRequest, { params }) {
 
     const jsonSchema = getJsonSchema();
@@ -64,24 +83,24 @@ export function getRouteHandler<P extends JSONSchema, R>(pathSchema: P | null, c
       }
     }
 
-    return handle(() => callback(pathArgs));
+    return handle((identifier) => callback(identifier, pathArgs));
   }
 }
 
 export function getQueryHandler<Q extends JSONSchema, R>(
   pathSchema: null,
   querySchema: Q,
-  callback: (path: null, query: FromSchema<Q>) => Promise<R>
+  callback: (identifier: Identifier, path: null, query: FromSchema<Q>) => Promise<R>
 );
 export function getQueryHandler<P extends JSONSchema, Q extends JSONSchema, R>(
   pathSchema: P,
   querySchema: Q,
-  callback: (path: FromSchema<P>, query: FromSchema<Q>) => Promise<R>
+  callback: (identifier: Identifier, path: FromSchema<P>, query: FromSchema<Q>) => Promise<R>
 );
 export function getQueryHandler<S extends JSONSchema, Q extends JSONSchema, R>(
   pathSchema: S | null,
   querySchema: Q,
-  callback: (path: FromSchema<P> | null, query: FromSchema<Q>) => Promise<R>
+  callback: (identifier: Identifier, path: FromSchema<P> | null, query: FromSchema<Q>) => Promise<R>
 ) {
   async function (req: NextRequest, { params }) {
 
@@ -107,24 +126,24 @@ export function getQueryHandler<S extends JSONSchema, Q extends JSONSchema, R>(
       return NextResponse.json(queryArgs.toJson());
     }
 
-    return handle(() => callback(pathArgs, queryArgs));
+    return handle((identifier) => callback(identifier, pathArgs, queryArgs));
   }
 }
 
 export function getBodyHandler<B extends JSONSchema, R>(
   pathSchema: null,
   bodySchema: B,
-  callback: (path: null, body: FromSchema<B>) => Promise<R>
+  callback: (identifier: Identifier, path: null, body: FromSchema<B>) => Promise<R>
 );
 export function getBodyHandler<P extends JSONSchema, B extends JSONSchema, R>(
   pathSchema: P,
   bodySchema: B,
-  callback: (path: FromSchema<P>, body: FromSchema<B>) => Promise<R>
+  callback: (identifier: Identifier, path: FromSchema<P>, body: FromSchema<B>) => Promise<R>
 );
 export function getBodyHandler<P extends JSONSchema, B extends JSONSchema, R>(
   pathSchema: P | null,
   bodySchema: B,
-  callback: (path: FromSchema<P> | null, body: FromSchema<B>) => Promise<R>
+  callback: (identifier: Identifier, path: FromSchema<P> | null, body: FromSchema<B>) => Promise<R>
 ) {
   async function (req: NextRequest, { params }) {
 
@@ -154,39 +173,39 @@ export function getBodyHandler<P extends JSONSchema, B extends JSONSchema, R>(
 
     bodyArgs = body;
 
-    return handle(() => callback(pathArgs, bodyArgs));
+    return handle((identifier) => callback(identifier, pathArgs, bodyArgs));
   }
 }
 
 export function getFormHandler<F extends JSONSchema, R>(
   pathSchema: null, formSchema: F, fileName: null,
-  callback: (path: null, form: FromSchema<F>, file: null) => Promise<R>
+  callback: (identifier: Identifier, path: null, form: FromSchema<F>, file: null) => Promise<R>
 );
 export function getFormHandler<R>(
   pathSchema: null, formSchema: null, fileName: string,
-  callback: (path: null, form: null, file: File) => Promise<R>
+  callback: (identifier: Identifier, path: null, form: null, file: File) => Promise<R>
 );
 export function getFormHandler<F extends JSONSchema, R>(
   pathSchema: null, formSchema: F, fileName: string,
-  callback: (path: null, form: FromSchema<F>, file: File) => Promise<R>
+  callback: (identifier: Identifier, path: null, form: FromSchema<F>, file: File) => Promise<R>
 );
 export function getFormHandler<P extends JSONSchema, F extends JSONSchema, R>(
   pathSchema: P, formSchema: F, fileName: null,
-  callback: (path: FromSchema<P>, form: FromSchema<F>, file: null) => Promise<R>
+  callback: (identifier: Identifier, path: FromSchema<P>, form: FromSchema<F>, file: null) => Promise<R>
 );
 export function getFormHandler<P extends JSONSchema, R>(
   pathSchema: P, formSchema: null, fileName: string,
-  callback: (path: FromSchema<P>, form: null, file: File) => Promise<R>
+  callback: (identifier: Identifier, path: FromSchema<P>, form: null, file: File) => Promise<R>
 );
 export function getFormHandler<P extends JSONSchema, F extends JSONSchema, R>(
   pathSchema: P, formSchema: F, fileName: string,
-  callback: (path: FromSchema<P>, form: FromSchema<F>, file: File) => Promise<R>
+  callback: (identifier: Identifier, path: FromSchema<P>, form: FromSchema<F>, file: File) => Promise<R>
 );
 export function getFormHandler<P extends JSONSchema, F extends JSONSchema, R>(
   pathSchema: P | null,
   formSchema: F | null,
   fileName: string | null,
-  callback: (path: FromSchema<P> | null, form: FromSchema<F> | null, file: File | null) => Promise<R>
+  callback: (identifier: Identifier, path: FromSchema<P> | null, form: FromSchema<F> | null, file: File | null) => Promise<R>
 ) {
   async function (req: NextRequest, { params }) {
 
@@ -233,7 +252,7 @@ export function getFormHandler<P extends JSONSchema, F extends JSONSchema, R>(
       }
     }
 
-    return handle(() => callback(pathArgs, formArgs, file));
+    return handle((identifier) => callback(identifier, pathArgs, formArgs, file));
   }
 }
 

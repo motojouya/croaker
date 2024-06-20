@@ -1,13 +1,20 @@
 import Database from 'better-sqlite3'
 import { Kysely, SqliteDialect, Transaction, sql } from 'kysely';
-import { Database as DatabaseType } from '@/rdb/type';
-import { HandleableError } from '@/lib/error';
+import { Database as DatabaseType } from '@/database/type';
+import { HandleableError } from '@/lib/base/error';
+import { KyselyAuth } from "@auth/kysely-adapter";
 
 // This adapter exports a wrapper of the original `Kysely` class called `KyselyAuth`,
 // that can be used to provide additional type-safety.
 // While using it isn't required, it is recommended as it will verify
 // that the database interface has all the fields that Auth.js expects.
 // import { KyselyAuth } from "@auth/kysely-adapter"
+
+export const nextAuthKysely = new KyselyAuth<Database>({
+  dialect: new SqliteDialect({
+    database: new Database(process.env.SQLITE_FILE),
+  })
+});
 
 let db?: Kysely = undefined;
 
