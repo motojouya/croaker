@@ -3,7 +3,7 @@ import { CroakerTable, CROAKER_STATUS_BANNED } from '@/database/type/croak';
 import { read, update } from '@/database/query/base';
 // import { deleteUserCroaks } from '@/database/command/deleteUserCroaks';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
-import { Identifier, AuthorityError, authorize } from '@/authorization/base';
+import { Identifier, AuthorityError, authorizeCroaker } from '@/authorization/base';
 import { getCroakerUser } from '@/database/getCroakerUser';
 import { AUTHORIZE_FORM_AGREEMENT } from '@/authorization/validation/formAgreement'; 
 import { AUTHORIZE_BANNED } from '@/authorization/validation/banned'; 
@@ -34,15 +34,13 @@ export type BanCroaker = ContextFullFunction<
 >;
 export const banCroaker: BanCroaker = ({ db }) => (identifier) => async (croakerId) => {
 
-  if (identifier.type === 'anonymous') {
-    return new AuthorityError(null, 'login', 'ログインしてください');
-  }
-
-  const croaker = await db.getCroakerUser(identifier.user_id);
-
-  const authorizeErr = await authorize(croaker, [AUTHORIZE_FORM_AGREEMENT, AUTHORIZE_BANNED, AUTHORIZE_BAN_POWER]);
-  if (authorizeErr) {
-    return authorizeErr;
+  const croakerActor = await authorizeCroaker(
+    identifier,
+    db.getCroakerUser,
+    [AUTHORIZE_FORM_AGREEMENT, AUTHORIZE_BANNED, AUTHORIZE_BAN_POWER]
+  );
+  if (croakerActor instanceof AuthorityError) {
+    return croakerActor;
   }
 
   return await db.transact(async (trx) => {

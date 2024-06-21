@@ -15,7 +15,7 @@ const pathSchema = {
 
 export const POST = getRouteHandler(
   pathSchema,
-  (p) => bindContext(deleteCroak)(p.croak_id)
+  (identifier, p) => bindContext(deleteCroak)(identifier)(p.croak_id)
 );
 
 export type FetchAPI = (thread: number) => Promise<ResponseType>;

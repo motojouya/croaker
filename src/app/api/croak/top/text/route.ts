@@ -15,7 +15,7 @@ const bodySchema = {
 export const POST = getBodyHandler(
   null,
   bodySchema,
-  (p, b) => bindContext(postTextCroak)(b.contents)
+  (identifier, p, b) => bindContext(postTextCroak)(identifier)(b.contents)
 );
 
 export type FetchAPI = (contents: string) => Promise<ResponseType>;

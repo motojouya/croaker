@@ -5,14 +5,14 @@ import { read, create } from '@/database/crud';
 import { getCroakerUser } from '@/database/query/getCroakerUser';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
 import { getLocal } from '@/lib/io/local';
-import { Identifier, AuthorityError } from '@/domain/authorize';
+import { Identifier, AuthorityError, justLoginUser } from '@/domain/authorize';
 import { InvalidArgumentsError } from '@/lib/base/validation';
 import { trimName, trimDescription } from '@/domain/text';
 
 export type FunctionResult = Omit<CroakerTable, 'user_id'> | InvalidArgumentsError;
 
 const createCroakerContext = {
-  db: () => getDatabase(null, { read, create, getCroakerUser }),
+  db: () => getDatabase({ read, getCroakerUser }, { read, create }),
   local: getLocal,
 } as const;
 
@@ -22,34 +22,33 @@ export type CreateCroaker = ContextFullFunction<
 >;
 export const createCroaker: CreateCroaker = ({ db, local }) => (identifier) => async (name, description, formAgreement) => {
 
-  if (identifier.type === 'anonymous') {
-    return new AuthorityError(null, 'login', 'ログインしてください');
+  const trimedName = trimName(name);
+  if (trimedName instanceof InvalidArgumentsError) {
+    return trimedName;
+  }
+
+  const trimedDescription = trimDescription(description);
+  if (trimedDescription instanceof InvalidArgumentsError) {
+    return trimedDescription;
   }
 
   return db.transact(async (trx) => {
 
-    const croaker = await trx.getCroakerUser(identifier.user_id);
-    if (croaker) {
-      return new InvalidArgumentsError('croaker', croaker, 'すでに登録済みです');
+    const userId = await justLoginUser(identifier, trx.getCroakerUser);
+    if (
+      userId instanceof AuthorityError ||
+      userId instanceof InvalidArgumentsError
+    ) {
+      return userId;
     }
 
     const defaultRole = await getDefaultRole(trx);
 
-    const trimedName = trimName(name);
-    if (trimedName instanceof InvalidArgumentsError) {
-      return trimedName;
-    }
-
-    const trimedDescription = trimDescription(description);
-    if (trimedDescription instanceof InvalidArgumentsError) {
-      return trimedDescription;
-    }
-
-    const croakId = await getCroakerId(trx, local);
+    const croakerId = await getCroakerId(trx, local);
 
     const croaker = await trx.create('croaker', {
-      user_id: user_id,
-      croak_id: croakId,
+      user_id: userId,
+      croaker_id: croakerId,
       name: trimedName,
       description: trimedDescription,
       status: CROAKER_STATUS_ACTIVE,
@@ -57,7 +56,7 @@ export const createCroaker: CreateCroaker = ({ db, local }) => (identifier) => a
       form_agreement: !!formAgreement,
     });
 
-    const { 'user_id', ...rest } = croaker;
+    const { user_id, ...rest } = croaker;
     return rest;
   });
 };

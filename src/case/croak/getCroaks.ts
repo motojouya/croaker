@@ -4,6 +4,7 @@ import { search } from '@/database/query/search';
 import { thread } from '@/database/query/thread';
 import { Storage } from '@/lib/io/fileStorage';
 import { Context, ContextFullFunction, setContext } from '@/lib/base/context';
+import { Identifier } from '@/authorization/base';
 
 export type Resource = {
   name: string;
@@ -107,10 +108,11 @@ const getTopCroakContext = {
 
 export type GetTopCroak = ContextFullFunction<
   typeof getTopCroakContext,
-  (reverse?: boolean, offsetCursor?: number) => Promise<FunctionResult>
+  (identifier: Identifier) => (reverse?: boolean, offsetCursor?: number) => Promise<FunctionResult>
 >;
 export const getTopCroaks: GetTopCroak =
   ({ storage, db }) =>
+  (identifier) =>
   (reverse = false, offsetCursor = 0) =>
   getCroaks(storage, () => db.top(reverse, offsetCursor, DISPLAY_LIMIT + 1));
 
@@ -126,10 +128,11 @@ const getThreadCroaksContext = {
 
 export type GetThreadCroaks = ContextFullFunction<
   typeof getThreadCroaksContext,
-  (threadId: number, reverse?: boolean, offsetCursor?: number) => Promise<FunctionResult>
+  (identifier: Identifier) => (threadId: number, reverse?: boolean, offsetCursor?: number) => Promise<FunctionResult>
 >;
 export const getThreadCroaks: GetThreadCroaks =
   ({ storage, db }) =>
+  (identifier) =>
   (threadId, reverse = false, offsetCursor = 0) =>
   getCroaks(storage, () => db.thread(threadId, reverse, offsetCursor, DISPLAY_LIMIT + 1));
 
@@ -145,10 +148,11 @@ const searchCroaksContext = {
 
 export type SearchCroaks = ContextFullFunction<
   typeof searchCroaksContext,
-  (text: number, reverse?: boolean, offsetCursor?: number) => Promise<FunctionResult>
+  (identifier: Identifier) => (text: number, reverse?: boolean, offsetCursor?: number) => Promise<FunctionResult>
 >;
 export const searchCroaks: SearchCroaks =
   ({ storage, db }) =>
+  (identifier) =>
   (text, reverse = false, offsetCursor = 0) =>
   getCroaks(storage, () => db.search(text, reverse, offsetCursor, DISPLAY_LIMIT + 1));
 

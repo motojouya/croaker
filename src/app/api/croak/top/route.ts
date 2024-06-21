@@ -16,7 +16,7 @@ const querySchema = {
 export const GET = getQueryHandler(
   null,
   querySchema,
-  (p, q) => bindContext(getTopCroaks)(q.reverse, q.offset_cursor)
+  (identifier, p, q) => bindContext(getTopCroaks)(identifier)(q.reverse, q.offset_cursor)
 );
 
 export type FetchAPI = (reverse: boolean, offsetCursor?: number) => Promise<ResponseType>;

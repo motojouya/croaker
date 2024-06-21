@@ -1,7 +1,5 @@
-import { getSession } from '@/lib/session';
 import { getDatabase } from '@/lib/database/base';
 import { Croak } from '@/database/query/croak';
-import { read } from '@/database/query/base';
 import { getLastCroak } from '@/database/query/getLastCroak';
 import { createFileCroak } from '@/database/command/createFileCroak';
 import { STORAGE_TYPE_GCS } from '@/database/type/croak';
@@ -9,13 +7,15 @@ import { InvalidArgumentsError } from '@/lib/base/validation';
 import { getImageFile } from '@/lib/io/image';
 import { getStorage, FileError } from '@/lib/io/fileStorage';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
-import {
-  AuthorityError,
-  authorizeMutation,
-  authorizePostCroak,
-  authorizePostFile,
-} from '@/domain/authorize';
 import { getLocal } from '@/lib/io/local';
+import { Identifier, AuthorityError, authorizeCroaker } from '@/authorization/base';
+import { getCroakerUser } from '@/database/getCroakerUser';
+import { AUTHORIZE_FORM_AGREEMENT } from '@/authorization/validation/formAgreement';
+import { AUTHORIZE_BANNED } from '@/authorization/validation/banned';
+import { getAuthorizePostCroak } from '@/authorization/validation/postCroak';
+import { AUTHORIZE_POST_FILE } from '@/authorization/validation/postFile';
+import { trimContents } from '@/domain/text/contents';
+import { validateId } from '@/domain/id';
 
 // export type PostFile = ContextFullFunction<
 //   {
@@ -52,8 +52,7 @@ export type FunctionResult =
   | ImageFormatError;
 
 const postFileContext = {
-  db: () => getDatabase({ read, getLastCroak }, { createFileCroak }),
-  session: getSession,
+  db: () => getDatabase({ getCroakerUser, getLastCroak }, { createFileCroak }),
   storage: getStorage,
   imageFile: getImageFile,
   local: getLocal,
@@ -61,40 +60,26 @@ const postFileContext = {
 
 export type PostFile = ContextFullFunction<
   typeof postFileContext,
-  (file: File, thread?: number) => Promise<FunctionResult>
+  (identifier: Identifier) => (file: File, thread?: number) => Promise<FunctionResult>
 >;
 // TODO Fileにどういう情報が入ってるかよくわかっていない
-export const postFile: PostFile = ({ session, db, storage, local, imageFile }) => async (file, thread) => {
-
-  const actor = session.getActor();
+export const postFile: PostFile = ({ db, storage, local, imageFile }) => (identifier) => async (file, thread) => {
 
   if (!file) {
     return null;
   }
 
-  if (thread && thread < 1) {
-    return new InvalidArgumentsError('thread', thread, 'threadは1以上の整数です');
+  let validThread = thread;
+  if (validThread) {
+    validThread = validateId(thread, 'thread');
+    if (validThread instanceof InvalidArgumentsError) {
+      return validThread;
+    }
   }
 
-  const authorizeMutationErr = authorizeMutation(actor);
-  if (authorizeMutationErr) {
-    return authorizeMutationErr;
-  }
-
-  const actorAuthority = await db.read('role', { role_name: actor.role_name });
-  if (!actorAuthority) {
-    throw new Error('user role is not assigned!');
-  }
-
-  const lastCroak = await db.getLastCroak(actor.croaker_identifier);
-  const authorizePostCroakErr = authorizePostCroak(actor, actorAuthority, lastCroak, local.now(), !!thread);
-  if (authorizePostCroakErr) {
-    return authorizePostCroakErr;
-  }
-
-  const authorizePostFileErr = authorizePostFile(actor, actorAuthority);
-  if (authorizePostFileErr) {
-    return authorizePostFileErr;
+  const croaker = await getCroaker(identifier, !!validThread, local, db);
+  if (croaker instanceof AuthorityError) {
+    return croaker;
   }
 
   const uploadFilePath = await imageFile.convert(file.name);
@@ -113,7 +98,7 @@ export const postFile: PostFile = ({ session, db, storage, local, imageFile }) =
   const createCroak = {
     user_id: actor.user_id,
     contents: null,
-    thread: thread,
+    thread: validThread,
   };
   const createFile = {
     storage_type: STORAGE_TYPE_GCS,
@@ -129,15 +114,10 @@ export const postFile: PostFile = ({ session, db, storage, local, imageFile }) =
     return fileUrl;
   }
 
-  const { coak_id, contents, thread, posted_date, files, } = croak;
-  const { croaker_identifier, croaker_name, } = actor;
+  const { files, ...rest } = croak;
   return {
-    coak_id,
-    contents,
-    thread,
-    posted_date,
-    croaker_identifier,
-    croaker_name,
+    ...rest,
+    croaker_name: croaker.name,
     files: files.map(file => {
       name: file.name,
       url: fileUrl,
@@ -147,3 +127,26 @@ export const postFile: PostFile = ({ session, db, storage, local, imageFile }) =
 };
 
 setContext(postFile, postFileContext);
+
+type ReadableDB = {
+  getCroakerUser: ReturnType<typeof getCroakerUser>,
+  getLastCroak: ReturnType<typeof getLastCroak>,
+};
+type GetCroaker = (identifier: Identifier, isThread: boolean, local: Local, db: ReadableDB) => Promise<Croaker | AuthorityError>;
+const getCroaker: GetCroaker = async (identifier, isThread, local, db) => {
+
+  const authorizePostCroak = getAuthorizePostCroak(
+    isThread,
+    local.now,
+    async (croaker_id) => {
+      const lastCroak = await db.getLastCroak(croaker_id);
+      return lastCroak ? lastCroak.posted_date : null;
+    },
+  );
+
+  return await authorizeCroaker(
+    identifier,
+    db.getCroakerUser,
+    [AUTHORIZE_FORM_AGREEMENT, AUTHORIZE_BANNED, authorizePostCroak, AUTHORIZE_POST_FILE]
+  );
+};

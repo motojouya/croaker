@@ -4,7 +4,11 @@ import { Croak } from '@/database/query/croak';
 import { read, update } from '@/database/crud';
 // import { deleteCroak } from '@/database/command/deleteCroak';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
-import { AuthorityError, authorizeMutation } from '@/domain/authorize';
+import { Identifier, AuthorityError, authorizeCroaker } from '@/authorization/base';
+import { getCroakerUser } from '@/database/getCroakerUser';
+import { AUTHORIZE_FORM_AGREEMENT } from '@/authorization/validation/formAgreement';
+import { AUTHORIZE_BANNED } from '@/authorization/validation/banned';
+import { getAuthorizeDeleteOtherPost } from '@/authorization/validation/deleteOtherPost';
 
 // export type DeleteCroak = ContextFullFunction<
 //   {
@@ -20,37 +24,30 @@ import { AuthorityError, authorizeMutation } from '@/domain/authorize';
 export type FunctionResult = Croak | AuthorityError;
 
 const deleteCroakContext = {
-  db: () => getDatabase(null, { read, update }), // deleteCroakを使わない
-  session: getSession,
+  db: () => getDatabase(null, { getCroakerUser, read, update }), // deleteCroakを使わない
 } as const;
 
 export type DeleteCroak = ContextFullFunction<
   typeof deleteCroakContext,
-  (croakId: number) => Promise<FunctionResult>,
+  (identifier: Identifier) => (croakId: number) => Promise<FunctionResult>,
 >;
-export const deleteCroak: DeleteCroak = ({ session, db }) => async (croakId) => {
-
-  const actor = session.getActor();
-
-  const authorizeMutationErr = authorizeMutation(actor);
-  if (authorizeMutationErr) {
-    return authorizeMutationErr;
-  }
+export const deleteCroak: DeleteCroak = ({ db }) => (identifier) => async (croakId) => {
 
   return await db.transact(async (trx) => {
 
-    const actorAuthority = await trx.read('role', { role_name: actor.role_name });
-    if (!actorAuthority) {
-      throw new Error('user role is not assigned!');
-    }
-
-    const croak = await trx.read('croak', { croak_id: croakId });
-    if (!croak || !!croak.deleted_date) {
+    const croaks = await trx.read('croak', { croak_id: croakId });
+    if (croaks.length !== 1 || !!croaks[0].deleted_date) {
       return new RecordNotFoundError('croak', { croak_id: croakId }, '投稿がすでに存在しません');
     }
+    const croak = croaks[0];
 
-    if (!croak.user_id === actor.user_id && !actorAuthority.delete_other_post) {
-      return new AuthorityError(actor.croaker_identifier, 'delete_other_post', '自分以外の投稿を削除することはできません');
+    const croaker = await authorizeCroaker(
+      identifier,
+      trx.getCroakerUser,
+      [AUTHORIZE_FORM_AGREEMENT, AUTHORIZE_BANNED, getAuthorizeDeleteOtherPost(croak.croaker_id)]
+    );
+    if (croaker instanceof AuthorityError) {
+      return croaker;
     }
 
     //return await trx.deleteCroak(croakId);

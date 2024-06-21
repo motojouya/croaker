@@ -7,6 +7,9 @@ import { FormAgreement } from '@/authorization/validation/formAgreement';
 import { PostCroak } from '@/authorization/validation/postCroak';
 import { PostFile } from '@/authorization/validation/postFile';
 import { ShowOtherActivities } from '@/authorization/validation/showOtherActivities';
+import { DeleteOtherPost } from '@/authorization/validation/deleteOtherPost';
+
+import { InvalidArgumentsError } from '@/lib/base/validation';
 
 export type IdentifierAnonymous = { type: 'anonymous' };
 export type IdentifierUserId = { type: 'user_id', user_id: string };
@@ -29,27 +32,49 @@ export type ClientCroaker = ClientCroakerAnonymous | ClientCroakerLogined | Clie
 
 export type AuthorizeValidation = (croaker: Croaker) => undefined | AuthorityError;
 
+export type JustLoginUser = (
+  identifier: identifier
+  getCroaker: () => Promise<Croaker | null>
+) => Promise<string | AuthorityError | InvalidArgumentsError>;
+export const justLoginUser: JustLoginUser = async (identifier, getCroaker) => {
+
+  if (identifier.type === 'anonymous') {
+    return new AuthorityError(null, 'login', 'ログインしてください');
+  }
+  const userId = identifier.user_id;
+
+  const croaker = await getCroaker(userId);
+  if (croaker) {
+    return new InvalidArgumentsError('croaker', croaker, 'すでに登録済みです');
+  }
+
+  return userId;
+};
+
 export type Validation =
   | Banned
   | BanPower
   | FormAgreement
   | PostCroak
   | PostFile
-  | ShowOtherActivities;
+  | ShowOtherActivities
+  | DeleteOtherPost;
 
-export type Authorize = (
-  croaker?: Croaker,
-  validateRegisterd?: bool,
+export type AuthorizeCroaker = (
+  identifier: identifier
+  getCroaker: () => Promise<Croaker | null>
   additionals?: Validation[]
-) => Promise<undefined | AuthorityError>;
-export const authorize: Authorize = async (croaker, additionals) => {
+) => Promise<Croaker | AuthorityError>;
+export const authorizeCroaker: AuthorizeCroaker = async (identifier, getCroaker, additionals = []) => {
+
+  if (identifier.type === 'anonymous') {
+    return new AuthorityError(null, 'login', 'ログインしてください');
+  }
+
+  const croaker = await getCroaker(identifier.user_id);
 
   if (!croaker) {
     return new AuthorityError(null, 'register', '自身の情報の登録をお願いします');
-  }
-
-  if (!additionals) {
-    return;
   }
 
   for (const addition of additionals) {
@@ -62,6 +87,11 @@ export const authorize: Authorize = async (croaker, additionals) => {
         error = await validation(croaker, rest);
         break;
 
+      case 'delete_other_post':
+        const { validation, ...rest } = addition;
+        error = validation(croaker, rest);
+        break;
+
       default:
         error = addition.validation(croaker);
         break;
@@ -71,6 +101,8 @@ export const authorize: Authorize = async (croaker, additionals) => {
       return error;
     }
   }
+
+  return croaker;
 };
 
 export class AuthorityError extends HandleableError {

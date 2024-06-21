@@ -14,7 +14,7 @@ type PostCroakConfig = {
   type: 'post_croak',
   isThread: bool,
   getNow: () => Promise<Date>,
-  getLastCroakTime: () => Promise<Date | null>,
+  getLastCroakTime: (croaker_id: string) => Promise<Date | null>,
 };
 type AuthorizePostCroak = (
   croaker: Croaker,
@@ -30,9 +30,9 @@ const authorizePostCroak: AuthorizePostCroak = async (croaker, config) => {
     return new AuthorityError(croaker.croaker_id, 'post_thread', 'スレッド上にのみ投稿することができます');
   }
 
-  const lastCroakDate = await config.getLastCroak();
+  const lastCroakDate = await config.getLastCroak(croaker.croaker_id);
   if (lastCroakDate) {
-    const nowDate = await config.getNow();
+    const nowDate = config.getNow();
 
     const duration = getDuration(croaker.role.top_post_interval);
     const croakTimePassed = !!compareAsc(add(lastCroakDate, duration), nowDate);
@@ -51,7 +51,7 @@ export type PostCroak = PostCroakConfig & {
 export const GetAuthorizePostCroak = (
   isThread: bool,
   getNow: () => Promise<Date>,
-  getLastCroakTime: () => Promise<Date>
+  getLastCroakTime: (croaker_id: string) => Promise<Date | null>
 ) => PostCroak;
 export const getAuthorizePostCroak = (isThread, getNow, getLastCroakTime) => {
   return {

@@ -8,7 +8,7 @@ import { getLocal } from '@/lib/local';
 import {
   Identifier,
   AuthorityError,
-  authorize,
+  authorizeCroaker,
 } from '@/authorization/base';
 import { trimName, trimDescription } from '@/domain/text';
 
@@ -28,27 +28,21 @@ export type EditCroaker = ContextFullFunction<
 >;
 export const editCroaker: EditCroaker = ({ db }) => (identifier) => async (name, description, formAgreement) => {
 
-  if (identifier.type === 'anonymous') {
-    return new AuthorityError(null, 'login', 'ログインしてください');
+  const trimedName = trimName(name);
+  if (trimedName instanceof InvalidArgumentsError) {
+    return trimedName;
+  }
+
+  const trimedDescription = trimDescription(description);
+  if (trimedDescription instanceof InvalidArgumentsError) {
+    return trimedDescription;
   }
 
   return await db.transact(async (trx) => {
 
-    const croaker = await trx.getCroakerUser(identifier.user_id);
-
-    const authorizeErr = await authorize(croaker);
-    if (authorizeErr) {
-      return authorizeErr;
-    }
-
-    const trimedName = trimName(name);
-    if (trimedName instanceof InvalidArgumentsError) {
-      return trimedName;
-    }
-
-    const trimedDescription = trimDescription(description);
-    if (trimedDescription instanceof InvalidArgumentsError) {
-      return trimedDescription;
+    const croaker = await authorizeCroaker(identifier, trx.getCroakerUser);
+    if (croaker instanceof AuthorityError) {
+      return croaker;
     }
 
     const croakerResult = await trx.update('croaker', { croaker_id: croaker.croaker_id }, {

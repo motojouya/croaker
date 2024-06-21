@@ -16,7 +16,7 @@ export const POST = getFormHandler(
   pathSchema,
   null,
   'file',
-  (p, f, file) => bindContext(postFileCroak)(file, p.croak_id)
+  (identifier, p, f, file) => bindContext(postFileCroak)(identifier)(file, p.croak_id)
 );
 
 export type FetchAPI = (thread: number, file: File) => Promise<ResponseType>;

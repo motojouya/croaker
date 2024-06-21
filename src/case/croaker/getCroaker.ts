@@ -15,12 +15,10 @@ export type GetCroaker = ContextFullFunction<
   typeof getCroakerContext,
   (identifier: Identifier) => (croakerId: string) => Promise<FunctionResult>
 >;
-export const getCroaker: GetCroaker = ({ db }) => (identifier) => async (croakerId) => {
-  const croaker = await db.getCroaker(croaker_id);
-  if (!croaker) {
-    return null;
-  }
-  return croaker;
-};
+export const getCroaker: GetCroaker =
+  ({ db }) =>
+  (identifier) =>
+  (croakerId) =>
+  db.getCroaker(croakerId);
 
 setContext(getCroaker, getCroakerContext);

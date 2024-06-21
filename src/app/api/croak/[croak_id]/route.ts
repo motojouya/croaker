@@ -24,7 +24,7 @@ const querySchema = {
 export const GET = getQueryHandler(
   pathSchema,
   querySchema,
-  (p, q) => bindContext(getThreadCroaks)(p.croak_id, q.reverse, q.offset_cursor)
+  (identifier, p, q) => bindContext(getThreadCroaks)(identifier)(p.croak_id, q.reverse, q.offset_cursor)
 );
 
 export type FetchAPI = (croak_id: string, reverse: boolean, offsetCursor?: number) => Promise<ResponseType>;

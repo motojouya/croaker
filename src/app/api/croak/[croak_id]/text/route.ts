@@ -23,7 +23,7 @@ const bodySchema = {
 export const POST = getBodyHandler(
   pathSchema,
   bodySchema,
-  (p, b) => bindContext(postTextCroak)(b.contents, p.croak_id)
+  (identifier, p, b) => bindContext(postTextCroak)(identifier)(b.contents, p.croak_id)
 );
 
 export type FetchAPI = (thread: number, contents: string) => Promise<ResponseType>;
