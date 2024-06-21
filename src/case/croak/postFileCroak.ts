@@ -17,6 +17,12 @@ import { AUTHORIZE_POST_FILE } from '@/authorization/validation/postFile';
 import { trimContents } from '@/domain/text/contents';
 import { nullableThread } from '@/domain/id';
 
+import { pipe } from "fp-ts/function";
+import * as TE from 'fp-ts/TaskEither';
+// import { pipe } from "fp-ts/lib/function";
+// import * as TE from "fp-ts/lib/TaskEither";
+import { in, out } from '@/lib/base/fp/taskEither';
+
 // export type PostFile = ContextFullFunction<
 //   {
 //     session: Session,
@@ -84,7 +90,7 @@ export const postFile: PostFile = ({ db, storage, local, imageFile }) => (identi
     uploadFilePath instanceof ImageCommandError ||
     uploadFilePath instanceof ImageFormatError
   ) {
-    return converted;
+    return uploadFilePath;
   }
 
   const uploadedSource = await storage.uploadFile(uploadFilePath, file.extension);
@@ -92,21 +98,21 @@ export const postFile: PostFile = ({ db, storage, local, imageFile }) => (identi
     return uploadedSource;
   }
 
-  const createCroak = {
-    user_id: actor.user_id,
+  const croakData = {
+    croaker_id: croaker.croaker_id,
     contents: null,
     thread: nullableThread,
   };
-  const createFile = {
+  const fileData = {
     storage_type: STORAGE_TYPE_GCS,
     source: uploadedSource,
     name: file.name,
     content_type: file.type,
   };
 
-  const croak = await db.transact((trx) => trx.createFileCroak(createCroak, createFile));
+  const croak = await db.transact((trx) => trx.createFileCroak(croakData, fileData));
 
-  const fileUrl = storage.generatePreSignedUrl(uploadedSource);
+  const fileUrl = await storage.generatePreSignedUrl(uploadedSource);
   if (fileUrl instanceof FileError) {
     return fileUrl;
   }
@@ -124,6 +130,55 @@ export const postFile: PostFile = ({ db, storage, local, imageFile }) => (identi
 };
 
 setContext(postFile, postFileContext);
+
+export const postFileFP: PostFile = ({ db, storage, local, imageFile }) => (identifier) => async (file, thread) => {
+
+  // TODO 仕様がわからんので今は外側だが、ちゃんとpipeに組み込む
+  if (!file) {
+    return null;
+  }
+
+  return await pipe(
+    TE.Do,
+    TE.bind("nullableThread", inS(() => nullableId(thread, 'thread'))),
+    TE.bind("croaker", in(
+      ({ nullableThread }) => getCroaker(identifier, !!nullableThread, local, db)
+    )),
+    TE.bind("uploadFilePath", in(() => imageFile.convert(file.name))),
+    TE.bind("uploadedSource", in(
+      ({ uploadFilePath }) => storage.uploadFile(uploadFilePath, file.extension)
+    )),
+
+    TE.bind("croakData", inS(({ croaker, nullableThread }) => ({
+      croaker_id: croaker.croaker_id,
+      contents: null,
+      thread: nullableThread,
+    }))),
+    TE.bind("fileData", inS(({ uploadedSource }) => ({
+      storage_type: STORAGE_TYPE_GCS,
+      source: uploadedSource,
+      name: file.name,
+      content_type: file.type,
+    }))),
+    TE.bind("croak", in(({ croakData, fileData }) => db.transact((trx) => trx.createFileCroak(croakData, fileData)))),
+
+    TE.bind("fileUrl", in(({ uploadedSource }) => storage.generatePreSignedUrl(uploadedSource))),
+    out(({ croak, fileUrl, croaker, }) => {
+      const { files, ...rest } = croak;
+      return {
+        ...rest,
+        croaker_name: croaker.name,
+        files: files.map(file => {
+          name: file.name,
+          url: fileUrl,
+          content_type: file.content_type,
+        }),
+      };
+    }),
+  )();
+};
+
+setContext(postFileFP, postFileContext);
 
 type ReadableDB = {
   getCroakerUser: ReturnType<typeof getCroakerUser>,
