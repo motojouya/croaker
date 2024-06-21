@@ -4,14 +4,11 @@ import {
   LinkTable,
 } from '@/rdb/type/croak'
 
-export type ArgCroak = {
-  user_id: string;
-  contents: string;
+export type ArgCroak = Pick<CroakTable, 'croaker_id' | 'contents'> & {
   thread?: number;
-};
+}
 
-export type ArgLink = {
-  url: string;
+export type ArgLink = Pick<CroakTable, 'url'> & {
   type?: string;
   title?: string;
   image?: string;

@@ -3,7 +3,7 @@ import {
   CroakTable,
   LinkTable,
   FileTable,
-} from '@/rdb/type/croak'
+} from '@/database/type/croak'
 
 export type Link = LinkTable;
 export type File = FileTable;

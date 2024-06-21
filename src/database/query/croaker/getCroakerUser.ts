@@ -1,5 +1,5 @@
 import { Kysely } from 'kysely'
-import type { Croaker } from '@/database/quer/getCroaker';
+import { Croaker } from '@/database/query/croaker/croaker';
 
 export type GetCroakerUser = (db: Kysely) => (userId: string) => Promise<Croaker | null>;
 export const getCroakerUser: GetCroakerUser = (db) => async (userId) => {

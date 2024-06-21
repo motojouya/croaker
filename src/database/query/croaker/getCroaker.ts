@@ -1,25 +1,5 @@
 import { Kysely } from 'kysely'
-
-export type Role = {
-  name: string;
-  ban_power: boolean;
-  delete_other_post: boolean;
-  post: string;
-  post_file: boolean;
-  top_post_interval: number;
-  show_other_activities: boolean;
-};
-
-export type Croaker = {
-  croaker_id: string;
-  croaker_name: string;
-  description: string;
-  status: string;
-  form_agreement: boolean;
-  created_date: Date;
-  updated_date: Date;
-  role: Role;
-}
+import { Croaker } from '@/database/query/croaker/croaker';
 
 export type GetCroaker = (db: Kysely) => (croakerId: string) => Promise<Croaker | null>;
 export const getCroaker: GetCroaker = (db) => async (croakerId) => {

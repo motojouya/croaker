@@ -1,9 +1,9 @@
-import { Kysely, NotNull, Null } from 'kysely'
+import { Kysely, NotNull } from 'kysely'
 import { CROAKER_STATUS_ACTIVE } from '@/rdb/type/croak'
-import { CroakMini } from '@/rdb/query/croak';
+import { CroakSimple } from '@/rdb/query/croakSimple/croakSimple';
 
-export type RecentActivities = (db: Kysely) => (selfCroakerId: string, days: number) => Promise<CroakMini[]>;
-export const recentActivities: RecentActivities = (db) => async (selfCroakerId, days) => {
+export type RecentActivities = (db: Kysely) => (croakerId: string, days: number) => Promise<CroakSimple[]>;
+export const recentActivities: RecentActivities = (db) => async (croakerId, days) => {
   return await db
     .selectFrom('croak')
     .select([
@@ -37,7 +37,7 @@ export const recentActivities: RecentActivities = (db) => async (selfCroakerId, 
     .where('croak.posted_date', '>', '7 days ago') // TODO
     .where('croak.delete_date', NotNull)
     .where('croaker.status', '=', CROAKER_STATUS_ACTIVE)
-    .where('croaker.croaker_id', '<>', selfCroakerId)
+    .where('croaker.croaker_id', '<>', croakerId)
     .orderBy(['croak.croak_id desc'])
     .execute();
 };

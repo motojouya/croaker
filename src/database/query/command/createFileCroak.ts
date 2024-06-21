@@ -4,18 +4,12 @@ import {
   FileTable,
 } from '@/rdb/type/croak'
 
-export type ArgCroak = {
-  user_id: string;
-  contents: null;
+export type ArgCroak = Pick<CroakTable, 'croaker_id' | 'contents'> & {
   thread?: number;
-};
+}
 
-export type ArgFile = {
-  storage_type: string, // TODO STORAGE_TYPE_GCS
-  source: string,
-  name: string,
-  content_type: string;
-};
+// TODO STORAGE_TYPE_GCS
+export type ArgFile = Pick<FileTable, 'storage_type' | 'source' | 'name' | 'content_type'>;
 
 export type ReturnCroak = CroakTable & {
   files: FileTable[]
