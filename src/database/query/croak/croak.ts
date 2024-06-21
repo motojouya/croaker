@@ -7,15 +7,12 @@ import {
 
 export type Link = LinkTable;
 export type File = FileTable;
-export type Croak = Omit<CroakTable, 'user_id' | 'delete_date'> & {
+export type Croak = Omit<CroakTable, 'user_id'> & {
   has_thread: bool;
   croaker_name: string;
-  croaker_identifier: string;
   links: Link[];
   files: File[];
 };
-
-export type CroakMini = Omit<Croak, 'has_thread' | 'links' | 'files'>;
 
 exort type GetLinks = (db: Kysely) => (croakIds: number[]) => Promise<Link[]>;
 exort const getLinks: GetLinks = (db) => async (croakIds) => {
