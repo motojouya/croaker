@@ -38,11 +38,13 @@ export type CroakUpdate = Updateable<CroakTable>
 
 export interface LinkTable {
   croak_id: number;
-  url: string;
-  type: string;
+  source: string;
+  url: string | null;
+  type: string | null;
   title: string | null;
   image: string | null;
-  summary: string | null;
+  description: string | null;
+  site_name: string | null;
   created_date: Date;
 }
 export type Link = Selectable<LinkTable>

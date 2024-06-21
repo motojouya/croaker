@@ -1,11 +1,13 @@
 import { JSDOM } from 'jsdom';
 
 export type Ogp = {
+  source: string,
   url?: string,
-  title?: string,
-  image?: string,
-  summary?: string,
   type?: string;
+  title?: string,
+  description?: string,
+  site_name?: string,
+  image?: string,
 };
 
 type GetOgp = (dom: JSDOM) => Record<string, string>;
@@ -27,58 +29,55 @@ const getOgp: GetOgp = (dom) => {
     }, {});
 }
 
-type FetchOgp = (links: string[]) => Promise<Ogp[]>;
-const fetchOgp: FetchOgp = async (links) => {
+type FetchOgp = (link: string) => Promise<Ogp>;
+const fetchOgp: FetchOgp = async (link) => {
 
-  const requests = links.map(link => new Promise(async (resolve) => {
-    try {
-      const res = fetch(link);
-      if (!res) {
-        resolve(null);
-      }
-
-      const contentType = res.headers.get('Content-Type');
-      if (!contentType) {
-        resolve(null);
-      }
-
-      if (contentType.startWith('image/')) {
-        resolve({ image: link, source: link, type: contentType });
-      }
-
-      if (!contentType.startWith('text/')) {
-        resolve(null);
-      }
-
-      const dom = new JSDOM(res.data);
-      if (!dom) {
-        resolve(null);
-      }
-
-      const ogp = getOgp(dom);
-      if (!ogp) {
-        resolve(null);
-      }
-
-      resolve({
-        ...ogp,
-        type: contentType,
-        source: link,
-      });
-
-    } catch(e) {
-      resolve(null);
+  try {
+    const res = fetch(link);
+    if (!res) {
+      return { source: link };
     }
-  }));
 
-  const results = await Promise.allSettled(requests);
-  return results.filter(result => !!result).map(({ title, image, description, type, source }) => ({
-    title,
-    image,
-    type,
-    summary: description,
-    url: source,
-  }));
+    const contentType = res.headers.get('Content-Type');
+    if (!contentType) {
+      return { source: link };
+    }
+
+    if (contentType.startWith('image/')) {
+      return {
+        source: link,
+        url: link,
+        type: contentType,
+        image: link,
+      };
+    }
+
+    if (!contentType.startWith('text/')) {
+      return { source: link };
+    }
+
+    const dom = new JSDOM(res.data);
+    if (!dom) {
+      return { source: link };
+    }
+
+    const ogp = getOgp(dom);
+    if (!ogp) {
+      return { source: link };
+    }
+
+    const { url, type, ...rest } = ogp;
+    return {
+      ...rest,
+      type: type || contentType,
+      url: url || link,
+      summary: description,
+      source: link,
+    };
+
+  } catch(e) {
+    return { source: link };
+  }
 };
 
 export type Fetcher = {

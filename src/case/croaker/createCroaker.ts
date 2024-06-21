@@ -44,7 +44,7 @@ export const createCroaker: CreateCroaker = ({ db, local }) => (identifier) => a
       return userId;
     }
 
-    const defaultRole = await getDefaultRole(trx);
+    const defaultRoleId = await getDefaultRoleId(trx);
 
     const croakerId = await getCroakerId(trx, local);
 
@@ -54,7 +54,7 @@ export const createCroaker: CreateCroaker = ({ db, local }) => (identifier) => a
       name: trimedName,
       description: trimedDescription,
       status: CROAKER_STATUS_ACTIVE,
-      role_id: defaultRole.id,
+      role_id: defaultRoleId,
       form_agreement: !!formAgreement,
     });
 
@@ -65,8 +65,8 @@ export const createCroaker: CreateCroaker = ({ db, local }) => (identifier) => a
 
 type ReadableDB = { read: ReturnType<typeof read> };
 
-type GetDefaultRole = (db: ReadableDB) => Promise<RoleTable>
-const getDefaultRole: GetDefaultRole = (db) => {
+type GetDefaultRoleId = (db: ReadableDB) => Promise<number>
+const getDefaultRoleId: GetDefaultRoleId = (db) => {
 
   const configurations = db.read('configuration', {});
   if (configurations.length !== 1) {
@@ -74,11 +74,7 @@ const getDefaultRole: GetDefaultRole = (db) => {
   }
   const configuration = configuration[0];
 
-  const roles = db.read('role', { role_id: configuration.default_role_id });
-  if (roles.length !== 1) {
-    throw new Error('default role should be single result!');
-  }
-  return role[0];
+  return configuration.default_role_id;
 };
 
 type GetCroakerId = (db: ReadableDB, local: Local) => Promise<string>

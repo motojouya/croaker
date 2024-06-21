@@ -10,7 +10,7 @@ import {
   charCount,
   getLinks,
 } from '@/domain/text';
-import { getFetcher } from '@/lib/io/link';
+import { getFetcher, Ogp } from '@/lib/io/link';
 import { getLocal } from '@/lib/io/local';
 import { Identifier, AuthorityError, authorizeCroaker } from '@/authorization/base';
 import { getCroakerUser } from '@/database/getCroakerUser';
@@ -74,22 +74,15 @@ export const postCroak: PostCroak = ({ db, local, fetcher }) => (identifier) => 
     return croaker;
   }
 
-  const ogps = await fetcher.fetchOgp(getLinks(trimedContents));
-
   const createCroak = {
     croaker_id: croaker.croaker_id,
     contents: trimedContents,
     thread: nullableThread,
   };
-  const createLinks = ogps.map(ogp => ({
-    url: ogp.url,
-    type: ogp.type,
-    title: ogp.title,
-    image: ogp.image,
-    summary: ogp.summary,
-  }));
 
-  const croak = await db.transact((trx) => trx.createTextCroak(createCroak, createLinks));
+  const links = await getOgps(fetcher, trimedContents);
+
+  const croak = await db.transact((trx) => trx.createTextCroak(createCroak, links));
 
   return {
     ...croak,
@@ -120,4 +113,14 @@ const getCroaker: GetCroaker = async (identifier, isThread, local, db) => {
     db.getCroakerUser,
     [AUTHORIZE_FORM_AGREEMENT, AUTHORIZE_BANNED, authorizePostCroak]
   );
+};
+
+type GetOgps = (fetcher: Fetcher, trimedContents: string) => Promise<Ogp[]>;
+const getOgps: GetOgps = async (fetcher, trimedContents) => {
+
+  const links = getLinks(trimedContents);
+
+  const requests = links.map(link => fetcher.fetchOgp(link));
+
+  return await Promise.allSettled(requests);
 };

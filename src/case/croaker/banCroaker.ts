@@ -45,14 +45,9 @@ export const banCroaker: BanCroaker = ({ db }) => (identifier) => async (croaker
 
   return await db.transact(async (trx) => {
 
-    const croakers = await trx.read('croaker', { croaker_id: croakerId });
-    if (croakers !== 1) {
-      return new RecordNotFoundError('croaker', { croaker_id: croakerId }, '存在しないユーザです');
-    }
-    const croaker = croakers[0];
-
-    if (croaker.status === CROAKER_STATUS_BANNED) {
-      return new RecordNotFoundError('croaker', { croaker_id: croakerId }, 'すでに停止されたユーザです');
+    const croaker = await getCroaker(trx, croakerId);
+    if (croaker instanceof RecordNotFoundError) {
+      return croaker;
     }
 
     const croakerUpdated = await trx.update('croaker', { croaker_id: croakerId }, { status: CROAKER_STATUS_BANNED });
@@ -66,3 +61,22 @@ export const banCroaker: BanCroaker = ({ db }) => (identifier) => async (croaker
 };
 
 setContext(banCroaker, banCroakerContext);
+
+type ReadableDB = { read: ReturnType<typeof read> };
+type GetCroaker = (db: ReadableDB, croakerId: string) => Promise<CroakerTable | RecordNotFoundError>
+const getCroaker: GetCroaker = (db, croakerId) => {
+
+    const croakers = await trx.read('croaker', { croaker_id: croakerId });
+    if (croakers !== 1) {
+      return new RecordNotFoundError('croaker', { croaker_id: croakerId }, '存在しないユーザです');
+    }
+
+    const croaker = croakers[0];
+
+    if (croaker.status === CROAKER_STATUS_BANNED) {
+      return new RecordNotFoundError('croaker', { croaker_id: croakerId }, 'すでに停止されたユーザです');
+    }
+
+    return croaker;
+};
+
