@@ -16,13 +16,14 @@ export type FunctionResult = Omit<CroakerTable, 'user_id'> | InvalidArgumentsErr
 const createCroakerContext = {
   db: () => getDatabase({ read, getCroakerUser }, { read, create }),
   local: getLocal,
+  f: () => ({ getCroakerIdRandom }),
 } as const;
 
 export type CreateCroaker = ContextFullFunction<
   typeof createCroakerContext,
   (identifier: Identifier) => (name: string, description: string, formAgreement?: boolean) => Promise<FunctionResult>
 >;
-export const createCroaker: CreateCroaker = ({ db, local }) => (identifier) => async (name, description, formAgreement) => {
+export const createCroaker: CreateCroaker = ({ db, local, f }) => (identifier) => async (name, description, formAgreement) => {
 
   const trimedName = trimName(name);
   if (trimedName instanceof InvalidArgumentsError) {
@@ -46,7 +47,7 @@ export const createCroaker: CreateCroaker = ({ db, local }) => (identifier) => a
 
     const defaultRoleId = await getDefaultRoleId(trx);
 
-    const croakerId = await getCroakerId(trx, local);
+    const croakerId = await getCroakerId(trx, local, f);
 
     const croaker = await trx.create('croaker', {
       user_id: userId,
@@ -64,6 +65,7 @@ export const createCroaker: CreateCroaker = ({ db, local }) => (identifier) => a
 };
 
 type ReadableDB = { read: ReturnType<typeof read> };
+type Func = { getCroakerIdRandom: typeof getCroakerIdRandom };
 
 type GetDefaultRoleId = (db: ReadableDB) => Promise<number>
 const getDefaultRoleId: GetDefaultRoleId = (db) => {
@@ -77,13 +79,13 @@ const getDefaultRoleId: GetDefaultRoleId = (db) => {
   return configuration.default_role_id;
 };
 
-type GetCroakerId = (db: ReadableDB, local: Local) => Promise<string>
-const getCroakerId: GetCroakerId = async (db, local) => {
+type GetCroakerId = (db: ReadableDB, local: Local, f: Func) => Promise<string>
+const getCroakerId: GetCroakerId = async (db, local, f) => {
 
   let tryCount = 0;
   while (tryCount < 10) {
 
-    const croakerId = getCroakerIdRandom(local.random);
+    const croakerId = f.getCroakerIdRandom(local.random);
     const croakers = await db.read('croaker', { croaker_id: croakerId });
 
     if (croakers.length === 0) {
