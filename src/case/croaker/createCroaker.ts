@@ -7,7 +7,9 @@ import { ContextFullFunction, setContext } from '@/lib/base/context';
 import { getLocal } from '@/lib/io/local';
 import { Identifier, AuthorityError, justLoginUser } from '@/domain/authorize';
 import { InvalidArgumentsError } from '@/lib/base/validation';
-import { trimName, trimDescription } from '@/domain/text';
+import { getCroakerId as getCroakerIdRandom } from '@/domain/id';
+import { trimName } from '@/domain/text/name';
+import { trimDescription } from '@/domain/text/description';
 
 export type FunctionResult = Omit<CroakerTable, 'user_id'> | InvalidArgumentsError;
 
@@ -85,7 +87,7 @@ const getCroakerId: GetCroakerId = async (db, local) => {
   let tryCount = 0;
   while (tryCount < 10) {
 
-    const croakerId = local.getIdentifier();
+    const croakerId = getCroakerIdRandom(local.random);
     const croakers = await db.read('croaker', { croaker_id: croakerId });
 
     if (croakers.length === 0) {

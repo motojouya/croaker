@@ -5,30 +5,17 @@ import {
 } from '@/rdb/type/croak'
 import {
   Croak,
-  getLinks,
-} from '@/rdb/query/croak';
+  CroakSimple,
+  complementCroak,
+} from '@/database/query/croak/croak';
 
 export type Top = (db: Kysely) => (reverse: boolean, offsetCursor: number, limit: number) => Promise<Croak[]>;
-export const top: Top = (db) => async (reverse, offsetCursor, limit) => {
+export const top: Top =
+  (db) =>
+  (reverse, offsetCursor, limit) =>
+  complementCroak(db, () => getCroaks(db)(reverse, offsetCursor, limit));
 
-  const croaks = await getCroaks(db)(reverse, offsetCursor, limit);
-
-  const croakIds = croaks.map(croak => croak.croak_id);
-
-  const links = await getLinks(db)(croakIds);
-  const croakIdLinkDic = Object.groupBy('croak_id', links);
-
-  const files = await getFiles(db)(croakIds);
-  const croakIdFileDic = Object.groupBy('croak_id', files);
-
-  return croaks.map(croak => ({
-    ...croak,
-    links: croakIdLinkDic[croak.id] || [],
-    files: croakIdFileDic[croak.id] || [],
-  }));
-}
-
-type GetCroaks = (db: Kysely) => (reverse: boolean, offsetCursor: number, limit: number) => Promise<Omit<Croak, 'links' | 'files'>[]>;
+type GetCroaks = (db: Kysely) => (reverse: boolean, offsetCursor: number, limit: number) => Promise<CroakSimple[]>;
 const getCroaks: GetCroaks = (db) => async (reverse, offsetCursor, limit) => {
   return await db
     .selectFrom('croak')

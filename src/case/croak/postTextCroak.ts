@@ -1,4 +1,3 @@
-import { getSession } from '@/lib/session';
 import { getDatabase } from '@/lib/database/base';
 import { Croak } from '@/database/query/croak';
 import { getLastCroak } from '@/database/query/getLastCroak';
@@ -19,7 +18,7 @@ import { AUTHORIZE_FORM_AGREEMENT } from '@/authorization/validation/formAgreeme
 import { AUTHORIZE_BANNED } from '@/authorization/validation/banned';
 import { getAuthorizePostCroak } from '@/authorization/validation/postCroak';
 import { trimContents } from '@/domain/text/contents';
-import { validateId } from '@/domain/id';
+import { nullableThread } from '@/domain/id';
 
 // export type PostCroak = ContextFullFunction<
 //   {
@@ -50,7 +49,6 @@ export type FunctionResult =
 
 const postCroakContext = {
   db: () => getDatabase({ getCroakerUser, getLastCroak }, { createTextCroak }),
-  session: getSession,
   fetcher: getFetcher,
   local: getLocal,
 } as const;
@@ -66,15 +64,12 @@ export const postCroak: PostCroak = ({ db, local, fetcher }) => (identifier) => 
     return trimedContents;
   }
 
-  let validThread = thread;
-  if (validThread) {
-    validThread = validateId(thread, 'thread');
-    if (validThread instanceof InvalidArgumentsError) {
-      return validThread;
-    }
+  const nullableThread = nullableId(thread, 'thread');
+  if (nullableThread instanceof InvalidArgumentsError) {
+    return nullableThread;
   }
 
-  const croaker = await getCroaker(identifier, !!validThread, local, db);
+  const croaker = await getCroaker(identifier, !!nullableThread, local, db);
   if (croaker instanceof AuthorityError) {
     return croaker;
   }
@@ -84,7 +79,7 @@ export const postCroak: PostCroak = ({ db, local, fetcher }) => (identifier) => 
   const createCroak = {
     croaker_id: croaker.croaker_id,
     contents: trimedContents,
-    thread: validThread,
+    thread: nullableThread,
   };
   const createLinks = ogps.map(ogp => ({
     url: ogp.url,

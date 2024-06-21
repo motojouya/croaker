@@ -2,33 +2,20 @@ import { Kysely, NotNull, Null } from 'kysely'
 import {
   CROAKER_STATUS_ACTIVE,
   CROAKER_STATUS_BANNED,
-} from '@/rdb/type/croak'
+} from '@/database/type/croak'
 import {
   Croak,
-  getLinks,
-} from '@/rdb/query/croak';
+  CroakSimple,
+  complementCroak,
+} from '@/database/query/croak/croak';
 
 export type Search = (db: Kysely) => (search: string, reverse: boolean, offsetCursor: number, limit: number) => Promise<Croak[]>;
-export const search: Search = (db) => async (search, reverse, offsetCursor, limit) => {
+export const search: Search =
+  (db) =>
+  (search, reverse, offsetCursor, limit) =>
+  complementCroak(db, () => getCroaks(db)(search, reverse, offsetCursor, limit));
 
-  const croaks = await getCroaks(db)(search, reverse, offsetCursor, limit);
-
-  const croakIds = croaks.map(croak => croak.croak_id);
-
-  const links = await getLinks(db)(croakIds);
-  const croakIdLinkDic = Object.groupBy('croak_id', links);
-
-  const files = await getFiles(db)(croakIds);
-  const croakIdFileDic = Object.groupBy('croak_id', files);
-
-  return croaks.map(croak => ({
-    ...croak,
-    links: croakIdLinkDic[croak.id] || [],
-    files: croakIdFileDic[croak.id] || [],
-  }));
-}
-
-type GetCroaks = (db: Kysely) => (search: string, reverse: boolean, offsetCursor: number, limit: number) => Promise<Omit<Croak, 'links' | 'files'>[]>;
+type GetCroaks = (db: Kysely) => (search: string, reverse: boolean, offsetCursor: number, limit: number) => Promise<CroakSimple[]>;
 const getCroaks: GetCroaks = (db) => async (search, reverse, offsetCursor, limit) => {
   return await db
     .selectFrom('croak')

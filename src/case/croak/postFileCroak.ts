@@ -15,7 +15,7 @@ import { AUTHORIZE_BANNED } from '@/authorization/validation/banned';
 import { getAuthorizePostCroak } from '@/authorization/validation/postCroak';
 import { AUTHORIZE_POST_FILE } from '@/authorization/validation/postFile';
 import { trimContents } from '@/domain/text/contents';
-import { validateId } from '@/domain/id';
+import { nullableThread } from '@/domain/id';
 
 // export type PostFile = ContextFullFunction<
 //   {
@@ -69,15 +69,12 @@ export const postFile: PostFile = ({ db, storage, local, imageFile }) => (identi
     return null;
   }
 
-  let validThread = thread;
-  if (validThread) {
-    validThread = validateId(thread, 'thread');
-    if (validThread instanceof InvalidArgumentsError) {
-      return validThread;
-    }
+  const nullableThread = nullableId(thread, 'thread');
+  if (nullableThread instanceof InvalidArgumentsError) {
+    return nullableThread;
   }
 
-  const croaker = await getCroaker(identifier, !!validThread, local, db);
+  const croaker = await getCroaker(identifier, !!nullableThread, local, db);
   if (croaker instanceof AuthorityError) {
     return croaker;
   }
@@ -98,7 +95,7 @@ export const postFile: PostFile = ({ db, storage, local, imageFile }) => (identi
   const createCroak = {
     user_id: actor.user_id,
     contents: null,
-    thread: validThread,
+    thread: nullableThread,
   };
   const createFile = {
     storage_type: STORAGE_TYPE_GCS,

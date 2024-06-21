@@ -10,7 +10,8 @@ import {
   AuthorityError,
   authorizeCroaker,
 } from '@/authorization/base';
-import { trimName, trimDescription } from '@/domain/text';
+import { trimName } from '@/domain/text/name';
+import { trimDescription } from '@/domain/text/description';
 
 export type FunctionResult =
     | Omit<CroakerTable, 'user_id'>
