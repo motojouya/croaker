@@ -18,10 +18,7 @@ import { trimContents } from '@/domain/text/contents';
 import { nullableThread } from '@/domain/id';
 
 import { pipe } from "fp-ts/function";
-import * as TE from 'fp-ts/TaskEither';
-// import { pipe } from "fp-ts/lib/function";
-// import * as TE from "fp-ts/lib/TaskEither";
-import { in, out } from '@/lib/base/fp/taskEither';
+import { Do, bind, bindA, map, toUnion } from '@/lib/base/fp/taskEither';
 
 // export type PostFile = ContextFullFunction<
 //   {
@@ -131,39 +128,37 @@ export const postFile: PostFile = ({ db, storage, local, imageFile }) => (identi
 
 setContext(postFile, postFileContext);
 
-export const postFileFP: PostFile = ({ db, storage, local, imageFile }) => (identifier) => async (file, thread) => {
+// TODO 仕様がわからんので外してるが、ちゃんとpipeに組み込む
+// if (!file) {
+//   return null;
+// }
+export const postFileFP: PostFile =
+  ({ db, storage, local, imageFile }) =>
+  (identifier) =>
+  async (file, thread) =>
+  pipe(
+    Do,
+    bind("nullableThread", () => nullableId(thread, 'thread')),
+    bindA("croaker", ({ nullableThread }) => getCroaker(identifier, !!nullableThread, local, db)),
 
-  // TODO 仕様がわからんので今は外側だが、ちゃんとpipeに組み込む
-  if (!file) {
-    return null;
-  }
+    bindA("uploadFilePath", () => imageFile.convert(file.name)),
+    bindA("uploadedSource", ({ uploadFilePath }) => storage.uploadFile(uploadFilePath, file.extension)),
 
-  return await pipe(
-    TE.Do,
-    TE.bind("nullableThread", inS(() => nullableId(thread, 'thread'))),
-    TE.bind("croaker", in(
-      ({ nullableThread }) => getCroaker(identifier, !!nullableThread, local, db)
-    )),
-    TE.bind("uploadFilePath", in(() => imageFile.convert(file.name))),
-    TE.bind("uploadedSource", in(
-      ({ uploadFilePath }) => storage.uploadFile(uploadFilePath, file.extension)
-    )),
-
-    TE.bind("croakData", inS(({ croaker, nullableThread }) => ({
+    bind("croakData", ({ croaker, nullableThread }) => ({
       croaker_id: croaker.croaker_id,
       contents: null,
       thread: nullableThread,
-    }))),
-    TE.bind("fileData", inS(({ uploadedSource }) => ({
+    })),
+    bind("fileData", ({ uploadedSource }) => ({
       storage_type: STORAGE_TYPE_GCS,
       source: uploadedSource,
       name: file.name,
       content_type: file.type,
-    }))),
-    TE.bind("croak", in(({ croakData, fileData }) => db.transact((trx) => trx.createFileCroak(croakData, fileData)))),
+    })),
+    bindA("croak", ({ croakData, fileData }) => db.transact((trx) => trx.createFileCroak(croakData, fileData))),
 
-    TE.bind("fileUrl", in(({ uploadedSource }) => storage.generatePreSignedUrl(uploadedSource))),
-    out(({ croak, fileUrl, croaker, }) => {
+    bindA("fileUrl", ({ uploadedSource }) => storage.generatePreSignedUrl(uploadedSource)),
+    map(({ croak, fileUrl, croaker }) => {
       const { files, ...rest } = croak;
       return {
         ...rest,
@@ -175,8 +170,8 @@ export const postFileFP: PostFile = ({ db, storage, local, imageFile }) => (iden
         }),
       };
     }),
-  )();
-};
+    toUnion
+  );
 
 setContext(postFileFP, postFileContext);
 
