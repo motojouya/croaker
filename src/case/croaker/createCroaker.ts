@@ -25,6 +25,7 @@ export type CreateCroaker = ContextFullFunction<
 >;
 export const createCroaker: CreateCroaker = ({ db, local, f }) => (identifier) => async (name, description, formAgreement) => {
 
+  // TODO name,descriptionは一つの型にまとめる。croakerEditablePropsみたいな感じかな
   const trimedName = trimName(name);
   if (trimedName instanceof InvalidArgumentsError) {
     return trimedName;

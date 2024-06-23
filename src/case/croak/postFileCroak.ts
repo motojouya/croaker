@@ -82,6 +82,7 @@ export const postFile: PostFile = ({ db, storage, local, imageFile }) => (identi
     return croaker;
   }
 
+  // TODO storage.uploadFileのための処理なので、関数きってまとめる
   const uploadFilePath = await imageFile.convert(file.name);
   if (
     uploadFilePath instanceof ImageCommandError ||
@@ -109,6 +110,7 @@ export const postFile: PostFile = ({ db, storage, local, imageFile }) => (identi
 
   const croak = await db.transact((trx) => trx.createFileCroak(croakData, fileData));
 
+  // TODO return valueを整える処理なので、まとめる。ドメインがいいかも。file croakerみたいな
   const fileUrl = await storage.generatePreSignedUrl(uploadedSource);
   if (fileUrl instanceof FileError) {
     return fileUrl;
@@ -125,9 +127,14 @@ export const postFile: PostFile = ({ db, storage, local, imageFile }) => (identi
     }),
   };
 };
+// TODO eslintにmax-lines-par-functionsやmax-statementをいれて、行数をしきい値にエラーを出せるようにしたい。max-linesもいいかも
 
 setContext(postFile, postFileContext);
 
+// TODO もうちょっと直したら、step数が減ってpostTextCroakとかわらなくなる。
+// file自体ややこしいのに、この状態でメンテすんの大変なので、postTextCroakでrailway oriented styleにしたい。
+// ここではしない。
+// createCroakerもstep数似てるけど、transactionの内と外があるので面倒で避けたい。
 // TODO 仕様がわからんので外してるが、ちゃんとpipeに組み込む
 // if (!file) {
 //   return null;
