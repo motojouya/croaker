@@ -1,7 +1,7 @@
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 import { $Compiler, wrapCompilerAsTypeGuard } from 'json-schema-to-ts';
-import { HandleableError } from '@/lib/error';
+import { HandleableError } from '@/lib/base/error';
 
 const JSON_SCHEMA_TYPE_OBJECT = 'object';
 const JSON_SCHEMA_TYPE_ARRAY = 'array';

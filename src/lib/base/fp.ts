@@ -2,12 +2,25 @@ import * as E from 'fp-ts/Either';
 // import * as T from 'fp-ts/Task';
 import * as TE from 'fp-ts/TaskEither';
 
+// export type Nrm<A> = A extends Error ? never : A;
+// export type Err<A> = A extends Error ? A : never;
+// export type Go<A> = E.Either<Err<A>, Nrm<A>>;
+// export type GoT<A> = TE.TaskEither<Err<A>, Nrm<A>>;
+// export function go<A>(func: () => A): Go<A> {
+//   const result = func();
+//   if (result instanceof Error) {
+//     return E.left(result);
+//   } else {
+//     return E.right(result);
+//   }
+// }
+
 export type Nrm<A> = A extends Error ? never : A;
 export type Err<A> = A extends Error ? A : never;
+export type ErrorUnion<A, E extends Error = never> = A | E;
+export type ErrorReturn<A> = ErrorUnion<Nrm<A>, Err<A>>;
 
-export type Go<A> = E.Either<Err<A>, Nrm<A>>;
-
-export function go<A>(func: () => A): Go<A> {
+export function go<A>(func: () => ErrorReturn<A>): E.Either<Err<A>, Nrm<A>> {
   const result = func();
   if (result instanceof Error) {
     return E.left(result);
@@ -15,19 +28,35 @@ export function go<A>(func: () => A): Go<A> {
     return E.right(result);
   }
 }
+// export function go<A, E extends Error = never>(func: () => ErrorUnion<A, E>): E.Either<E, A> {
+//   const result = func();
+//   if (result instanceof Error) {
+//     return E.left(result);
+//   } else {
+//     return E.right(result);
+//   }
+// }
 
-export type GoT<A> = TE.TaskEither<Err<A>, Nrm<A>>;
-
-export function goT<A>(func: () => Promise<A>): GoT<A> {
+export function goT<A>(func: () => Promise<ErrorReturn<A>>): TE.TaskEither<Err<A>, Nrm<A>> {
   return async function () {
     const result = await func();
     if (result instanceof Error) {
-      return TE.left(result);
+      return E.left(result);
     } else {
-      return TE.right(result);
+      return E.right(result);
     }
   };
 }
+
+// export const goT = <A>(f: () => Promise<ErrorReturn<A>>): TE.TaskEither<Err<A>, Nrm<A>> =>
+//   async () => {
+//     const result = await f();
+//     if (result instanceof Error) {
+//       return E.left(result);
+//     } else {
+//       return E.right(result);
+//     }
+//   }
 
 // 成功時の結果とエラー時のerrorをunionにして返す関数を扱う。
 // 2象限あり、組み合わせは、6通りある
@@ -43,15 +72,15 @@ export function goT<A>(func: () => Promise<A>): GoT<A> {
 // for sync function
 export const bind: <N extends string, A, B>(
   name: Exclude<N, keyof A>,
-  f: (a: A) => B
-) => <E>(fa: TaskEither<E, A>) => TaskEither<Err<B> | E, { readonly [K in N | keyof A]: K extends keyof A ? A[K] : Nrm<B> }> =
+  f: (a: A) => ErrorReturn<B>
+) => <E>(fa: TE.TaskEither<E, A>) => TE.TaskEither<Err<B> | E, { readonly [K in N | keyof A]: K extends keyof A ? A[K] : Nrm<B> }> =
   (name, f) => TE.bindW(name, (v) => TE.fromEither(go(() => f(v))));
 
 // A for async function
 export const bindA: <N extends string, A, B>(
   name: Exclude<N, keyof A>,
-  f: (a: A) => Promise<B>
-) => <E>(fa: TaskEither<E, A>) => TaskEither<Err<B> | E, { readonly [K in N | keyof A]: K extends keyof A ? A[K] : Nrm<B> }> =
+  f: (a: A) => Promise<ErrorReturn<B>>
+) => <E>(fa: TE.TaskEither<E, A>) => TE.TaskEither<Err<B> | E, { readonly [K in N | keyof A]: K extends keyof A ? A[K] : Nrm<B> }> =
   (name, f) => TE.bindW(name, (v) => goT(() => f(v)));
 
 export const Do = TE.Do;
@@ -63,34 +92,34 @@ export const toUnion = TE.toUnion;
 //   <E1, A, E2, B>(ma: TaskEither<E1, A>, f: (a: A) => TaskEither<E2, B>): TaskEither<E1 | E2, B>
 // }
 
-export const check: <A, E2>(f: (a: A) => undefined | E2): <E1>(ma: TaskEither<E1, A>) => TaskEither<E2 | E1, B> =
-  (f) => TE.flatMap((a) => {
-    const result = f(a);
-    if (result) {
-      return TE.fromEither(E.left(result));
-    } else {
-      return TE.fromEither(E.right(a));
-    }
-  });
+// export const check: <A, E2>(f: (a: A) => undefined | E2) => <E1>(ma: TE.TaskEither<E1, A>) => TE.TaskEither<E2 | E1, A> =
+//   (f) => TE.flatMap((a) => {
+//     const result = f(a);
+//     if (result) {
+//       return TE.fromEither(E.left(result));
+//     } else {
+//       return TE.fromEither(E.right(a));
+//     }
+//   });
 
-export const checkT: <A, E2>(f: (a: A) => Promise<undefined | E2>): <E1>(ma: TaskEither<E1, A>) => TaskEither<E2 | E1, B> =
-  (f) => TE.flatMap(async (a) => {
-    const result = f(a);
-    if (result) {
-      return TE.left(result);
-    } else {
-      return TE.right(a);
-    }
-  });
+// export const checkT: <A, E2>(f: (a: A) => Promise<undefined | E2>) => <E1>(ma: TE.TaskEither<E1, A>) => TE.TaskEither<E2 | E1, A> =
+//   (f) => TE.flatMap(async (a) => {
+//     const result = f(a);
+//     if (result) {
+//       return E.left(result);
+//     } else {
+//       return E.right(a);
+//     }
+//   });
 
 // TODO test
 declare function assertSame<A, B>(
   expect: [A] extends [B] ? ([B] extends [A] ? true : false) : false
 ): void;
 
-type A = TE.TaskEither<RangeError | ReferenceError, string | number>
-type B = GoT<string | number | RangeError | ReferenceError>;
-assertSame<A, B>(true);
+// type A = ErrorReturn<RangeError | ReferenceError, string | number>
+// type B = ErrorReturn<string | number | RangeError | ReferenceError>;
+// assertSame<A, B>(true);
 
 type C = RangeError | RangeError;
 type D = RangeError;
@@ -99,4 +128,3 @@ assertSame<C, D>(true);
 type E = never | RangeError;
 type F = RangeError;
 assertSame<E, F>(true);
-

@@ -1,47 +1,36 @@
 export abstract class HandleableError extends Error {
 
-  override readonly name = 'lib.error.HandleableError' as const;
-
   constructor() {
     super();
   }
 
+  // @ts-ignore
   toJson() {
-
-    let json = {};
-    for (const key in Object.keys(this)) {
+    return Object.entries(this).reduce((acc, [key, val]) => {
 
       if (!Object.hasOwn(this, key)) {
-        continue;
+        return acc;
       }
 
-      // TODO 大丈夫？
-      // @ts-ignore
-      const val = this[key];
-
       if (val instanceof HandleableError) {
-        json = {
-          ...json,
+        return {
+          ...acc,
           [key]: val.toJson(),
         };
-        continue;
       }
 
       if (val instanceof Error) {
-        json = {
-          ...json,
+        return {
+          ...acc,
           [key]: val.message,
         };
-        continue;
       }
 
-      json = {
-        ...json,
+      return {
+        ...acc,
         [key]: val,
       };
-    }
-
-    return json;
+    });
   }
 
   eq(arg: any): arg is this {
