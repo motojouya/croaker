@@ -1,7 +1,9 @@
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
-import { $Compiler, wrapCompilerAsTypeGuard } from 'json-schema-to-ts';
+import { Validator, FromSchemaDefaultOptions, FromSchema, JSONSchema, $Validator, wrapValidatorAsTypeGuard } from 'json-schema-to-ts';
+// import { $Compiler, wrapCompilerAsTypeGuard } from "json-schema-to-ts";
 import { HandleableError } from '@/lib/base/error';
+import { InvalidArgumentsError } from '@/lib/base/validation';
 
 const JSON_SCHEMA_TYPE_OBJECT = 'object';
 const JSON_SCHEMA_TYPE_ARRAY = 'array';
@@ -10,52 +12,75 @@ const JSON_SCHEMA_TYPE_INTEGER = 'integer';
 const JSON_SCHEMA_TYPE_NUMBER = 'number';
 const JSON_SCHEMA_TYPE_BOOLEAN = 'boolean';
 
-let jsonSchema;
+export type JsonSchema = {
+  validate: ValidateFunc;
+  getKeyValue: ReturnType<typeof getKeyValue>;
+};
+
+let jsonSchema: JsonSchema;
+
+type ValidateFunc = Validator<FromSchemaDefaultOptions, []>; // ReturnType<typeof wrapValidatorAsTypeGuard>;
+type GetValidate = () => ValidateFunc;
+const getValidate: GetValidate = () => {
+  const ajv = new Ajv();
+  addFormats(ajv);
+  const $validate: $Validator = (schema, data) => ajv.validate(schema, data);
+  return wrapValidatorAsTypeGuard($validate);
+};
 
 export const getJsonSchema = () => {
   if (!jsonSchema) {
-    const ajv = new Ajv();
-    addFormats(ajv);
-    const $compile: $Compiler = schema => ajv.compile(schema);
-    const createValidationCompiler = () => wrapCompilerAsTypeGuard($compile);
-    const compile = createValidationCompiler(),
+    const validate = getValidate();
     jsonSchema = {
-      compile,
-      getKeyValue: getKeyValue(compile),
+      validate,
+      getKeyValue: getKeyValue(validate),
     };
   }
   return jsonSchema;
 };
 
-function getKeyValue(schemaCompiler) {
+function getKeyValue(validate: ValidateFunc) {
   return function <T extends JSONSchema>(schema: T, get: (key: string) => string | null | undefined): FromSchema<T> | InvalidArgumentsError | JsonSchemaError {
+
+    if (schema === true || schema === false) {
+      throw new Error('top level json schema shoud be object');
+    }
 
     if (!schema.type || schema.type !== JSON_SCHEMA_TYPE_OBJECT) {
       throw new Error('top level json schema shoud be object');
     }
 
-    const required = schema.required;
+    const required: readonly string[] = schema.required || [];
+
+    const properties = schema.properties;
+    if (!properties) {
+      throw new Error('no properties defined');
+    }
 
     let keyValue = {};
-    for (const key in schema) {
+    for (const key in properties) {
 
-      if (!Object.hasOwn(schema, key)) {
+      if (!Object.hasOwn(properties, key)) {
         continue;
       }
 
-      const def = schema[key];
+      const def = properties[key];
+      if (def === true || def === false) {
+        throw new Error('json schema properties shoud be object');
+      }
+
       const raw = get(key);
 
       if (raw === undefined) {
         if (required.some(r => key === r)) {
-          return new InvalidArgumentsError(key, val, `${key}を定義してください`);
+          return new InvalidArgumentsError(key, '', `${key}を定義してください`);
         }
         continue;
       }
 
       if (raw === null) {
         if (!def.nullable) {
-          return new InvalidArgumentsError(key, val, `${key}がNull以外です`);
+          return new InvalidArgumentsError(key, '', `${key}がNull以外です`);
         }
         keyValue = {
           ...keyValue,
@@ -74,10 +99,10 @@ function getKeyValue(schemaCompiler) {
         case JSON_SCHEMA_TYPE_INTEGER: {
           val = Number(raw);
           if (Number.isNaN(val)) {
-            return new InvalidArgumentsError(key, val, `${key}は${JSON_SCHEMA_TYPE_INTEGER}型です`);
+            return new InvalidArgumentsError(key, String(val), `${key}は${JSON_SCHEMA_TYPE_INTEGER}型です`);
           }
           if (Number.isSafeInteger(val)) {
-            return new InvalidArgumentsError(key, val, `${key}は${JSON_SCHEMA_TYPE_INTEGER}型です`);
+            return new InvalidArgumentsError(key, String(val), `${key}は${JSON_SCHEMA_TYPE_INTEGER}型です`);
           }
           break;
         }
@@ -85,7 +110,7 @@ function getKeyValue(schemaCompiler) {
         case JSON_SCHEMA_TYPE_NUMBER: {
           val = Number(raw);
           if (Number.isNaN(val)) {
-            return new InvalidArgumentsError(key, val, `${key}は${JSON_SCHEMA_TYPE_NUMBER}型です`);
+            return new InvalidArgumentsError(key, String(val), `${key}は${JSON_SCHEMA_TYPE_NUMBER}型です`);
           }
           break;
         }
@@ -112,16 +137,14 @@ function getKeyValue(schemaCompiler) {
       };
     }
 
-    const schemaCompiler = getSchemaCompiler();
-    const validateSchema = schemaCompiler.compile(schema);
-    if (!validateSchema(keyValue)) {
+    if (!validate(schema, keyValue)) {
       // @ts-ignore
-      const { errors } = validateSchema;
+      const { errors } = validate;
       console.debug(errors);
       return new JsonSchemaError(errors.propertyName, errors.data, errors, errors.message);
     }
 
-    return keyValue;
+    return keyValue as any; // TODO as!
   }
 }
 
