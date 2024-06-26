@@ -16,16 +16,23 @@ const getOgp: GetOgp = (dom) => {
   return Array.from(meta)
     .filter((element) => element.hasAttribute("property"))
     .reduce((acc, ogp) => {
-      const prop = ogp.getAttribute("property").trim().replace("og:", "");
+
+      const properties = ogp.getAttribute("property");
+      if (!properties) {
+        return acc;
+      }
+
+      const prop = properties.trim().replace("og:", "");
       const content = ogp.getAttribute("content");
       if (prop && content) {
         return {
           ...acc,
           [prop]: content
         };
-      } else {
-        return acc;
       }
+
+      return acc;
+
     }, {});
 }
 
@@ -33,7 +40,7 @@ type FetchOgp = (link: string) => Promise<Ogp>;
 const fetchOgp: FetchOgp = async (link) => {
 
   try {
-    const res = fetch(link);
+    const res = await fetch(link);
     if (!res) {
       return { source: link };
     }
@@ -43,7 +50,7 @@ const fetchOgp: FetchOgp = async (link) => {
       return { source: link };
     }
 
-    if (contentType.startWith('image/')) {
+    if (contentType.startsWith('image/')) {
       return {
         source: link,
         url: link,
@@ -52,16 +59,16 @@ const fetchOgp: FetchOgp = async (link) => {
       };
     }
 
-    if (!contentType.startWith('text/')) {
+    if (!contentType.startsWith('text/')) {
       return { source: link };
     }
 
-    const dom = new JSDOM(res.data);
-    if (!dom) {
+    const html = await res.text();
+    if (!html) {
       return { source: link };
     }
 
-    const ogp = getOgp(dom);
+    const ogp = getOgp(new JSDOM(html));
     if (!ogp) {
       return { source: link };
     }
@@ -71,7 +78,6 @@ const fetchOgp: FetchOgp = async (link) => {
       ...rest,
       type: type || contentType,
       url: url || link,
-      summary: description,
       source: link,
     };
 

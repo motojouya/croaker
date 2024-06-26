@@ -1,43 +1,31 @@
-import Database from 'better-sqlite3'
+import Sqlite from 'better-sqlite3'
 import { Kysely, SqliteDialect, Transaction, sql } from 'kysely';
-import { Database as DatabaseType } from '@/database/type';
+import { Database } from '@/database/type';
 import { HandleableError } from '@/lib/base/error';
 import { KyselyAuth } from "@auth/kysely-adapter";
 
-// This adapter exports a wrapper of the original `Kysely` class called `KyselyAuth`,
-// that can be used to provide additional type-safety.
-// While using it isn't required, it is recommended as it will verify
-// that the database interface has all the fields that Auth.js expects.
-// import { KyselyAuth } from "@auth/kysely-adapter"
+export type GetQuery = Record<string, (db: Kysely<Database>) => any>;
+// const a = { a: () => 'a', b: () => 1 } as const satisfies GetQuery;
+// GetQueryをsatisfiesできるがextendedなわけではないっぽいので、extends GetQueryはだめっぽ
+// 実コードでコンパイルできるか試しながらやる
 
-export const nextAuthKysely = new KyselyAuth<Database>({
-  dialect: new SqliteDialect({
-    database: new Database(process.env.SQLITE_FILE),
-  })
-});
+let db: Kysely<Database>;
 
-let db?: Kysely = undefined;
-
-type GetKysely = () => Kysely;
-const getKysely: GetKysely = () => {
+export type GetKysely = () => Kysely<Database>;
+export const getKysely: GetKysely = () => {
   if (!db) {
-    db = new Kysely<DatabaseType>({
+    db = new KyselyAuth<Database>({
       dialect: new SqliteDialect({
-        database: new Database(process.env.SQLITE_FILE),
+        database: new Sqlite(process.env.SQLITE_FILE),
       })
     });
-    // rdb = new KyselyAuth<DatabaseType>({
-    //   dialect: new SqliteDialect({
-    //     database: new Database('db.sqlite'),
-    //   })
-    // });
   }
   return db;
 };
 
 export type Query<Q extends object> = {
   [K in keyof Q]: (
-    Q[K] extends ((db: Kysely<DatabaseType>) => infer Q)
+    Q[K] extends ((db: Kysely<Database>) => infer Q)
       ? Q
       : never
   )
@@ -76,13 +64,16 @@ export function getDatabase<Q extends object, T extends object>(queries: Q | nul
   }
 
   if (transactionQueries) {
-    dbAccess['transact'] = getTransact(db, transactionQueries);
+    dbAccess = {
+      ...dbAccess,
+      transact: getTransact(db, transactionQueries),
+    };
   }
 
-  return dbAccess;
+  return dbAccess as DB<Q, T>; // TODO as!
 };
 
-function getTransact<T extends object>(db: Kysely, queries: T): Transact<T> {
+function getTransact<T extends object>(db: Kysely<Database>, queries: T): Transact<T> {
   return async function <R>(callback: (trx: Query<T>) => Promise<R>): Promise<R> {
 
     try {
@@ -98,7 +89,7 @@ function getTransact<T extends object>(db: Kysely, queries: T): Transact<T> {
             ...acc,
             [key]: val(trx),
           };
-        }, {});
+        }, {}) as Query<T>;
 
         const result = callback(transactedQueries);
 
@@ -112,6 +103,7 @@ function getTransact<T extends object>(db: Kysely, queries: T): Transact<T> {
     // kyselyがrollbackはerror throwを想定しているため、callback内で投げて、再度catchする
     } catch (e) {
       if (e instanceof HandleableError) {
+        // @ts-ignore
         return e;
       }
       throw e;

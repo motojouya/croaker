@@ -1,13 +1,11 @@
 import { v4 } from 'uuid';
-import imageMagick from 'imagemagick';
-// npm i -D @types/imagemagick
-// npm i node-imagemagick
-import { HandleableError } from '@/lib/error';
+import imageMagick, { Features } from 'imagemagick';
+import { HandleableError } from '@/lib/base/error';
 
-type Convert = (filePath: string) => Promise<string | ImageCommandError | ImageFormatError>;
+type Convert = (filePath: string) => Promise<string | ImageCommandError | ImageInformationError>;
 const convert: Convert = async (filePath) => {
 
-  const imageInfo = getInformation(filePath);
+  const imageInfo = await getInformation(filePath);
   if (imageInfo instanceof ImageCommandError) {
     return imageInfo;
   }
@@ -16,21 +14,26 @@ const convert: Convert = async (filePath) => {
     imageInfo.format === 'jpg' ||
     imageInfo.format === 'png' ||
     imageInfo.format === 'gif';
-  if (!validContentType) {
-    return new ImageFormatError(imageInfo.format, filePath, 'image形式はjpeg,png,gifのみです');
+  if (!imageInfo.format || !validContentType) {
+    return new ImageInformationError('format', String(imageInfo.format), filePath, 'image形式はjpeg,png,gifのみです');
+  }
+
+  if (!imageInfo.width) {
+    return new ImageInformationError('width', String(imageInfo.width), filePath, '幅がありません');
   }
 
   const width = imageInfo.width > 1000 ? 1000 : imageInfo.width;
 
   if (imageInfo.format === 'jpg') {
-    const error = await resizeJpeg(filePath, `temp/${v4()}.jpeg`, width);
+    const resizedJpegPath = `temp/${v4()}.jpeg`;
+    const error = await resizeJpeg(filePath, resizedJpegPath, width);
     if (error) {
       return error;
     }
-    return resizedFilePath;
+    return resizedJpegPath;
   }
 
-  let resizedFilePath = undefined;
+  let resizedFilePath: string;
   if (imageInfo.format === 'png') {
     resizedFilePath = `temp/${v4()}.png`;
   } else {
@@ -44,10 +47,11 @@ const convert: Convert = async (filePath) => {
   return resizedFilePath;
 };
 
-export class ImageFormatError extends HandleableError {
-  override readonly name = 'lib.image.ImageFormatError' as const;
+export class ImageInformationError extends HandleableError {
+  override readonly name = 'lib.image.ImageInformationError' as const;
   constructor(
-    readonly format: string,
+    readonly key: string,
+    readonly value: string,
     readonly path: string,
     readonly message: string,
   ) {
@@ -68,14 +72,14 @@ export class ImageCommandError extends HandleableError {
 }
 
 // TODO すでに型がありそう
-type ImageFeatures = {
-  format: string; // 'JPEG',
-  width: number; // 3904,
-  height: number; // 2622,
-  depth: number; // 8,
-};
+// type Features = {
+//   format: string; // 'JPEG',
+//   width: number; // 3904,
+//   height: number; // 2622,
+//   depth: number; // 8,
+// };
 
-type GetInformation = (filePath: string) => Promise<ImageFeatures | ImageCommandError>
+type GetInformation = (filePath: string) => Promise<Features | ImageCommandError>
 const getInformation: GetInformation = async (filePath) => {
   return new Promise((resolve) => {
     imageMagick.identify(filePath, (error, features) => {
@@ -125,7 +129,7 @@ const resizeJpeg: ResizeJpeg = async (filePath, resizedPath, width) => {
       if (error) {
         resolve(new ImageCommandError('resize', filePath, error, 'imageファイルのサイズ変更ができません'));
       } else {
-        resolve(features);
+        resolve(null);
       }
     });
   });

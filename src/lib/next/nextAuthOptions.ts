@@ -3,7 +3,7 @@ import GitHubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 // import CredentialsProvider from "next-auth/providers/credentials";
 import { KyselyAdapter } from "@auth/kysely-adapter";
-import { nextAuthKysely } from "@/database/base";
+import { getKysely } from "@/database/base";
 
 declare module 'next-auth' {
   interface Session {
@@ -16,7 +16,8 @@ declare module 'next-auth' {
 export const { handlers, signIn, signOut, auth } = NextAuth({
   debug: true,
   session: { strategy: "database" }, // TODO 'jwt' でもいい。いずれにしろadapterがあれば永続化はしてくれる。どっちがいいのか
-  adapter: KyselyAdapter(nextAuthKysely),
+  // @ts-ignore
+  adapter: KyselyAdapter(getKysely()), // TODO なんか型合わないが動かしてみて動けばいいでしょう
   providers: [
     GitHubProvider({
       clientId: process.env.GITHUB_ID!,

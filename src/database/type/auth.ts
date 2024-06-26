@@ -4,9 +4,10 @@ import {
   Selectable,
   Updateable
 } from 'kysely'
+import { AdapterAccountType } from '@auth/core/adapters';
 
 export interface UserTable {
-  id: GeneratedAlways<string>
+  id: string // GeneratedAlways<string>
   name: string | null
   email: string
   emailVerified: Date | null
@@ -19,16 +20,17 @@ export type UserUpdate = Updateable<UserTable>
 export interface AccountTable {
   id: GeneratedAlways<string>
   userId: string
-  type: string
+  type: AdapterAccountType //string
   provider: string
   providerAccountId: string
-  refresh_token: string | null
-  access_token: string | null
-  expires_at: number | null
-  token_type: string | null
-  scope: string | null
-  id_token: string | null
+  refresh_token?: string
+  access_token?: string
+  expires_at?: number
+  token_type?: Lowercase<string>
+  scope?: string
+  id_token?: string
   session_state: string | null
+  [parameter: string]: any
 }
 export type Account = Selectable<AccountTable>
 export type NewAccount = Insertable<AccountTable>

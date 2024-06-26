@@ -1,14 +1,14 @@
 import { Storage as GoogleCloudStorage, UploadOptions } from '@google-cloud/storage';
 import { v4 } from 'uuid';
-import { HandleableError } from '@/lib/error';
+import { HandleableError } from '@/lib/base/error';
 
 type StorageConfig = {
   storage: GoogleCloudStorage;
-  bucket: string;
+  bucketName: string;
   directory: string;
 };
 
-let storage?: StorageConfig = undefined;
+let storage: StorageConfig;
 
 type CreateStorage = () => StorageConfig;
 const createStorage: CreateStorage = () => {
@@ -16,45 +16,48 @@ const createStorage: CreateStorage = () => {
     projectId: process.env.GOOGLE_CLOUD_PROJECT,
     keyFilename: process.env.GOOGLE_CLOUD_KEY,
     credentials: { // TODO
-      client_email,
-      private_key,
+      client_email: '',
+      private_key: '',
     },
   });
   return {
     storage: googleCloudStorage,
-    bucket: process.env.STORAGE_BUCKET,
-    directory: process.env.STORAGE_DIRECTORY,
+    bucketName: process.env.STORAGE_BUCKET || "",
+    directory: process.env.STORAGE_DIRECTORY || "",
   };
 }
 
 type UploadFile = (config: StorageConfig) => (localFilePath: string, extension: string) => Promise<string | FileError>;
-const uploadFile: UploadFile = ({ storage, bucketName, dir }) => async (localFilePath, extension) => {
+const uploadFile: UploadFile = ({ storage, bucketName, directory }) => async (localFilePath, extension) => {
 
   try {
     const storageFileName = `${v4()}.${extension}`;
 
     const bucket = storage.bucket(bucketName);
 
-    await bucket.upload(localFilePath, { destination: `${dir}/${storageFileName}`, gzip: true });
+    await bucket.upload(localFilePath, { destination: `${directory}/${storageFileName}`, gzip: true });
 
     return storageFileName;
 
   } catch (e) {
-    return new FileError(
-      'upload',
-      file_path,
-      e,
-      'ファイルアップロードできませんでした'
-    );
+    if (e instanceof Error) {
+      return new FileError(
+        'upload',
+        localFilePath,
+        e,
+        'ファイルアップロードできませんでした'
+      );
+    }
+    throw e;
   }
 }
 
 type GeneratePreSignedUrl = (config: StorageConfig) => (filePath: string) => Promise<string | FileError>
-const generatePreSignedUrl: GeneratePreSignedUrl = ({ storage, bucketName, dir }) => (filePath) => {
+const generatePreSignedUrl: GeneratePreSignedUrl = ({ storage, bucketName, directory }) => async (filePath) => {
 
   try {
     const bucket = storage.bucket(bucketName);
-    const [ url ] = await bucket.file(`${dir}/${filePath}`).getSignedUrl({
+    const [ url ] = await bucket.file(`${directory}/${filePath}`).getSignedUrl({
       version: 'v4',
       action: 'read',
       expires: Date.now() + (15 * 60 * 1000), // 15 minutes
@@ -62,18 +65,21 @@ const generatePreSignedUrl: GeneratePreSignedUrl = ({ storage, bucketName, dir }
     return url;
 
   } catch (e) {
-    return new FileError(
-      'preSignedUrl',
-      filePath,
-      e,
-      '署名付きURLを発行できませんでした'
-    );
+    if (e instanceof Error) {
+      return new FileError(
+        'preSignedUrl',
+        filePath,
+        e,
+        '署名付きURLを発行できませんでした'
+      );
+    }
+    throw e;
   }
 }
 
 export type Storage = {
-  generatePreSignedUrl: GeneratePreSignedUrl;
-  uploadFile: UploadFile
+  generatePreSignedUrl: ReturnType<GeneratePreSignedUrl>;
+  uploadFile: ReturnType<UploadFile>;
 }
 
 export type GetStorage = () => Storage;

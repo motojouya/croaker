@@ -10,4 +10,4 @@ export type Local = {
 };
 
 export type GetLocal = () => Local;
-export const getLocal = () => { now, random };
+export const getLocal = () => ({ now, random });
