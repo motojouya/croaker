@@ -3,15 +3,15 @@ import type {
   AccountTable,
   SessionTable,
   VerificationTokenTable,
-} from '@/rdb/type/auth';
+} from '@/database/type/auth';
 import type {
   CroakTable,
   CroakerTable,
-} from '@/rdb/type/croak';
+} from '@/database/type/croak';
 import type {
   RoleTable,
   ConfigurationTable,
-} from '@/rdb/type/master';
+} from '@/database/type/master';
 
 export interface Database {
   User: UserTable;

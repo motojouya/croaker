@@ -9,7 +9,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn('description', 'text')
     .addColumn('status', 'text', (col) => col.notNull()) // active or banned
     .addColumn('role_id', 'integer', (col) => col.notNull()) // foreign key
-    .addColumn('form_agreement', 'tinyint', (col) => col.notNull())
+    .addColumn('form_agreement', 'boolean', (col) => col.notNull()) // tinyint -> boolean
     .addColumn('created_date', 'timestamp', (col) =>
       col.defaultTo(sql`now()`).notNull()
     )

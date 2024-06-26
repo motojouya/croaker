@@ -148,7 +148,7 @@ const searchCroaksContext = {
 
 export type SearchCroaks = ContextFullFunction<
   typeof searchCroaksContext,
-  (identifier: Identifier) => (text: number, reverse?: boolean, offsetCursor?: number) => Promise<FunctionResult>
+  (identifier: Identifier) => (text: string, reverse?: boolean, offsetCursor?: number) => Promise<FunctionResult>
 >;
 export const searchCroaks: SearchCroaks =
   ({ storage, db }) =>

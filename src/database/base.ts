@@ -35,9 +35,9 @@ const getKysely: GetKysely = () => {
   return db;
 };
 
-export type Query<T extends object> = {
+export type Query<Q extends object> = {
   [K in keyof Q]: (
-    Q[K] extends ((db: Kyseky) => infer Q)
+    Q[K] extends ((db: Kysely<DatabaseType>) => infer Q)
       ? Q
       : never
   )
@@ -62,10 +62,17 @@ export function getDatabase<Q extends object, T extends object>(queries: Q | nul
   let dbAccess = {};
 
   if (queries) {
-    dbAccess = Object.entries(queries).reduce((acc, [key, val]) => ({
-      ...acc,
-      [key]: val(db),
-    }), dbAccess);
+    dbAccess = Object.entries(queries).reduce((acc, [key, val]) => {
+
+      if (typeof val !== 'function') {
+        throw new Error('programmer should set context function!');
+      }
+
+      return {
+        ...acc,
+        [key]: val(db),
+      };
+    }, dbAccess);
   }
 
   if (transactionQueries) {
@@ -81,10 +88,17 @@ function getTransact<T extends object>(db: Kysely, queries: T): Transact<T> {
     try {
       return db.transaction().execute(trx => {
 
-        const transactedQueries = Object.entries(queries).reduce((acc, [key, val]) => ({
-          ...acc,
-          [key]: val(trx),
-        }), {});
+        const transactedQueries = Object.entries(queries).reduce((acc, [key, val]) => {
+
+          if (typeof val !== 'function') {
+            throw new Error('programmer should set context function!');
+          }
+
+          return {
+            ...acc,
+            [key]: val(trx),
+          };
+        }, {});
 
         const result = callback(transactedQueries);
 

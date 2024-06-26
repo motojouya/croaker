@@ -1,16 +1,13 @@
 import { FunctionResult, banCroaker } from '@/case/croaker/banCroaker';
 import { bindContext } from '@/lib/base/context';
 import { FetchType, getRouteHandler, executeFetch } from '@/lib/next/routeHandler';
+import { z } from 'zod';
 
 export type ResponseType = FunctionResult;
 
-const pathSchema = {
-  type: 'object',
-  properties: {
-    croaker_id: { type: 'string' }
-  },
-  required: ['croaker_id'],
-} as const satisfies JSONSchema;
+const pathSchema = z.object({
+  croaker_id: z.string(),
+});
 
 export const POST = getRouteHandler(
   pathSchema,

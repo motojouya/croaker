@@ -1,22 +1,19 @@
-import { FunctionResult, postFileCroak } from '@/case/croak/postFileCroak';
+import { FunctionResult, postFile } from '@/case/croak/postFileCroak';
 import { bindContext } from '@/lib/base/context';
 import { FetchType, getFormHandler, executeFetch } from '@/lib/next/routeHandler';
+import { z } from 'zod';
 
 export type ResponseType = FunctionResult;
 
-const pathSchema = {
-  type: 'object',
-  properties: {
-    croak_id: { type: 'string' }
-  },
-  required: ['croak_id'],
-} as const satisfies JSONSchema;
+const pathSchema = z.object({
+  croak_id: z.coerce.number(),
+});
 
 export const POST = getFormHandler(
   pathSchema,
   null,
   'file',
-  (identifier, p, f, file) => bindContext(postFileCroak)(identifier)(file, p.croak_id)
+  (identifier, p, f, file) => bindContext(postFile)(identifier)(file, p.croak_id)
 );
 
 export type FetchAPI = (thread: number, file: File) => Promise<ResponseType>;

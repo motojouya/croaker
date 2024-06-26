@@ -1,25 +1,18 @@
 import { FunctionResult, getThreadCroaks } from '@/case/croak/getCroaks';
 import { bindContext } from '@/lib/base/context';
 import { FetchType, getQueryHandler, executeFetch } from '@/lib/next/routeHandler';
+import { z } from 'zod';
 
 export type ResponseType = FunctionResult;
 
-const pathSchema = {
-  type: 'object',
-  properties: {
-    croak_id: { type: 'string' }
-  },
-  required: ['croak_id'],
-} as const satisfies JSONSchema;
+const pathSchema = z.object({
+  croak_id: z.coerce.number(),
+});
 
-const querySchema = {
-  type: 'object',
-  properties: {
-    reverse: { type: 'boolean' },
-    offset_cursor: { type: 'number' },
-  },
-  required: [],
-} as const satisfies JSONSchema;
+const querySchema = z.object({
+  reverse: z.coerce.boolean().nullable(),
+  offset_cursor: z.coerce.number().nullable(),
+});
 
 export const GET = getQueryHandler(
   pathSchema,

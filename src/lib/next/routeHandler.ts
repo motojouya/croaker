@@ -1,16 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Session } from 'next-auth';
-import { auth } from "next-auth/next"
-import type { FromSchema, JSONSchema } from "json-schema-to-ts";
-import { getJsonSchema, JsonSchemaError } from '@/lib/base/jsonSchema'
+import { z } from 'zod';
+import { auth } from "@/lib/next/nextAuthOptions"
+import { parse, parseKeyValue, ZodSchemaError, ValueTypeError } from '@/lib/base/schema'
 import { InvalidArgumentsError } from '@/lib/base/validation';
 import { HandleableError } from '@/lib/base/error';
-import { options } from '@/lib/next/nextAuthOptions';
-import type { Identifier } from '@/domain/authorize';
+import type { Identifier } from '@/domain/authorization/base';
+import { FileData, getLocalFile } from '@/lib/io/file';
+
+// TODO 書きたくないが関数overloadしたときに実装のない関数はReturnTypeが推論されないので
+// next-authのnext-auth/lib/typesを参照
+type AppRouteHandlerFnContext = {
+  params?: Record<string, string | string[]>
+}
+type AppRouteHandlerFn = (
+  req: NextRequest,
+  ctx: AppRouteHandlerFnContext
+) => void | Response | Promise<void | Response>
 
 export type FetchType = typeof fetch;
 
-export function executeFetch(callback: () => ReturnType<FetchType>) {
+export async function executeFetch(callback: () => ReturnType<FetchType>) {
   try {
     const res = await callback();
 
@@ -27,16 +37,16 @@ export function executeFetch(callback: () => ReturnType<FetchType>) {
   }
 };
 
-export type GetIdentifier = (session?: Session) => Identifier;
+export type GetIdentifier = (session: Session | null) => Identifier;
 export const getIdentifier: GetIdentifier = (session) => {
   if (session) {
-    return { type: 'anonymous' };
+    return { type: 'user_id', user_id: session.user.id };
   } else {
-    return { type: 'user_id', user_id: sesion.user.id };
+    return { type: 'anonymous' };
   }
 };
 
-function handle<R>(session?: Session, callback: (identifier: Identifier) => Promise<R>) {
+async function handle<R>(session: Session | null, callback: (identifier: Identifier) => Promise<R>) {
   try {
     const identifier = getIdentifier(session);
 
@@ -61,203 +71,184 @@ function handle<R>(session?: Session, callback: (identifier: Identifier) => Prom
   }
 }
 
-export function getRouteHandler<R>(pathSchema: null, callback: (identifier: Identifier, path: null) => Promise<R>);
-export function getRouteHandler<P extends JSONSchema, R>(pathSchema: P, callback: (identifier: Identifier, path: FromSchema<P>) => Promise<R>);
-export function getRouteHandler<P extends JSONSchema, R>(pathSchema: P | null, callback: (identifier: Identifier, path: FromSchema<P> | null) => Promise<R>) {
-  return auth(async function (req: NextRequest, { params }) {
+export function getRouteHandler<R>(
+  pathSchema: null,
+  callback: (identifier: Identifier, path: null) => Promise<R>
+): AppRouteHandlerFn;
+export function getRouteHandler<P extends z.SomeZodObject, R>(
+  pathSchema: P,
+  callback: (identifier: Identifier, path: z.infer<P>) => Promise<R>
+): AppRouteHandlerFn;
+export function getRouteHandler<P extends z.SomeZodObject, R>(
+  pathSchema: P | null,
+  callback: (identifier: Identifier, path: z.infer<P> | null) => Promise<R>
+): AppRouteHandlerFn {
 
-    const jsonSchema = getJsonSchema();
+  return auth(async (req, { params }) => {
 
-    let pathArgs: FromSchema<P> | InvalidArgumentsError | JsonSchemaError | null = null;
+    let pathArgs: z.infer<P> | ZodSchemaError;
     if (pathSchema) {
-      pathArgs = jsonSchema.getKeyValue(pathSchema, (key) => parames[key]);
-      if (
-        pathArgs instanceof InvalidArgumentsError
-        pathArgs instanceof JsonSchemaError
-      ) {
+      pathArgs = parse(pathSchema, params);
+      if (pathArgs instanceof ZodSchemaError) {
         return NextResponse.json(pathArgs.toJson());
       }
     }
 
-    return handle(req.auth, (identifier) => callback(identifier, pathArgs));
+    return await handle(req.auth, (identifier) => callback(identifier, pathArgs));
   });
 }
 
-export function getQueryHandler<Q extends JSONSchema, R>(
+export function getQueryHandler<Q extends z.SomeZodObject, R>(
   pathSchema: null,
   querySchema: Q,
-  callback: (identifier: Identifier, path: null, query: FromSchema<Q>) => Promise<R>
-);
-export function getQueryHandler<P extends JSONSchema, Q extends JSONSchema, R>(
+  callback: (identifier: Identifier, path: null, query: z.infer<Q>) => Promise<R>
+): AppRouteHandlerFn;
+export function getQueryHandler<P extends z.SomeZodObject, Q extends z.SomeZodObject, R>(
   pathSchema: P,
   querySchema: Q,
-  callback: (identifier: Identifier, path: FromSchema<P>, query: FromSchema<Q>) => Promise<R>
-);
-export function getQueryHandler<S extends JSONSchema, Q extends JSONSchema, R>(
-  pathSchema: S | null,
+  callback: (identifier: Identifier, path: z.infer<P>, query: z.infer<Q>) => Promise<R>
+): AppRouteHandlerFn;
+export function getQueryHandler<P extends z.SomeZodObject, Q extends z.SomeZodObject, R>(
+  pathSchema: P | null,
   querySchema: Q,
-  callback: (identifier: Identifier, path: FromSchema<P> | null, query: FromSchema<Q>) => Promise<R>
-) {
-  return auth(async function (req: NextRequest, { params }) {
+  callback: (identifier: Identifier, path: z.infer<P> | null, query: z.infer<Q>) => Promise<R>
+): AppRouteHandlerFn {
 
-    const jsonSchema = getJsonSchema();
+  return auth(async (req, { params }) => {
 
-    let pathArgs: FromSchema<P> | InvalidArgumentsError | JsonSchemaError | null = null;
+    let pathArgs: z.infer<P> | ZodSchemaError;
     if (pathSchema) {
-      pathArgs = jsonSchema.getKeyValue(pathSchema, (key) => parames[key]);
-      if (
-        pathArgs instanceof InvalidArgumentsError
-        pathArgs instanceof JsonSchemaError
-      ) {
+      pathArgs = parse(pathSchema, params);
+      if (pathArgs instanceof ZodSchemaError) {
         return NextResponse.json(pathArgs.toJson());
       }
     }
 
     const searchParams = req.nextUrl.searchParams;
-    const queryArgs = jsonSchema.getKeyValue(querySchema, searchParams.get);
-    if (
-      queryArgs instanceof InvalidArgumentsError
-      queryArgs instanceof JsonSchemaError
-    ) {
+    const queryArgs = parseKeyValue(querySchema, searchParams.get);
+    if (queryArgs instanceof ZodSchemaError) {
       return NextResponse.json(queryArgs.toJson());
     }
 
-    return handle(req.auth, (identifier) => callback(identifier, pathArgs, queryArgs));
+    return await handle(req.auth, (identifier) => callback(identifier, pathArgs, queryArgs));
   });
 }
 
-export function getBodyHandler<B extends JSONSchema, R>(
+export function getBodyHandler<B extends z.SomeZodObject, R>(
   pathSchema: null,
   bodySchema: B,
-  callback: (identifier: Identifier, path: null, body: FromSchema<B>) => Promise<R>
-);
-export function getBodyHandler<P extends JSONSchema, B extends JSONSchema, R>(
+  callback: (identifier: Identifier, path: null, body: z.infer<B>) => Promise<R>
+): AppRouteHandlerFn;
+export function getBodyHandler<P extends z.SomeZodObject, B extends z.SomeZodObject, R>(
   pathSchema: P,
   bodySchema: B,
-  callback: (identifier: Identifier, path: FromSchema<P>, body: FromSchema<B>) => Promise<R>
-);
-export function getBodyHandler<P extends JSONSchema, B extends JSONSchema, R>(
+  callback: (identifier: Identifier, path: z.infer<P>, body: z.infer<B>) => Promise<R>
+): AppRouteHandlerFn;
+export function getBodyHandler<P extends z.SomeZodObject, B extends z.SomeZodObject, R>(
   pathSchema: P | null,
   bodySchema: B,
-  callback: (identifier: Identifier, path: FromSchema<P> | null, body: FromSchema<B>) => Promise<R>
-) {
-  return auth(async function (req: NextRequest, { params }) {
+  callback: (identifier: Identifier, path: z.infer<P> | null, body: z.infer<B>) => Promise<R>
+): AppRouteHandlerFn {
 
-    const jsonSchema = getJsonSchema();
+  return auth(async (req, { params }) => {
 
-    let pathArgs: FromSchema<P> | InvalidArgumentsError | JsonSchemaError | null = null;
+    let pathArgs: z.infer<P> | ZodSchemaError;
     if (pathSchema) {
-      pathArgs = jsonSchema.getKeyValue(pathSchema, (key) => parames[key]);
-      if (
-        pathArgs instanceof InvalidArgumentsError
-        pathArgs instanceof JsonSchemaError
-      ) {
+      pathArgs = parse(pathSchema, params);
+      if (pathArgs instanceof ZodSchemaError) {
         return NextResponse.json(pathArgs.toJson());
       }
     }
 
-    const body = await request.json()
-
-    const validateSchema = jsonSchema.compile(bodySchema);
-    if (!validateSchema(body)) {
-      // @ts-ignore
-      const { errors } = validateSchema;
-      console.debug(errors);
-      const jsonSchemaError = new JsonSchemaError(errors.propertyName, errors.data, errors, errors.message);
-      return NextResponse.json(jsonSchemaError.toJson());
+    const body = await req.json()
+    const bodyArgs = parse(bodySchema, body);
+    if (bodyArgs instanceof ZodSchemaError) {
+      return NextResponse.json(bodyArgs.toJson());
     }
 
-    bodyArgs = body;
-
-    return handle(req.auth, (identifier) => callback(identifier, pathArgs, bodyArgs));
-  };
+    return await handle(req.auth, (identifier) => callback(identifier, pathArgs, bodyArgs));
+  });
 }
 
-export function getFormHandler<F extends JSONSchema, R>(
-  pathSchema: null, formSchema: F, fileName: null,
-  callback: (identifier: Identifier, path: null, form: FromSchema<F>, file: null) => Promise<R>
-);
-export function getFormHandler<R>(
-  pathSchema: null, formSchema: null, fileName: string,
-  callback: (identifier: Identifier, path: null, form: null, file: File) => Promise<R>
-);
-export function getFormHandler<F extends JSONSchema, R>(
-  pathSchema: null, formSchema: F, fileName: string,
-  callback: (identifier: Identifier, path: null, form: FromSchema<F>, file: File) => Promise<R>
-);
-export function getFormHandler<P extends JSONSchema, F extends JSONSchema, R>(
-  pathSchema: P, formSchema: F, fileName: null,
-  callback: (identifier: Identifier, path: FromSchema<P>, form: FromSchema<F>, file: null) => Promise<R>
-);
-export function getFormHandler<P extends JSONSchema, R>(
-  pathSchema: P, formSchema: null, fileName: string,
-  callback: (identifier: Identifier, path: FromSchema<P>, form: null, file: File) => Promise<R>
-);
-export function getFormHandler<P extends JSONSchema, F extends JSONSchema, R>(
-  pathSchema: P, formSchema: F, fileName: string,
-  callback: (identifier: Identifier, path: FromSchema<P>, form: FromSchema<F>, file: File) => Promise<R>
-);
-export function getFormHandler<P extends JSONSchema, F extends JSONSchema, R>(
+// TODO 以下のようにでてしまうのでコメントアウト
+// This overload signature is not compatible with its implementation signature.
+// export function getFormHandler<F extends z.SomeZodObject, R>(
+//   pathSchema: null, formSchema: F, fileName: null,
+//   callback: (identifier: Identifier, path: null, form: z.infer<F>, file: null) => Promise<R>
+// ): AppRouteHandlerFn;
+// export function getFormHandler<R>(
+//   pathSchema: null, formSchema: null, fileName: string,
+//   callback: (identifier: Identifier, path: null, form: null, file: FileData) => Promise<R>
+// ): AppRouteHandlerFn;
+// export function getFormHandler<F extends z.SomeZodObject, R>(
+//   pathSchema: null, formSchema: F, fileName: string,
+//   callback: (identifier: Identifier, path: null, form: z.infer<F>, file: FileData) => Promise<R>
+// ): AppRouteHandlerFn;
+// export function getFormHandler<P extends z.SomeZodObject, F extends z.SomeZodObject, R>(
+//   pathSchema: P, formSchema: F, fileName: null,
+//   callback: (identifier: Identifier, path: z.infer<P>, form: z.infer<F>, file: null) => Promise<R>
+// ): AppRouteHandlerFn;
+// export function getFormHandler<P extends z.SomeZodObject, R>(
+//   pathSchema: P, formSchema: null, fileName: string,
+//   callback: (identifier: Identifier, path: z.infer<P>, form: null, file: FileData) => Promise<R>
+// ): AppRouteHandlerFn;
+// export function getFormHandler<P extends z.SomeZodObject, F extends z.SomeZodObject, R>(
+//   pathSchema: P, formSchema: F, fileName: string,
+//   callback: (identifier: Identifier, path: z.infer<P>, form: z.infer<F>, file: FileData) => Promise<R>
+// ): AppRouteHandlerFn;
+export function getFormHandler<P extends z.SomeZodObject, F extends z.SomeZodObject, R>(
   pathSchema: P | null,
   formSchema: F | null,
   fileName: string | null,
-  callback: (identifier: Identifier, path: FromSchema<P> | null, form: FromSchema<F> | null, file: File | null) => Promise<R>
-) {
-  return auth(async function (req: NextRequest, { params }) {
+  callback: (identifier: Identifier, path: z.infer<P> | null, form: z.infer<F> | null, file: FileData | null) => Promise<R>
+): AppRouteHandlerFn {
 
-    const jsonSchema = getJsonSchema();
+  return auth(async (req, { params }) => {
 
-    let pathArgs: FromSchema<P> | null = null;
+    let pathArgs: z.infer<P> | ZodSchemaError;
     if (pathSchema) {
-      pathArgs = jsonSchema.getKeyValue(pathSchema, (key) => parames[key]);
-      if (
-        pathArgs instanceof InvalidArgumentsError
-        pathArgs instanceof JsonSchemaError
-      ) {
+      pathArgs = parse(pathSchema, params);
+      if (pathArgs instanceof ZodSchemaError) {
         return NextResponse.json(pathArgs.toJson());
       }
     }
 
-    let formArgs: FromSchema<F> | null = null;
-    let file: File | null = null;
-    if (formSchema || fileName) {
-      const formData = await req.formData();
+    const formData = await req.formData();
 
-      if (formSchema) {
-        formArgs = jsonSchema.getKeyValue(formSchema, formData.get);
-        if (
-          formArgs instanceof InvalidArgumentsError
-          formArgs instanceof JsonSchemaError
-        ) {
-          return NextResponse.json(formArgs.toJson());
+    let formArgs: z.infer<F> | ZodSchemaError | ValueTypeError;
+    if (formSchema) {
+      formArgs = parseKeyValue(formSchema, (key) => {
+        const val = formData.get(key);
+        if (val instanceof Blob) {
+          return new ValueTypeError(key, 'string', 'Blob', `${key}がファイルです`);
+        } else {
+          return val;
         }
-      }
-
-      if (fileName) {
-        file = formData.get(fileName) as File;
-        // TODO is File を実装する
-        // if (isFile(file)) {
-        //   const formFileError = new FormFileError(fileName, `${fileName}はファイルではありません`);
-        //   return NextResponse.json(formFileError.toJson());
-        // }
-
-        // const arrayBuffer = await file.arrayBuffer();
-        // const buffer = Buffer.from(arrayBuffer);
-        // const buffer = new Uint8Array(arrayBuffer);
-        // await fs.writeFile(`./public/uploads/${file.name}`, buffer);
+      });
+      if (
+        formArgs instanceof ZodSchemaError ||
+        formArgs instanceof ValueTypeError
+      ) {
+        return NextResponse.json(formArgs.toJson());
       }
     }
 
-    return handle(req.auth, (identifier) => callback(identifier, pathArgs, formArgs, file));
-  });
-}
+    let fileData: FileData;
+    if (fileName) {
+      const file = formData.get(fileName);
 
-export class FormFileError extends HandleableError {
-  override readonly name = 'lib.routeHandler.FileError' as const;
-  constructor(
-    readonly property_name: string,
-    readonly message: string,
-  ) {
-    super();
-  }
+      if (!file) {
+        const formFileError = new ValueTypeError(fileName, 'File', 'string or Blob', `${fileName}はファイルではありません`);
+        return NextResponse.json(formFileError.toJson());
+
+      } else if (!(file instanceof File)) {
+        const formFileError = new ValueTypeError(fileName, 'File', 'null', `${fileName}はファイルではありません`);
+        return NextResponse.json(formFileError.toJson());
+      }
+      const localFile = getLocalFile();
+      fileData = await localFile.saveTempFile(file);
+    }
+
+    return handle(req.auth, (identifier) => callback(identifier, pathArgs, formArgs, fileData));
+  });
 }

@@ -1,17 +1,13 @@
 import { FunctionResult, deleteCroak } from '@/case/croak/deleteCroak';
 import { bindContext } from '@/lib/base/context';
 import { FetchType, getRouteHandler, executeFetch } from '@/lib/next/routeHandler';
-import type { JSONSchema } from "json-schema-to-ts";
+import { z } from 'zod';
 
 export type ResponseType = FunctionResult;
 
-const pathSchema = {
-  type: 'object',
-  properties: {
-    croak_id: { type: 'string' }
-  },
-  required: ['croak_id'],
-} as const satisfies JSONSchema;
+const pathSchema = z.object({
+  croak_id: z.coerce.number(),
+});
 
 export const POST = getRouteHandler(
   pathSchema,

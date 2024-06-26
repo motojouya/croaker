@@ -1,21 +1,18 @@
-import { FunctionResult, postTextCroak } from '@/case/croak/postTextCroak';
+import { FunctionResult, postCroak } from '@/case/croak/postTextCroak';
 import { bindContext } from '@/lib/base/context';
 import { FetchType, getBodyHandler, executeFetch } from '@/lib/next/routeHandler';
+import { z } from 'zod';
 
 export type ResponseType = FunctionResult;
 
-const bodySchema = {
-  type: 'object',
-  properties: {
-    contents: { type: 'string' }
-  },
-  required: ['contents'],
-} as const satisfies JSONSchema;
+const bodySchema = z.object({
+  contents: z.string(),
+});
 
 export const POST = getBodyHandler(
   null,
   bodySchema,
-  (identifier, p, b) => bindContext(postTextCroak)(identifier)(b.contents)
+  (identifier, p, b) => bindContext(postCroak)(identifier)(b.contents)
 );
 
 export type FetchAPI = (contents: string) => Promise<ResponseType>;
@@ -23,7 +20,7 @@ export const fetchAPI: FetchAPI = async (contents) => {
   const result = await executeFetch(() => {
     return fetch(`/api/croak/top/text`, {
       method: 'POST',
-      body: { contents },
+      body: JSON.stringify({ contents }),
     })
   });
   return result as ResponseType;

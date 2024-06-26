@@ -5,7 +5,7 @@ import {
   Updateable
 } from 'kysely'
 
-exort interface RoleTable {
+export interface RoleTable {
   role_id: number;
   name: string;
   ban_power: boolean;
@@ -19,7 +19,7 @@ export type Role = Selectable<RoleTable>
 export type NewRole = Insertable<RoleTable>
 export type RoleUpdate = Updateable<RoleTable>
 
-exort interface ConfigurationTable {
+export interface ConfigurationTable {
   active: boolean;
   account_create_available: boolean;
   default_role_id: number;

@@ -14,17 +14,38 @@ export function parse<S extends z.ZodTypeAny>(schema: S, data: unknown): z.infer
 
 // TODO S extends z.SomeZodObjectしてるけど、stringとかnumber定義がコンパイルエラーになるか検証
 // parseがz.ZodTypeAnyを受け入れるようにしてるけどbodySchemaはz.SomeZodObjectになるようにしておく
-export type GetKeyValue = (key: string) => string | null | undefined;
-export function parseKeyValue<S extends z.SomeZodObject>(schema: S, get: GetKeyValue): z.infer<S> | ZodSchemaError {
+export type GetKeyValue<E> = (key: string) => string | null | E;
+export function parseKeyValue<S extends z.SomeZodObject, E extends HandleableError>(schema: S, get: GetKeyValue<E>): z.infer<S> | ZodSchemaError | E {
 
   const keys = Object.keys(schema.keyof().Values);
 
-  const data = keys.reduce((acc, key) => ({
-    ...acc,
-    key: get(key),
-  }), {});
+  let data = {};
+  for (const key of keys) {
+
+    const val = get(key);
+    if (val instanceof Error) {
+      return val;
+    }
+
+    data = {
+      ...data,
+      key: val,
+    };
+  }
 
   return parse(schema, data);
+}
+
+export class ValueTypeError extends HandleableError {
+  override readonly name = 'lib.schema.ValueTypeError' as const;
+  constructor(
+    readonly property_name: string,
+    readonly expected: string,
+    readonly actual: string,
+    readonly message: string,
+  ) {
+    super();
+  }
 }
 
 export type Issue = {

@@ -7,8 +7,8 @@ export async function up(db: Kysely<any>): Promise<void> {
 
   await db.schema
     .createTable('configuration')
-    .addColumn('active', 'tinyint', (col) => col.notNull())
-    .addColumn('account_create_available', 'tinyint', (col) => col.notNull())
+    .addColumn('active', 'boolean', (col) => col.notNull()) // tinyint -> boolean
+    .addColumn('account_create_available', 'boolean', (col) => col.notNull()) // tinyint -> boolean
     .addColumn('default_role_id', 'integer', (col) => col.notNull())
     .addColumn('about_contents', 'text', (col) => col.primaryKey())
     .execute();
@@ -17,12 +17,12 @@ export async function up(db: Kysely<any>): Promise<void> {
     .createTable('role')
     .addColumn('role_id', 'integer', (col) => col.primaryKey())
     .addColumn('name', 'text', (col) => col.notNull()) // owner visitor
-    .addColumn('ban_power', 'tinyint', (col) => col.notNull())
-    .addColumn('delete_other_post', 'tinyint', (col) => col.notNull())
+    .addColumn('ban_power', 'boolean', (col) => col.notNull()) // tinyint -> boolean
+    .addColumn('delete_other_post', 'boolean', (col) => col.notNull()) // tinyint -> boolean
     .addColumn('post', 'text', (col) => col.notNull()) // top thread disable
-    .addColumn('post_file', 'tinyint', (col) => col.notNull())
+    .addColumn('post_file', 'boolean', (col) => col.notNull()) // tinyint -> boolean
     .addColumn('top_post_interval', 'integer', (col) => col.notNull())
-    .addColumn('show_other_activities', 'tinyint', (col) => col.notNull())
+    .addColumn('show_other_activities', 'boolean', (col) => col.notNull()) // tinyint -> boolean
     .execute();
 }
 

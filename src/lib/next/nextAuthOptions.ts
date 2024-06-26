@@ -1,5 +1,4 @@
-import type { NextAuthOptions, DefaultSession } from "next-auth";
-import NextAuth from "next-auth"
+import NextAuth, { DefaultSession } from "next-auth";
 import GitHubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 // import CredentialsProvider from "next-auth/providers/credentials";
@@ -14,7 +13,7 @@ declare module 'next-auth' {
   }
 }
 
-export const options: NextAuthOptions = {
+export const { handlers, signIn, signOut, auth } = NextAuth({
   debug: true,
   session: { strategy: "database" }, // TODO 'jwt' でもいい。いずれにしろadapterがあれば永続化はしてくれる。どっちがいいのか
   adapter: KyselyAdapter(nextAuthKysely),
@@ -89,4 +88,4 @@ export const options: NextAuthOptions = {
       // };
     },
   }
-};
+});
