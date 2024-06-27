@@ -7,6 +7,8 @@ import type {
 import type {
   CroakTable,
   CroakerTable,
+  FileTable,
+  LinkTable,
 } from '@/database/type/croak';
 import type {
   RoleTable,
@@ -14,12 +16,14 @@ import type {
 } from '@/database/type/master';
 
 export interface Database {
-  User: UserTable;
-  Account: AccountTable;
-  Session: SessionTable;
-  VerificationToken: VerificationTokenTable;
-  Croak: CroakTable,
-  Croaker: CroakerTable,
-  Role: RoleTable,
-  Configuration: ConfigurationTable,
+  user: UserTable;
+  account: AccountTable;
+  session: SessionTable;
+  verification_token: VerificationTokenTable;
+  croak: CroakTable,
+  croaker: CroakerTable,
+  file: FileTable,
+  link: LinkTable,
+  role: RoleTable,
+  configuration: ConfigurationTable,
 }

@@ -1,24 +1,25 @@
 import * as E from 'fp-ts/Either';
 import * as TE from 'fp-ts/TaskEither';
+import { Fail } from '@/lib/base/fail';
 
-export type Nrm<A> = A extends Error ? never : A;
-export type Err<A> = A extends Error ? A : never;
-export type ErrorUnion<A, E extends Error = never> = A | E;
-export type ErrorReturn<A> = ErrorUnion<Nrm<A>, Err<A>>;
+export type Success<A> = A extends Fail ? never : A;
+export type Failure<A> = A extends Fail ? A : never;
+export type FailUnion<A, E extends Fail = never> = A | E;
+export type FailReturn<A> = FailUnion<Success<A>, Failure<A>>;
 
-export function go<A>(func: () => ErrorReturn<A>): E.Either<Err<A>, Nrm<A>> {
+export function execute<A>(func: () => FailReturn<A>): E.Either<Failure<A>, Success<A>> {
   const result = func();
-  if (result instanceof Error) {
+  if (result instanceof Fail) {
     return E.left(result);
   } else {
     return E.right(result);
   }
 }
 
-export function goT<A>(func: () => Promise<ErrorReturn<A>>): TE.TaskEither<Err<A>, Nrm<A>> {
+export function executeT<A>(func: () => Promise<FailReturn<A>>): TE.TaskEither<Failure<A>, Success<A>> {
   return async function () {
     const result = await func();
-    if (result instanceof Error) {
+    if (result instanceof Fail) {
       return E.left(result);
     } else {
       return E.right(result);
@@ -29,16 +30,16 @@ export function goT<A>(func: () => Promise<ErrorReturn<A>>): TE.TaskEither<Err<A
 // for sync function
 export const bind: <N extends string, A, B>(
   name: Exclude<N, keyof A>,
-  f: (a: A) => ErrorReturn<B>
-) => <E>(fa: TE.TaskEither<E, A>) => TE.TaskEither<Err<B> | E, { readonly [K in N | keyof A]: K extends keyof A ? A[K] : Nrm<B> }> =
-  (name, f) => TE.bindW(name, (v) => TE.fromEither(go(() => f(v))));
+  f: (a: A) => FailReturn<B>
+) => <E>(fa: TE.TaskEither<E, A>) => TE.TaskEither<Failure<B> | E, { readonly [K in N | keyof A]: K extends keyof A ? A[K] : Success<B> }> =
+  (name, f) => TE.bindW(name, (v) => TE.fromEither(execute(() => f(v))));
 
 // A for async function
 export const bindA: <N extends string, A, B>(
   name: Exclude<N, keyof A>,
-  f: (a: A) => Promise<ErrorReturn<B>>
-) => <E>(fa: TE.TaskEither<E, A>) => TE.TaskEither<Err<B> | E, { readonly [K in N | keyof A]: K extends keyof A ? A[K] : Nrm<B> }> =
-  (name, f) => TE.bindW(name, (v) => goT(() => f(v)));
+  f: (a: A) => Promise<FailReturn<B>>
+) => <E>(fa: TE.TaskEither<E, A>) => TE.TaskEither<Failure<B> | E, { readonly [K in N | keyof A]: K extends keyof A ? A[K] : Success<B> }> =
+  (name, f) => TE.bindW(name, (v) => executeT(() => f(v)));
 
 export const Do = TE.Do;
 export const map = TE.map;

@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import type { Session } from 'next-auth';
 import { z } from 'zod';
 import { auth } from "@/lib/next/nextAuthOptions"
-import { parse, parseKeyValue, ZodSchemaError, ValueTypeError } from '@/lib/base/schema'
-import { InvalidArgumentsError } from '@/lib/base/validation';
-import { HandleableError } from '@/lib/base/error';
+import { parse, parseKeyValue, ZodSchemaFail, ValueTypeFail } from '@/lib/base/schema'
+import { InvalidArgumentsFail } from '@/lib/base/validation';
+import { Fail } from '@/lib/base/fail';
 import type { Identifier } from '@/domain/authorization/base';
 import { FileData, getLocalFile } from '@/lib/io/file';
 
@@ -52,8 +52,8 @@ async function handle<R>(session: Session | null, callback: (identifier: Identif
 
     const result = await callback(identifier);
 
-    if (result instanceof HandleableError) {
-      return NextResponse.json(result.toJson());
+    if (result instanceof Fail) {
+      return NextResponse.json(result.toJSON());
     }
 
     if (result instanceof Error) {
@@ -86,11 +86,11 @@ export function getRouteHandler<P extends z.SomeZodObject, R>(
 
   return auth(async (req, { params }) => {
 
-    let pathArgs: z.infer<P> | ZodSchemaError;
+    let pathArgs: z.infer<P> | ZodSchemaFail | null = null;
     if (pathSchema) {
       pathArgs = parse(pathSchema, params);
-      if (pathArgs instanceof ZodSchemaError) {
-        return NextResponse.json(pathArgs.toJson());
+      if (pathArgs instanceof ZodSchemaFail) {
+        return NextResponse.json(pathArgs.toJSON());
       }
     }
 
@@ -116,18 +116,18 @@ export function getQueryHandler<P extends z.SomeZodObject, Q extends z.SomeZodOb
 
   return auth(async (req, { params }) => {
 
-    let pathArgs: z.infer<P> | ZodSchemaError;
+    let pathArgs: z.infer<P> | ZodSchemaFail | null = null;
     if (pathSchema) {
       pathArgs = parse(pathSchema, params);
-      if (pathArgs instanceof ZodSchemaError) {
-        return NextResponse.json(pathArgs.toJson());
+      if (pathArgs instanceof ZodSchemaFail) {
+        return NextResponse.json(pathArgs.toJSON());
       }
     }
 
     const searchParams = req.nextUrl.searchParams;
     const queryArgs = parseKeyValue(querySchema, searchParams.get);
-    if (queryArgs instanceof ZodSchemaError) {
-      return NextResponse.json(queryArgs.toJson());
+    if (queryArgs instanceof ZodSchemaFail) {
+      return NextResponse.json(queryArgs.toJSON());
     }
 
     return await handle(req.auth, (identifier) => callback(identifier, pathArgs, queryArgs));
@@ -152,18 +152,18 @@ export function getBodyHandler<P extends z.SomeZodObject, B extends z.SomeZodObj
 
   return auth(async (req, { params }) => {
 
-    let pathArgs: z.infer<P> | ZodSchemaError;
+    let pathArgs: z.infer<P> | ZodSchemaFail | null = null;
     if (pathSchema) {
       pathArgs = parse(pathSchema, params);
-      if (pathArgs instanceof ZodSchemaError) {
-        return NextResponse.json(pathArgs.toJson());
+      if (pathArgs instanceof ZodSchemaFail) {
+        return NextResponse.json(pathArgs.toJSON());
       }
     }
 
     const body = await req.json()
     const bodyArgs = parse(bodySchema, body);
-    if (bodyArgs instanceof ZodSchemaError) {
-      return NextResponse.json(bodyArgs.toJson());
+    if (bodyArgs instanceof ZodSchemaFail) {
+      return NextResponse.json(bodyArgs.toJSON());
     }
 
     return await handle(req.auth, (identifier) => callback(identifier, pathArgs, bodyArgs));
@@ -196,6 +196,7 @@ export function getBodyHandler<P extends z.SomeZodObject, B extends z.SomeZodObj
 //   pathSchema: P, formSchema: F, fileName: string,
 //   callback: (identifier: Identifier, path: z.infer<P>, form: z.infer<F>, file: FileData) => Promise<R>
 // ): AppRouteHandlerFn;
+// TODO どうもfileNameが型引数を取らないので推論できないっぽい
 export function getFormHandler<P extends z.SomeZodObject, F extends z.SomeZodObject, R>(
   pathSchema: P | null,
   formSchema: F | null,
@@ -205,45 +206,45 @@ export function getFormHandler<P extends z.SomeZodObject, F extends z.SomeZodObj
 
   return auth(async (req, { params }) => {
 
-    let pathArgs: z.infer<P> | ZodSchemaError;
+    let pathArgs: z.infer<P> | ZodSchemaFail | null = null;
     if (pathSchema) {
       pathArgs = parse(pathSchema, params);
-      if (pathArgs instanceof ZodSchemaError) {
-        return NextResponse.json(pathArgs.toJson());
+      if (pathArgs instanceof ZodSchemaFail) {
+        return NextResponse.json(pathArgs.toJSON());
       }
     }
 
     const formData = await req.formData();
 
-    let formArgs: z.infer<F> | ZodSchemaError | ValueTypeError;
+    let formArgs: z.infer<F> | ZodSchemaFail | ValueTypeFail | null = null;
     if (formSchema) {
       formArgs = parseKeyValue(formSchema, (key) => {
         const val = formData.get(key);
         if (val instanceof Blob) {
-          return new ValueTypeError(key, 'string', 'Blob', `${key}がファイルです`);
+          return new ValueTypeFail(key, 'string', 'Blob', `${key}がファイルです`);
         } else {
           return val;
         }
       });
       if (
-        formArgs instanceof ZodSchemaError ||
-        formArgs instanceof ValueTypeError
+        formArgs instanceof ZodSchemaFail ||
+        formArgs instanceof ValueTypeFail
       ) {
-        return NextResponse.json(formArgs.toJson());
+        return NextResponse.json(formArgs.toJSON());
       }
     }
 
-    let fileData: FileData;
+    let fileData: FileData | null = null;
     if (fileName) {
       const file = formData.get(fileName);
 
       if (!file) {
-        const formFileError = new ValueTypeError(fileName, 'File', 'string or Blob', `${fileName}はファイルではありません`);
-        return NextResponse.json(formFileError.toJson());
+        const formFileFail = new ValueTypeFail(fileName, 'File', 'string or Blob', `${fileName}はファイルではありません`);
+        return NextResponse.json(formFileFail.toJSON());
 
       } else if (!(file instanceof File)) {
-        const formFileError = new ValueTypeError(fileName, 'File', 'null', `${fileName}はファイルではありません`);
-        return NextResponse.json(formFileError.toJson());
+        const formFileFail = new ValueTypeFail(fileName, 'File', 'null', `${fileName}はファイルではありません`);
+        return NextResponse.json(formFileFail.toJSON());
       }
       const localFile = getLocalFile();
       fileData = await localFile.saveTempFile(file);

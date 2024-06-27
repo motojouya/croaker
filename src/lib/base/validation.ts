@@ -1,12 +1,12 @@
-import { HandleableError } from '@/lib/base/error';
+import { Fail, isFailJSON } from '@/lib/base/fail';
 
-export class InvalidArgumentsError extends HandleableError {
-  override readonly name = 'lib.validation.InvalidArgumentsError' as const;
+export class InvalidArgumentsFail extends Fail {
   constructor(
-    readonly property_name: string,
-    readonly value: string,
-    readonly message: string,
+    public readonly property_name: string,
+    public readonly value: string,
+    public readonly message: string,
   ) {
-    super();
+    super('lib.validation.InvalidArgumentsFail');
   }
 }
+export const isInvalidArguments = isFailJSON(new InvalidArgumentsFail('', '', ''));

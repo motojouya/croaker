@@ -1,5 +1,6 @@
-import { CroakTable } from '@/rdb/type/croak'
+import { CroakRecord } from '@/database/type/croak'
 
-export type CroakSimple = Omit<CroakTable, 'user_id' | 'name'> & {
+export type CroakSimple = CroakRecord & {
   croaker_name: string;
+  has_thread: boolean;
 };

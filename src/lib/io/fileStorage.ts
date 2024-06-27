@@ -1,6 +1,6 @@
 import { Storage as GoogleCloudStorage, UploadOptions } from '@google-cloud/storage';
 import { v4 } from 'uuid';
-import { HandleableError } from '@/lib/base/error';
+import { Fail, isFailJSON } from '@/lib/base/fail';
 
 type StorageConfig = {
   storage: GoogleCloudStorage;
@@ -27,7 +27,7 @@ const createStorage: CreateStorage = () => {
   };
 }
 
-type UploadFile = (config: StorageConfig) => (localFilePath: string, extension: string) => Promise<string | FileError>;
+type UploadFile = (config: StorageConfig) => (localFilePath: string, extension: string) => Promise<string | FileFail>;
 const uploadFile: UploadFile = ({ storage, bucketName, directory }) => async (localFilePath, extension) => {
 
   try {
@@ -41,7 +41,7 @@ const uploadFile: UploadFile = ({ storage, bucketName, directory }) => async (lo
 
   } catch (e) {
     if (e instanceof Error) {
-      return new FileError(
+      return new FileFail(
         'upload',
         localFilePath,
         e,
@@ -52,7 +52,7 @@ const uploadFile: UploadFile = ({ storage, bucketName, directory }) => async (lo
   }
 }
 
-type GeneratePreSignedUrl = (config: StorageConfig) => (filePath: string) => Promise<string | FileError>
+type GeneratePreSignedUrl = (config: StorageConfig) => (filePath: string) => Promise<string | FileFail>
 const generatePreSignedUrl: GeneratePreSignedUrl = ({ storage, bucketName, directory }) => async (filePath) => {
 
   try {
@@ -66,7 +66,7 @@ const generatePreSignedUrl: GeneratePreSignedUrl = ({ storage, bucketName, direc
 
   } catch (e) {
     if (e instanceof Error) {
-      return new FileError(
+      return new FileFail(
         'preSignedUrl',
         filePath,
         e,
@@ -95,14 +95,14 @@ export const getStorage: GetStorage = () => {
   };
 };
 
-export class FileError extends HandleableError {
-  override readonly name = 'lib.fileStorage.FileError' as const;
+export class FileFail extends Fail {
   constructor(
     readonly action: string,
     readonly path: string,
     readonly exception: Error,
     readonly message: string,
   ) {
-    super();
+    super('lib.fileStorage.FileFail');
   }
 }
+export const isFileFail = isFailJSON(new FileFail('', '', new Error(), ''));

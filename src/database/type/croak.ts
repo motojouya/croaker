@@ -1,5 +1,6 @@
 import {
   GeneratedAlways,
+  Generated,
   Insertable,
   Selectable,
   Updateable
@@ -19,7 +20,7 @@ export interface CroakerTable {
   created_date: Date;
   updated_date: Date;
 }
-export type Croaker = Selectable<CroakerTable>
+export type CroakerRecord = Selectable<CroakerTable>
 export type NewCroaker = Insertable<CroakerTable>
 export type CroakerUpdate = Updateable<CroakerTable>
 
@@ -27,12 +28,11 @@ export interface CroakTable {
   croak_id: GeneratedAlways<number>;
   croaker_id: string;
   contents: string | null;
-  file_path: string | null;
   thread: number | null;
-  posted_date: Date;
-  delete_date: Date | null;
+  posted_date: Generated<Date>;
+  deleted_date: Date | null;
 }
-export type Croak = Selectable<CroakTable>
+export type CroakRecord = Selectable<CroakTable>
 export type NewCroak = Insertable<CroakTable>
 export type CroakUpdate = Updateable<CroakTable>
 
@@ -45,9 +45,9 @@ export interface LinkTable {
   image: string | null;
   description: string | null;
   site_name: string | null;
-  created_date: Date;
+  created_date: Generated<Date>;
 }
-export type Link = Selectable<LinkTable>
+export type LinkRecord = Selectable<LinkTable>
 export type NewLink = Insertable<LinkTable>
 export type LinkUpdate = Updateable<LinkTable>
 
@@ -60,9 +60,9 @@ export interface FileTable {
   source: string;
   name: string;
   content_type: string;
-  created_date: Date;
+  created_date: Generated<Date>;
 }
-export type File = Selectable<FileTable>
+export type FileRecord = Selectable<FileTable>
 export type NewFile = Insertable<FileTable>
 export type FileUpdate = Updateable<FileTable>
 

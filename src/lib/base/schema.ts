@@ -1,21 +1,21 @@
 import { z } from 'zod';
-import { HandleableError } from '@/lib/base/error';
+import { Fail, isFailJSON } from '@/lib/base/fail';
 
-export function parse<S extends z.ZodTypeAny>(schema: S, data: unknown): z.infer<S> | ZodSchemaError {
+export function parse<S extends z.ZodTypeAny>(schema: S, data: unknown): z.infer<S> | ZodSchemaFail {
 
   const result = schema.safeParse(data);
 
   if (result.success) {
     return result.data;
   } else {
-    return new ZodSchemaError(result.error);
+    return new ZodSchemaFail(result.error);
   }
 }
 
 // TODO S extends z.SomeZodObjectしてるけど、stringとかnumber定義がコンパイルエラーになるか検証
 // parseがz.ZodTypeAnyを受け入れるようにしてるけどbodySchemaはz.SomeZodObjectになるようにしておく
 export type GetKeyValue<E> = (key: string) => string | null | E;
-export function parseKeyValue<S extends z.SomeZodObject, E extends HandleableError>(schema: S, get: GetKeyValue<E>): z.infer<S> | ZodSchemaError | E {
+export function parseKeyValue<S extends z.SomeZodObject, E extends Fail>(schema: S, get: GetKeyValue<E>): z.infer<S> | ZodSchemaFail | E {
 
   const keys = Object.keys(schema.keyof().Values);
 
@@ -23,7 +23,7 @@ export function parseKeyValue<S extends z.SomeZodObject, E extends HandleableErr
   for (const key of keys) {
 
     const val = get(key);
-    if (val instanceof Error) {
+    if (val instanceof Fail) {
       return val;
     }
 
@@ -36,17 +36,17 @@ export function parseKeyValue<S extends z.SomeZodObject, E extends HandleableErr
   return parse(schema, data);
 }
 
-export class ValueTypeError extends HandleableError {
-  override readonly name = 'lib.schema.ValueTypeError' as const;
+export class ValueTypeFail extends Fail {
   constructor(
-    readonly property_name: string,
-    readonly expected: string,
-    readonly actual: string,
-    readonly message: string,
+    public readonly property_name: string,
+    public readonly expected: string,
+    public readonly actual: string,
+    public readonly message: string,
   ) {
-    super();
+    super('lib.schema.ValueTypeFail');
   }
 }
+export const isValueTypeFail = isFailJSON(new ValueTypeFail('', '', '', ''));
 
 export type Issue = {
   code: string;
@@ -54,16 +54,14 @@ export type Issue = {
   message: string;
 };
 
-export class ZodSchemaError extends HandleableError {
+export class ZodSchemaFail extends Fail {
 
-  override readonly name = 'lib.schema.ZodSchemaError' as const;
-
-  readonly issues: Issue[];
-  readonly error: z.ZodError;
-  readonly message: string;
+  public readonly issues: Issue[];
+  public readonly error: z.ZodError;
+  public readonly message: string;
 
   constructor(error: z.ZodError) {
-    super();
+    super('lib.schema.ZodSchemaFail');
     this.error = error;
     this.issues = error.issues.map(({ code, path, message }) => ({
       code,
@@ -73,3 +71,4 @@ export class ZodSchemaError extends HandleableError {
     this.message = this.issues.map(issue => issue.message).join('\n');
   }
 }
+export const isZodSchemaFail = isFailJSON(new ZodSchemaFail(new z.ZodError([])));

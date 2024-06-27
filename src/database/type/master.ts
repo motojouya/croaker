@@ -15,7 +15,7 @@ export interface RoleTable {
   top_post_interval: number;
   show_other_activities: boolean;
 }
-export type Role = Selectable<RoleTable>
+export type RoleRecord = Selectable<RoleTable>
 export type NewRole = Insertable<RoleTable>
 export type RoleUpdate = Updateable<RoleTable>
 
@@ -25,7 +25,7 @@ export interface ConfigurationTable {
   default_role_id: number;
   about_contents: string;
 }
-export type Configuration = Selectable<ConfigurationTable>
+export type ConfigurationRecord = Selectable<ConfigurationTable>
 export type NewConfiguration = Insertable<ConfigurationTable>
 export type ConfigurationUpdate = Updateable<ConfigurationTable>
 

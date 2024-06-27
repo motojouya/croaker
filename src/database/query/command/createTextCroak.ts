@@ -1,25 +1,28 @@
 import { Kysely } from 'kysely'
 import {
-  CroakTable,
-  LinkTable,
-} from '@/rdb/type/croak'
+  CroakRecord,
+  LinkRecord,
+} from '@/database/type/croak'
+import { Database } from '@/database/type'
 
-export type ArgCroak = Pick<CroakTable, 'croaker_id' | 'contents'> & {
+export type ArgCroak = Pick<CroakRecord, 'croaker_id' | 'contents'> & {
   thread?: number;
 }
 
-export type ArgLink = Pick<CroakTable, 'url'> & {
+export type ArgLink = Pick<LinkRecord, 'source'> & {
+  url?: string;
   type?: string;
   title?: string;
   image?: string;
-  summary?: string;
+  description?: string;
+  site_name?: string;
 };
 
-export type ReturnCroak = CroakTable & {
-  links: LinkTable[]
+export type ReturnCroak = CroakRecord & {
+  links: LinkRecord[]
 };
 
-export const CreateTextCroak = (db: Kysely) => (croak: ArgCroak, links: ArgLink[]) => Promise<ReturnCroak>;
+export type CreateTextCroak = (db: Kysely<Database>) => (croak: ArgCroak, links: ArgLink[]) => Promise<ReturnCroak>;
 export const createTextCroak: CreateTextCroak = (db) => async (croak, links) => {
 
   const croakRecord = await db.insertInto('croak')
@@ -43,5 +46,5 @@ export const createTextCroak: CreateTextCroak = (db) => async (croak, links) => 
     linkRecords.push(linkRecord);
   }
 
-  return { ...croakRecord, links: linkRecord, };
+  return { ...croakRecord, links: linkRecords, };
 };

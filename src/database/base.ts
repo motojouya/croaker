@@ -1,7 +1,7 @@
 import Sqlite from 'better-sqlite3'
 import { Kysely, SqliteDialect, Transaction, sql } from 'kysely';
 import { Database } from '@/database/type';
-import { HandleableError } from '@/lib/base/error';
+import { Fail, isFailJSON } from '@/lib/base/fail';
 import { KyselyAuth } from "@auth/kysely-adapter";
 
 export type GetQuery = Record<string, (db: Kysely<Database>) => any>;
@@ -73,7 +73,7 @@ function getTransact<T extends object>(db: Kysely<Database>, queries: T): Transa
 
         const result = callback(transactedQueries);
 
-        if (result instanceof Error) {
+        if (result instanceof Fail) {
           throw result;
         }
 
@@ -82,7 +82,7 @@ function getTransact<T extends object>(db: Kysely<Database>, queries: T): Transa
 
     // kyselyがrollbackはerror throwを想定しているため、callback内で投げて、再度catchする
     } catch (e) {
-      if (e instanceof HandleableError) {
+      if (e instanceof Fail) {
         // @ts-ignore
         return e;
       }
@@ -112,24 +112,33 @@ function getQuery<T extends object>(db: Kysely<Database>, queries: T, acc: objec
 
 export const sqlNow = () => sql`now()`;
 
-export class RecordAlreadyExistError extends HandleableError {
-  override readonly name = 'lib.db.RecordAlreadyExistError' as const;
+export class RecordAlreadyExistFail extends Fail {
   constructor(
     readonly table: string,
     readonly data: object,
     readonly message: string,
   ) {
-    super();
+    super('lib.db.RecordAlreadyExistFail');
   }
 }
 
-export class RecordNotFoundError extends HandleableError {
-  override readonly name = 'lib.db.RecordNotFoundError' as const;
+export class RecordNotFoundFail extends Fail {
   constructor(
     readonly table: string,
     readonly keys: object,
     readonly message: string,
   ) {
-    super();
+    super('lib.db.RecordNotFoundFail');
+  }
+}
+
+export class MutationFail extends Fail {
+  constructor(
+    readonly action: string,
+    readonly table: string,
+    readonly value: object,
+    readonly message: string,
+  ) {
+    super('lib.db.MutationFail');
   }
 }

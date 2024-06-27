@@ -1,4 +1,4 @@
-import { HandleableError } from '@/lib/error';
+import { Fail, isFailJSON } from '@/lib/base/fail';
 import { Croaker } from '@/database/query/getCroaker';
 
 import { Banned } from '@/authorization/validation/banned';
@@ -9,7 +9,7 @@ import { PostFile } from '@/authorization/validation/postFile';
 import { ShowOtherActivities } from '@/authorization/validation/showOtherActivities';
 import { DeleteOtherPost } from '@/authorization/validation/deleteOtherPost';
 
-import { InvalidArgumentsError } from '@/lib/base/validation';
+import { InvalidArgumentsFail } from '@/lib/base/validation';
 
 export type IdentifierAnonymous = { type: 'anonymous' };
 export type IdentifierUserId = { type: 'user_id', user_id: string };
@@ -30,22 +30,22 @@ export type ClientCroakerLogined = { type: 'logined' };
 export type ClientCroakerRegisterd = { type: 'registered', value: Croaker };
 export type ClientCroaker = ClientCroakerAnonymous | ClientCroakerLogined | ClientCroakerRegisterd;
 
-export type AuthorizeValidation = (croaker: Croaker) => undefined | AuthorityError;
+export type AuthorizeValidation = (croaker: Croaker) => undefined | AuthorityFail;
 
 export type JustLoginUser = (
   identifier: identifier
   getCroaker: () => Promise<Croaker | null>
-) => Promise<string | AuthorityError | InvalidArgumentsError>;
+) => Promise<string | AuthorityFail | InvalidArgumentsFail>;
 export const justLoginUser: JustLoginUser = async (identifier, getCroaker) => {
 
   if (identifier.type === 'anonymous') {
-    return new AuthorityError(null, 'login', 'ログインしてください');
+    return new AuthorityFail(null, 'login', 'ログインしてください');
   }
   const userId = identifier.user_id;
 
   const croaker = await getCroaker(userId);
   if (croaker) {
-    return new InvalidArgumentsError('croaker', croaker, 'すでに登録済みです');
+    return new InvalidArgumentsFail('croaker', croaker, 'すでに登録済みです');
   }
 
   return userId;
@@ -64,17 +64,17 @@ export type AuthorizeCroaker = (
   identifier: identifier
   getCroaker: () => Promise<Croaker | null>
   additionals?: Validation[]
-) => Promise<Croaker | AuthorityError>;
+) => Promise<Croaker | AuthorityFail>;
 export const authorizeCroaker: AuthorizeCroaker = async (identifier, getCroaker, additionals = []) => {
 
   if (identifier.type === 'anonymous') {
-    return new AuthorityError(null, 'login', 'ログインしてください');
+    return new AuthorityFail(null, 'login', 'ログインしてください');
   }
 
   const croaker = await getCroaker(identifier.user_id);
 
   if (!croaker) {
-    return new AuthorityError(null, 'register', '自身の情報の登録をお願いします');
+    return new AuthorityFail(null, 'register', '自身の情報の登録をお願いします');
   }
 
   for (const addition of additionals) {
@@ -105,13 +105,13 @@ export const authorizeCroaker: AuthorizeCroaker = async (identifier, getCroaker,
   return croaker;
 };
 
-export class AuthorityError extends HandleableError {
-  override readonly name = 'lib.authorize.AuthorityError' as const;
+export class AuthorityFail extends Fail {
   constructor(
     readonly croaker_id: string,
     readonly authority: string,
     readonly message: string,
   ) {
-    super();
+    super('lib.authorize.AuthorityFail');
   }
 }
+export const isAuthorityFail = isFailJSON(new AuthorityFail('', '', ''));

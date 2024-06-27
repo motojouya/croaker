@@ -13,7 +13,7 @@ export interface UserTable {
   emailVerified: Date | null
   image: string | null
 }
-export type User = Selectable<UserTable>
+export type UserRecord = Selectable<UserTable>
 export type NewUser = Insertable<UserTable>
 export type UserUpdate = Updateable<UserTable>
 
@@ -32,7 +32,7 @@ export interface AccountTable {
   session_state: string | null
   [parameter: string]: any
 }
-export type Account = Selectable<AccountTable>
+export type AccountRecord = Selectable<AccountTable>
 export type NewAccount = Insertable<AccountTable>
 export type AccountUpdate = Updateable<AccountTable>
 
@@ -42,7 +42,7 @@ export interface SessionTable {
   sessionToken: string
   expires: Date
 }
-export type Session = Selectable<SessionTable>
+export type SessionRecord = Selectable<SessionTable>
 export type NewSession = Insertable<SessionTable>
 export type SessionUpdate = Updateable<SessionTable>
 
@@ -51,6 +51,6 @@ export interface VerificationTokenTable {
   token: string
   expires: Date
 }
-export type VerificationToken = Selectable<VerificationTokenTable>
+export type VerificationTokenRecord = Selectable<VerificationTokenTable>
 export type NewVerificationToken = Insertable<VerificationTokenTable>
 export type VerificationTokenUpdate = Updateable<VerificationTokenTable>
