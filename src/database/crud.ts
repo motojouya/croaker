@@ -4,64 +4,58 @@ import {
   Selectable,
   Updateable
 } from 'kysely'
-// import {
-//   TableExpression,
-//   FromTables,
-// } from 'kysely/parser/table-parser';
 import { Database } from '@/database/type';
 
-// export function create(db: Kysely<Database>) {
-//   return async function <TE extends TableExpression<Database, keyof Database>>(tableName: TE, newRecord: Insertable<FromTables<Database, never, TE>>): Promise<FromTables<Database, never, TE>[]> {
-//     return await db.insertInto(tableName)
-//       .values(newRecord)
-//       .returningAll()
-//       .executeTakeFirstOrThrow();
-//   };
-// }
-// 
-// export function read(db: Kysely<Database>) {
-//   return async function <TE extends TableExpression<Database, keyof Database>>(tableName: TE, criteria: Partial<Selectable<FromTables<Database, never, TE>>>): Promise<FromTables<Database, never, TE>[]> {
-//     let query = db.selectFrom(tableName);
-// 
-//     for (const prop in criteria) {
-//       query = query.where(prop, '=', criteria[prop]);
-//     }
-// 
-//     return await query.selectAll().execute();
-//   };
-// }
-// 
-// export function update(db: Kysely<Database>) {
-//   return async function <TE extends TableExpression<Database, keyof Database>>(tableName: TE, criteria: Partial<Selectable<FromTables<Database, never, TE>>>, updateWith: Updateable<FromTables<Database, never, TE>>): Promise<FromTables<Database, never, TE>[]> {
-//     let command = db.updateTable(tableName).set(updateWith);
-// 
-//     for (const prop in criteria) {
-//       command = command.where(prop, '=', criteria[prop]);
-//     }
-// 
-//     return await command.returningAll().execute();
-//   };
-// }
-// 
-// export async function delete(db: Kysely<Database>) {
-//   return async function <TE extends TableExpression<Database, keyof Database>>(tableName: TE, criteria: Partial<Selectable<FromTables<Database, never, TE>>>): Promise<FromTables<Database, never, TE>[]> {
-//     let command = db.deleteFrom(tableName);
-// 
-//     for (const prop in criteria) {
-//       command = command.where(prop, '=', criteria[prop]);
-//     }
-// 
-//     return await command.returningAll().execute();
-//   };
-// }
+// TODO 型推論が途中で止まっている気がする。
+// ALEのtscだと限界あるのかな。とりあえずほっておいて、実際にコンパイルしてみて結果を見る。
+// 型としては、見る限りあってそうで、大丈夫そうならignoreしてしまう
+
+export function create(db: Kysely<Database>) {
+  return async function <T extends keyof Database & string>(tableName: T, newRecord: Insertable<Database[T]>): Promise<Database[T][]> {
+    return await db.insertInto(tableName)
+      .values(newRecord)
+      .returningAll()
+      .executeTakeFirstOrThrow();
+  };
+}
+
+export function read(db: Kysely<Database>) {
+  return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>): Promise<Database[T][]> {
+    let query = db.selectFrom(tableName);
+
+    Object.entries(criteria).forEach(([key, value]) => {
+      if (Object.hasOwn(criteria, key)) {
+        command = command.where(key, '=', value);
+      }
+    });
+
+    return await query.selectAll().execute();
+  };
+}
 
 export function update(db: Kysely<Database>) {
-  return async function <T extends keyof Database>(tableName: T, criteria: Partial<Selectable<Database[T]>>, updateWith: Updateable<Database[T]>): Promise<Database[T][]> {
+  return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>, updateWith: Updateable<Database[T]>): Promise<Database[T][]> {
     let command = db.updateTable(tableName).set(updateWith);
 
-    for (const prop in criteria) {
-      command = command.where(prop, '=', criteria[prop]);
-    }
+    Object.entries(criteria).forEach(([key, value]) => {
+      if (Object.hasOwn(criteria, key)) {
+        command = command.where(key, '=', value);
+      }
+    });
+
+    return await command.returningAll().execute();
+  };
+}
+
+export function destroy(db: Kysely<Database>) {
+  return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>): Promise<Database[T][]> {
+    let command = db.deleteFrom(tableName);
+
+    Object.entries(criteria).forEach(([key, value]) => {
+      if (Object.hasOwn(criteria, key)) {
+        command = command.where(key, '=', value);
+      }
+    });
 
     return await command.returningAll().execute();
   };

@@ -50,17 +50,7 @@ export function getDatabase<Q extends object, T extends object>(queries: Q | nul
   let dbAccess = {};
 
   if (queries) {
-    dbAccess = Object.entries(queries).reduce((acc, [key, val]) => {
-
-      if (typeof val !== 'function') {
-        throw new Error('programmer should set context function!');
-      }
-
-      return {
-        ...acc,
-        [key]: val(db),
-      };
-    }, dbAccess);
+    dbAccess = getQuery(db, queries, dbAccess);
   }
 
   if (transactionQueries) {
@@ -70,7 +60,7 @@ export function getDatabase<Q extends object, T extends object>(queries: Q | nul
     };
   }
 
-  return dbAccess as DB<Q, T>; // TODO as!
+  return dbAccess as DB<Q, T>; // FIXME as!
 };
 
 function getTransact<T extends object>(db: Kysely<Database>, queries: T): Transact<T> {
@@ -79,17 +69,7 @@ function getTransact<T extends object>(db: Kysely<Database>, queries: T): Transa
     try {
       return db.transaction().execute(trx => {
 
-        const transactedQueries = Object.entries(queries).reduce((acc, [key, val]) => {
-
-          if (typeof val !== 'function') {
-            throw new Error('programmer should set context function!');
-          }
-
-          return {
-            ...acc,
-            [key]: val(trx),
-          };
-        }, {}) as Query<T>;
+        const transactedQueries = getQuery(db, queries, {});
 
         const result = callback(transactedQueries);
 
@@ -110,6 +90,25 @@ function getTransact<T extends object>(db: Kysely<Database>, queries: T): Transa
     }
   }
 }
+
+function getQuery<T extends object>(db: Kysely<Database>, queries: T, acc: object): Query<T> {
+
+  return Object.entries(queries).reduce((acc, [key, val]) => {
+
+    if (typeof val !== 'function') {
+      throw new Error('programmer should set context function!');
+    }
+
+    if (!Object.hasOwn(queries, key)) {
+      return acc;
+    }
+
+    return {
+      ...acc,
+      [key]: val(db),
+    };
+  }, acc) as Query<T>; // FIXME as!
+};
 
 export const sqlNow = () => sql`now()`;
 

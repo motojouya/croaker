@@ -1,6 +1,7 @@
 import { Kysely, sql } from 'kysely'
+import { Database } from '@/database/type';
 
-export async function up(db: Kysely<any>): Promise<void> {
+export async function up(db: Kysely<Database>): Promise<void> {
 
   // TODO
   await db.raw(sql<void>`PRAGMA foreign_keys = ON`).execute();
@@ -26,7 +27,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .execute();
 }
 
-export async function down(db: Kysely<any>): Promise<void> {
+export async function down(db: Kysely<Database>): Promise<void> {
   await db.raw(sql<void>`PRAGMA foreign_keys = OFF`).execute();
   await db.schema.dropTable('role').execute();
   await db.schema.dropTable('configuration').execute();

@@ -29,10 +29,18 @@ export function bindContext<T extends GetContext, F>(func: ContextFullFunction<T
     throw new Error('programmer should set context!');
   }
 
-  const context = Object.entries(func._context_setting).reduce((acc, [key, val]) => {
+  // Object.entriesのスコープでundefinedがないという推論が消えてしまう
+  // なので別の変数に入れ直して、その変数で型を推論させてやる必要がある
+  const contextSetting = func._context_setting;
+
+  const context = Object.entries(contextSetting).reduce((acc, [key, val]) => {
 
     if (typeof val !== 'function') {
       throw new Error('programmer should set context function!');
+    }
+
+    if (!Object.hasOwn(contextSetting, key)) {
+      return acc;
     }
 
     return {

@@ -1,6 +1,7 @@
 import { Kysely, sql } from 'kysely'
+import { Database } from '@/database/type';
 
-export async function up(db: Kysely<any>): Promise<void> {
+export async function up(db: Kysely<Database>): Promise<void> {
   await db.schema
     .createTable('croaker')
     .addColumn('user_id', 'text', (col) => col.primaryKey()) // foreign key
@@ -72,7 +73,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .execute()
 }
 
-export async function down(db: Kysely<any>): Promise<void> {
+export async function down(db: Kysely<Database>): Promise<void> {
   await db.schema.dropTable('croaker').execute();
   await db.schema.dropTable('croak').execute();
 }
