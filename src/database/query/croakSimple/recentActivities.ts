@@ -12,7 +12,7 @@ export const recentActivities: RecentActivities = (db) => async (croakerId, days
       (eb) => eb
         .selectFrom('croak as subk')
         .groupBy('subk.croaker_id')
-        .where((ebs) => ebs.fn<>'subk.posted_date', '>', '7 days ago') // TODO
+        .where('subk.posted_date', '>', (ebs) => ebs.fn<string>('datetime', ['now', 'localtime', `-${days} days`])) // TODO
         .where('subk.deleted_date', 'is not', null)
         .select((ebs) => ([
           'subk.croaker_id as croaker_id',
