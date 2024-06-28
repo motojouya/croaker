@@ -1,43 +1,40 @@
 import { Kysely, NotNull } from 'kysely'
-import { CROAKER_STATUS_ACTIVE } from '@/rdb/type/croak'
-import { CroakSimple } from '@/rdb/query/croakSimple/croakSimple';
+import { CROAKER_STATUS_ACTIVE } from '@/database/type/croak'
+import { CroakSimple } from '@/database/query/croakSimple/croakSimple';
+import { Database } from '@/database/type';
 
-export type RecentActivities = (db: Kysely) => (croakerId: string, days: number) => Promise<CroakSimple[]>;
+export type RecentActivities = (db: Kysely<Database>) => (croakerId: string, days: number) => Promise<CroakSimple[]>;
 export const recentActivities: RecentActivities = (db) => async (croakerId, days) => {
   return await db
-    .selectFrom('croak')
-    .select([
-      'croak.croak_id as croak_id',
-      'croak.contents as contents',
-      'croak.thread as thread',
-      'croak.posted_date as posted_date',
-      'croaker.croaker_id as croaker_id',
-      'croaker.name as croaker_name',
-    ])
-    .innerJoin('croaker', (join) => {
-      join.onRef('croak.croaker_id', '=', 'croaker.croaker_id');
-    })
+    .selectFrom('croak as k')
+    .innerJoin('croaker as ker', 'k.croaker_id', 'ker.croaker_id')
     .innerJoin(
-      (eb) => {
-        eb
-          .selectFrom('croak')
-          .select([
-            'croak.croaker_id as croaker_id',
-            'max(croak.croak_id) as max_croak_id',
-          ])
-          .where('croak.posted_date', '>', '7 days ago') // TODO
-          .where('croak.delete_date', NotNull)
-          .groupBy('croak.croaker_id')
-          .as('su');
-      },
-      (join) => {
-        join.onRef('croak.croak_id', '=', 'su.max_croak_id');
-      }
+      (eb) => eb
+        .selectFrom('croak as subk')
+        .groupBy('subk.croaker_id')
+        .where((ebs) => ebs.fn<>'subk.posted_date', '>', '7 days ago') // TODO
+        .where('subk.deleted_date', 'is not', null)
+        .select((ebs) => ([
+          'subk.croaker_id as croaker_id',
+          ebs.fn.max<number>('subk.croak_id').as('max_croak_id'),
+        ]))
+        .as('su'),
+      (join) => join.onRef('k.croak_id', '=', 'su.max_croak_id')
     )
-    .where('croak.posted_date', '>', '7 days ago') // TODO
-    .where('croak.delete_date', NotNull)
-    .where('croaker.status', '=', CROAKER_STATUS_ACTIVE)
-    .where('croaker.croaker_id', '<>', croakerId)
-    .orderBy(['croak.croak_id desc'])
+    .select((eb) => ([
+      'k.croak_id as croak_id',
+      'k.contents as contents',
+      'k.thread as thread',
+      'k.posted_date as posted_date',
+      'k.deleted_date as deleted_date',
+      eb.val(false).as('has_thread'),
+      'ker.croaker_id as croaker_id',
+      'ker.name as croaker_name',
+    ]))
+    .where('k.posted_date', '>', '7 days ago') // TODO
+    .where('k.deleted_date', 'is not', null)
+    .where('ker.status', '=', CROAKER_STATUS_ACTIVE)
+    .where('ker.croaker_id', '<>', croakerId)
+    .orderBy(['k.croak_id desc'])
     .execute();
 };
