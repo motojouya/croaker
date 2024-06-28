@@ -1,4 +1,4 @@
-import { Kysely, NotNull } from 'kysely'
+import { Kysely, sql, NotNull } from 'kysely'
 import { CROAKER_STATUS_ACTIVE } from '@/database/type/croak'
 import { CroakSimple } from '@/database/query/croakSimple/croakSimple';
 import { Database } from '@/database/type';
@@ -12,7 +12,8 @@ export const recentActivities: RecentActivities = (db) => async (croakerId, days
       (eb) => eb
         .selectFrom('croak as subk')
         .groupBy('subk.croaker_id')
-        .where('subk.posted_date', '>', (ebs) => ebs.fn<string>('datetime', ['now', 'localtime', `-${days} days`])) // TODO
+        .where('subk.posted_date', '>', db.fn('datetime', ['now', 'localtime', `-${days} days`]))
+        //.where('subk.posted_date', '>', sql`datetime('now', 'localtime', '-${days} days')`)
         .where('subk.deleted_date', 'is not', null)
         .select((ebs) => ([
           'subk.croaker_id as croaker_id',

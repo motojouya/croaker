@@ -42,64 +42,42 @@ export function create(db: Kysely<Database>) {
 
 export function read(db: Kysely<Database>) {
   return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>): Promise<Selectable<Database[T]>[]> {
-    let query = db.selectFrom(tableName);
-
-    // @ts-ignore
-    Object.entries(criteria).forEach(([key, value]: KeyValue<T>) => {
-      // @ts-ignore
-      if (Object.hasOwn(criteria, key)) {
-        query = query.where(key, '=', value);
-      }
-    });
-
-    return await query.selectAll().execute();
+    return await db
+      .selectFrom(tableName)
+      .where((eb) => eb.and(criteria))
+      .selectAll()
+      .execute();
   };
 }
 
 export function update(db: Kysely<Database>) {
-  return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>, updateWith: Updateable<Database[T]>): Promise<Selectable<Database[T]>[]> {
-    let command = db.updateTable(tableName).set(updateWith);
-
-    // @ts-ignore
-    Object.entries(criteria).forEach(([key, value]: KeyValue<T>) => {
-      // @ts-ignore
-      if (Object.hasOwn(criteria, key)) {
-        command = command.where(key, '=', value);
-      }
-    });
-
-    return await command.returningAll().execute();
+  return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>, updateWith: Updateable<Database[T]>): Promise<Database[T][]> {
+    return await db
+      .updateTable(tableName)
+      .set(updateWith)
+      .where((eb) => eb.and(criteria))
+      .returningAll()
+      .execute();
   };
 }
 
 export function updateObject(db: Kysely<Database>) {
   return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>, updateWith: UpdateObject<Database, T>): Promise<Selectable<Database[T]>[]> {
-    let command = db.updateTable(tableName).set(updateWith);
-
-    // @ts-ignore
-    Object.entries(criteria).forEach(([key, value]: KeyValue<T>) => {
-      // @ts-ignore
-      if (Object.hasOwn(criteria, key)) {
-        command = command.where(key, '=', value);
-      }
-    });
-
-    return await command.returningAll().execute();
+    return await db
+      .updateTable(tableName)
+      .set(updateWith)
+      .where((eb) => eb.and(criteria))
+      .returningAll()
+      .execute();
   };
 }
 
 export function destroy(db: Kysely<Database>) {
   return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>): Promise<Selectable<Database[T]>[]> {
-    let command = db.deleteFrom(tableName);
-
-    // @ts-ignore
-    Object.entries(criteria).forEach(([key, value]: KeyValue<T>) => {
-      // @ts-ignore
-      if (Object.hasOwn(criteria, key)) {
-        command = command.where(key, '=', value);
-      }
-    });
-
-    return await command.returningAll().execute();
+    return await db
+      .deleteFrom(tableName)
+      .where((eb) => eb.and(criteria))
+      .returningAll()
+      .execute();
   };
 }
