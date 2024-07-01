@@ -1,7 +1,7 @@
-import { getDatabase } from '@/lib/database/base';
-import { Croak } from '@/database/query/croak';
-import { getLastCroak } from '@/database/query/getLastCroak';
-import { createTextCroak } from '@/database/command/createTextCroak';
+import { getDatabase } from '@/database/base';
+import { Croak } from '@/database/query/croak/croak';
+import { getLastCroak } from '@/database/query/croakSimple/getLastCroak';
+import { createTextCroak } from '@/database/query/command/createTextCroak';
 import { InvalidArgumentsError } from '@/lib/base/validation';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
 import {
@@ -18,7 +18,7 @@ import { AUTHORIZE_FORM_AGREEMENT } from '@/authorization/validation/formAgreeme
 import { AUTHORIZE_BANNED } from '@/authorization/validation/banned';
 import { getAuthorizePostCroak } from '@/authorization/validation/postCroak';
 import { trimContents } from '@/domain/text/contents';
-import { nullableThread } from '@/domain/id';
+import { nullableId } from '@/domain/id';
 
 // export type PostCroak = ContextFullFunction<
 //   {

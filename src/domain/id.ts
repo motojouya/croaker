@@ -1,22 +1,22 @@
-import { InvalidArgumentsError } from '@/lib/base/validation';
+import { InvalidArgumentsFail } from '@/lib/base/validation';
 import { Random } from '@/lib/io/local';
 
-export type ValidateId = (value: number, name: string) => InvalidArgumentsError | number;
+export type ValidateId = (value: number, name: string) => InvalidArgumentsFail | number;
 export const validateId: ValidateId = (value, name) => {
   if (!Number.isSafeInteger(value) || value < 1) {
-    return new InvalidArgumentsError(name, value, `${name}は1以上の整数です`);
+    return new InvalidArgumentsFail(name, String(value), `${name}は1以上の整数です`);
   }
   return value;
 };
 
-export type NullableId = (value?: number, name: string) => InvalidArgumentsError | number | null;
-export const nullableId: NullableId = (value?, name) => {
+export type NullableId = (name: string, value?: number) => InvalidArgumentsFail | number | null;
+export const nullableId: NullableId = (name, value) => {
   if (!value) {
     return null;
   }
 
   if (!Number.isSafeInteger(value) || value < 1) {
-    return new InvalidArgumentsError(name, value, `${name}は1以上の整数です`);
+    return new InvalidArgumentsFail(name, String(value), `${name}は1以上の整数です`);
   }
 
   return value;

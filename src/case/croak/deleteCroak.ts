@@ -1,14 +1,13 @@
-import { getSession } from '@/lib/session';
-import { getDatabase, RecordNotFoundError, sqlNow } from '@/database/base';
-import { CroakTable } from '@/database/type/croak';
+import { getDatabase, RecordNotFoundFail, sqlNow } from '@/database/base';
+import { CroakRecord } from '@/database/type/croak';
 import { read, update } from '@/database/crud';
 // import { deleteCroak } from '@/database/command/deleteCroak';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
-import { Identifier, AuthorityError, authorizeCroaker } from '@/authorization/base';
-import { getCroakerUser } from '@/database/getCroakerUser';
-import { AUTHORIZE_FORM_AGREEMENT } from '@/authorization/validation/formAgreement';
-import { AUTHORIZE_BANNED } from '@/authorization/validation/banned';
-import { getAuthorizeDeleteOtherPost } from '@/authorization/validation/deleteOtherPost';
+import { Identifier, AuthorityFail, authorizeCroaker } from '@/domain/authorization/base';
+import { getCroakerUser } from '@/database/query/croaker/getCroakerUser';
+import { AUTHORIZE_FORM_AGREEMENT } from '@/domain/authorization/validation/formAgreement';
+import { AUTHORIZE_BANNED } from '@/domain/authorization/validation/banned';
+import { getAuthorizeDeleteOtherPost } from '@/domain/authorization/validation/deleteOtherPost';
 
 // export type DeleteCroak = ContextFullFunction<
 //   {
@@ -18,12 +17,12 @@ import { getAuthorizeDeleteOtherPost } from '@/authorization/validation/deleteOt
 //       update: ReturnType<typeof update>,
 //     }>,
 //   },
-//   (croakId: number) => Promise<Croak | AuthorityError>
+//   (croakId: number) => Promise<Croak | AuthorityFail>
 // >;
 
-export type Croak = CroakTable;
+export type Croak = CroakRecord;
 
-export type FunctionResult = Croak | AuthorityError;
+export type FunctionResult = Croak | AuthorityFail | RecordNotFoundFail;
 
 const deleteCroakContext = {
   db: () => getDatabase(null, { getCroakerUser, read, update }), // deleteCroakを使わない
@@ -31,14 +30,14 @@ const deleteCroakContext = {
 
 export type DeleteCroak = ContextFullFunction<
   typeof deleteCroakContext,
-  (identifier: Identifier) => (croakId: number) => Promise<FunctionResult>,
+  (identifier: Identifier) => (croakId: number) => Promise<FunctionResult>
 >;
 export const deleteCroak: DeleteCroak = ({ db }) => (identifier) => async (croakId) => {
 
   return await db.transact(async (trx) => {
 
     const croak = await getCroak(trx, croakId);
-    if (croak instanceof RecordNotFoundError) {
+    if (croak instanceof RecordNotFoundFail) {
       return croak;
     }
 
@@ -47,24 +46,29 @@ export const deleteCroak: DeleteCroak = ({ db }) => (identifier) => async (croak
       trx.getCroakerUser,
       [AUTHORIZE_FORM_AGREEMENT, AUTHORIZE_BANNED, getAuthorizeDeleteOtherPost(croak.croaker_id)]
     );
-    if (croaker instanceof AuthorityError) {
+    if (croaker instanceof AuthorityFail) {
       return croaker;
     }
 
     //return await trx.deleteCroak(croakId);
-    return await trx.update('croak', { croak_id: croakId }, { deleted_date: sqlNow() });
+    const result = await trx.update('croak', { croak_id: croakId }, { deleted_date: sqlNow() });
+    if (result.length !== 1) {
+      throw new Error('croak shoud be unique by croak_id');
+    }
+
+    return result[0];
   });
 };
 
 setContext(deleteCroak, deleteCroakContext);
 
 type ReadableDB = { read: ReturnType<typeof read> };
-type GetCroak = (db: ReadableDB, croakId: number) => Promise<Croak | RecordNotFoundError>
+type GetCroak = (db: ReadableDB, croakId: number) => Promise<Croak | RecordNotFoundFail>
 const getCroak: GetCroak = async (db, croakId) => {
 
-  const croaks = await trx.read('croak', { croak_id: croakId });
+  const croaks = await db.read('croak', { croak_id: croakId });
   if (croaks.length !== 1 || !!croaks[0].deleted_date) {
-    return new RecordNotFoundError('croak', { croak_id: croakId }, '投稿がすでに存在しません');
+    return new RecordNotFoundFail('croak', { croak_id: croakId }, '投稿がすでに存在しません');
   }
 
   return croaks[0];

@@ -1,10 +1,10 @@
-import { Croak as CroakFromDB } from '@/database/query/croak';
-import { top } from '@/database/query/top';
-import { search } from '@/database/query/search';
-import { thread } from '@/database/query/thread';
+import { Croak as CroakFromDB } from '@/database/query/croak/croak';
+import { top } from '@/database/query/croak/top';
+import { search } from '@/database/query/croak/search';
+import { thread } from '@/database/query/croak/thread';
 import { Storage } from '@/lib/io/fileStorage';
 import { Context, ContextFullFunction, setContext } from '@/lib/base/context';
-import { Identifier } from '@/authorization/base';
+import { Identifier } from '@/domain/authorization/base';
 
 export type Resource = {
   name: string;
@@ -17,12 +17,12 @@ export type Croak = Omit<CroakFromDB, 'files'> & {
 
 export type CroakList = {
   croaks: Croak[];
-  has_next: bool;
+  has_next: boolean;
 };
 
 export const DISPLAY_LIMIT = 20;
 
-type SetFileUrl = (storage: Storage, croaksFromTable: CroakFromTable[]) => Promise<Croak[] | FileError>
+type SetFileUrl = (storage: Storage, croaksFromTable: CroakFromDB[]) => Promise<Croak[] | FileError>
 const setFileUrl: SetFileUrl = async (storage, croaksFromTable) => {
 
   const croaks = [];

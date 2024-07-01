@@ -1,21 +1,21 @@
-import { getDatabase } from '@/lib/database/base';
-import { Croak } from '@/database/query/croak';
-import { getLastCroak } from '@/database/query/getLastCroak';
-import { createFileCroak } from '@/database/command/createFileCroak';
+import { getDatabase } from '@/database/base';
+import { Croak } from '@/database/query/croak/croak';
+import { getLastCroak } from '@/database/query/croakSimple/getLastCroak';
+import { createFileCroak } from '@/database/query/command/createFileCroak';
 import { STORAGE_TYPE_GCS } from '@/database/type/croak';
-import { InvalidArgumentsError } from '@/lib/base/validation';
-import { getImageFile } from '@/lib/io/image';
-import { getStorage, FileError } from '@/lib/io/fileStorage';
+import { InvalidArgumentsFail } from '@/lib/base/validation';
+import { getImageFile, ImageCommandFail, ImageFormatFail } from '@/lib/io/image';
+import { getStorage, FileFail } from '@/lib/io/fileStorage';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
 import { getLocal } from '@/lib/io/local';
-import { Identifier, AuthorityError, authorizeCroaker } from '@/authorization/base';
-import { getCroakerUser } from '@/database/getCroakerUser';
-import { AUTHORIZE_FORM_AGREEMENT } from '@/authorization/validation/formAgreement';
-import { AUTHORIZE_BANNED } from '@/authorization/validation/banned';
-import { getAuthorizePostCroak } from '@/authorization/validation/postCroak';
-import { AUTHORIZE_POST_FILE } from '@/authorization/validation/postFile';
+import { Identifier, AuthorityFail, authorizeCroaker } from '@/domain/authorization/base';
+import { getCroakerUser } from '@/database/query/croaker/getCroakerUser';
+import { AUTHORIZE_FORM_AGREEMENT } from '@/domain/authorization/validation/formAgreement';
+import { AUTHORIZE_BANNED } from '@/domain/authorization/validation/banned';
+import { getAuthorizePostCroak } from '@/domain/authorization/validation/postCroak';
+import { AUTHORIZE_POST_FILE } from '@/domain/authorization/validation/postFile';
 import { trimContents } from '@/domain/text/contents';
-import { nullableThread } from '@/domain/id';
+import { nullableId } from '@/domain/id';
 
 import { pipe } from "fp-ts/function";
 import { Do, bind, bindA, map, toUnion } from '@/lib/base/fp/taskEither';
@@ -38,21 +38,21 @@ import { Do, bind, bindA, map, toUnion } from '@/lib/base/fp/taskEither';
 //   },
 //   (file: File, thread?: number) => Promise<
 //     | Omit<Croak, 'has_thread' | 'links'>
-//     | AuthorityError
-//     | InvalidArgumentsError
-//     | FileError
-//     | ImageCommandError
-//     | ImageFormatError
+//     | AuthorityFail
+//     | InvalidArgumentsFail
+//     | FileFail
+//     | ImageCommandFail
+//     | ImageFormatFail
 //   >,
 // >;
 
 export type FunctionResult =
   | Omit<Croak, 'has_thread' | 'links'>
-  | AuthorityError
-  | InvalidArgumentsError
-  | FileError
-  | ImageCommandError
-  | ImageFormatError;
+  | AuthorityFail
+  | InvalidArgumentsFail
+  | FileFail
+  | ImageCommandFail
+  | ImageFormatFail;
 
 const postFileContext = {
   db: () => getDatabase({ getCroakerUser, getLastCroak }, { createFileCroak }),
@@ -72,27 +72,27 @@ export const postFile: PostFile = ({ db, storage, local, imageFile }) => (identi
     return null;
   }
 
-  const nullableThread = nullableId(thread, 'thread');
-  if (nullableThread instanceof InvalidArgumentsError) {
+  const nullableThread = nullableId('thread', thread);
+  if (nullableThread instanceof InvalidArgumentsFail) {
     return nullableThread;
   }
 
   const croaker = await getCroaker(identifier, !!nullableThread, local, db);
-  if (croaker instanceof AuthorityError) {
+  if (croaker instanceof AuthorityFail) {
     return croaker;
   }
 
   // TODO storage.uploadFileのための処理なので、関数きってまとめる
   const uploadFilePath = await imageFile.convert(file.name);
   if (
-    uploadFilePath instanceof ImageCommandError ||
-    uploadFilePath instanceof ImageFormatError
+    uploadFilePath instanceof ImageCommandFail ||
+    uploadFilePath instanceof ImageFormatFail
   ) {
     return uploadFilePath;
   }
 
   const uploadedSource = await storage.uploadFile(uploadFilePath, file.extension);
-  if (uploadedSource instanceof FileError) {
+  if (uploadedSource instanceof FileFail) {
     return uploadedSource;
   }
 
@@ -112,7 +112,7 @@ export const postFile: PostFile = ({ db, storage, local, imageFile }) => (identi
 
   // TODO return valueを整える処理なので、まとめる。ドメインがいいかも。file croakerみたいな
   const fileUrl = await storage.generatePreSignedUrl(uploadedSource);
-  if (fileUrl instanceof FileError) {
+  if (fileUrl instanceof FileFail) {
     return fileUrl;
   }
 
@@ -186,7 +186,7 @@ type ReadableDB = {
   getCroakerUser: ReturnType<typeof getCroakerUser>,
   getLastCroak: ReturnType<typeof getLastCroak>,
 };
-type GetCroaker = (identifier: Identifier, isThread: boolean, local: Local, db: ReadableDB) => Promise<Croaker | AuthorityError>;
+type GetCroaker = (identifier: Identifier, isThread: boolean, local: Local, db: ReadableDB) => Promise<Croaker | AuthorityFail>;
 const getCroaker: GetCroaker = async (identifier, isThread, local, db) => {
 
   const authorizePostCroak = getAuthorizePostCroak(

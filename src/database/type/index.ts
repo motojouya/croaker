@@ -16,10 +16,10 @@ import type {
 } from '@/database/type/master';
 
 export interface Database {
-  user: UserTable;
-  account: AccountTable;
-  session: SessionTable;
-  verification_token: VerificationTokenTable;
+  User: UserTable;
+  Account: AccountTable;
+  Session: SessionTable;
+  VerificationToken: VerificationTokenTable;
   croak: CroakTable,
   croaker: CroakerTable,
   file: FileTable,

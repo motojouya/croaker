@@ -1,7 +1,7 @@
-type Now = () => Date;
+export type Now = () => Date;
 const now: Now = () => new Date();
 
-type Random = () => number;
+export type Random = () => number;
 const random: Random = () => Math.random();
 
 export type Local = {

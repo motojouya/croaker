@@ -61,8 +61,8 @@ export type Validation =
   | DeleteOtherPost;
 
 export type AuthorizeCroaker = (
-  identifier: identifier
-  getCroaker: () => Promise<Croaker | null>
+  identifier: identifier,
+  getCroaker: (userId: string) => Promise<Croaker | null>
   additionals?: Validation[]
 ) => Promise<Croaker | AuthorityFail>;
 export const authorizeCroaker: AuthorizeCroaker = async (identifier, getCroaker, additionals = []) => {

@@ -4,10 +4,7 @@ import { Database } from '@/database/type';
 import { Fail, isFailJSON } from '@/lib/base/fail';
 import { KyselyAuth } from "@auth/kysely-adapter";
 
-export type GetQuery = Record<string, (db: Kysely<Database>) => any>;
-// const a = { a: () => 'a', b: () => 1 } as const satisfies GetQuery;
-// GetQueryをsatisfiesできるがextendedなわけではないっぽいので、extends GetQueryはだめっぽ
-// 実コードでコンパイルできるか試しながらやる
+export type GetQuery = Record<string, (db: Kysely<Database>) => unknown>;
 
 let db: Kysely<Database>;
 
@@ -23,28 +20,37 @@ export const getKysely: GetKysely = () => {
   return db;
 };
 
-export type Query<Q extends object> = {
+export type Query<Q extends GetQuery> = {
   [K in keyof Q]: (
     Q[K] extends ((db: Kysely<Database>) => infer Q)
       ? Q
       : never
   )
 };
-// export type GetQuery<Q extends object> = { [K in keyof Q]: (db: Kyseky) => Q[K] };
 
-export type Transact<T extends object> = <R>(callback: (trx: Query<T>) => Promise<R>) => Promise<R>;
+export type Transact<T extends GetQuery> = <R>(callback: (trx: Query<T>) => Promise<R>) => Promise<R>;
 
-export type DB<Q extends object, T extends object> = Query<Q> & {
+// T extends Record<never, never> だと普通に成立するので逆
+export type DB<Q extends GetQuery, T extends GetQuery> = Query<Q> & {
   transact: (
-    T extends Record<never, never>
+    Record<never, never> extends T
       ? undefined
       : Transact<T>
   )
 };
 
-export function getDatabase<T extends object>(queries: null, transactionQueries: T): DB<Record<never, never>, T>;
-export function getDatabase<Q extends object>(queries: Q, transactionQueries: null): DB<Q, Record<never, never>>;
-export function getDatabase<Q extends object, T extends object>(queries: Q | null, transactionQueries: T | null): DB<Q, T> {
+declare function assertSame<A, B>(
+  expect: [A] extends [B] ? ([B] extends [A] ? true : false) : false
+): void;
+declare function assertExtends<A, B>(
+  expect: [A] extends [B] ? true : false
+): void;
+assertExtends<Record<never, never>, {a: 'a'}>(false);
+
+export function getDatabase<T extends GetQuery>(queries: null, transactionQueries: T): DB<Record<never, never>, T>;
+export function getDatabase<Q extends GetQuery>(queries: Q, transactionQueries: null): DB<Q, Record<never, never>>;
+export function getDatabase<Q extends GetQuery, T extends GetQuery>(queries: Q, transactionQueries: T): DB<Q, T>;
+export function getDatabase<Q extends GetQuery, T extends GetQuery>(queries: Q | null, transactionQueries: T | null): DB<Q, T> {
 
   const db = getKysely();
   let dbAccess = {};
@@ -63,7 +69,7 @@ export function getDatabase<Q extends object, T extends object>(queries: Q | nul
   return dbAccess as DB<Q, T>; // FIXME as!
 };
 
-function getTransact<T extends object>(db: Kysely<Database>, queries: T): Transact<T> {
+function getTransact<T extends GetQuery>(db: Kysely<Database>, queries: T): Transact<T> {
   return async function <R>(callback: (trx: Query<T>) => Promise<R>): Promise<R> {
 
     try {
@@ -91,7 +97,7 @@ function getTransact<T extends object>(db: Kysely<Database>, queries: T): Transa
   }
 }
 
-function getQuery<T extends object>(db: Kysely<Database>, queries: T, acc: object): Query<T> {
+function getQuery<T extends GetQuery>(db: Kysely<Database>, queries: T, acc: object): Query<T> {
 
   return Object.entries(queries).reduce((acc, [key, val]) => {
 
@@ -110,7 +116,7 @@ function getQuery<T extends object>(db: Kysely<Database>, queries: T, acc: objec
   }, acc) as Query<T>; // FIXME as!
 };
 
-export const sqlNow = () => sql`now()`;
+export const sqlNow = () => sql`datetime('now', 'localtime')`;
 
 export class RecordAlreadyExistFail extends Fail {
   constructor(

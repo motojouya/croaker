@@ -2,8 +2,8 @@ import { getDatabase } from '@/database/base';
 import { RoleTable, ConfigurationTable } from '@/database/type/master';
 import { read } from '@/database/crud';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
-import { ClientCroaker } from '@/authorization/base';
-import { getCroakerUser } from '@/database/query/getCroakerUser';
+import { ClientCroaker, Identifier } from '@/domain/authorization/base';
+import { getCroakerUser } from '@/database/query/croaker/getCroakerUser';
 
 export type Master = {
   configuration: ConfigurationTable;
@@ -30,7 +30,7 @@ export const getMaster: GetMaster = ({ db }) => (identifier) => async () => {
   if (identifier.type === 'anonymous') {
     return {
       configuration,
-      croaker: { type: 'anonymous' };
+      croaker: { type: 'anonymous' },
     };
   }
 
@@ -38,7 +38,7 @@ export const getMaster: GetMaster = ({ db }) => (identifier) => async () => {
   if (!croaker) {
     return {
       configuration,
-      croaker: { type: 'logined' };
+      croaker: { type: 'logined' },
     };
   }
 
@@ -47,7 +47,7 @@ export const getMaster: GetMaster = ({ db }) => (identifier) => async () => {
     croaker: {
       type: 'registered',
       value: croaker,
-    };
+    },
   };
 };
 
