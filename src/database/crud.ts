@@ -9,6 +9,7 @@ import {
   ExtractTypeFromReferenceExpression,
   ReferenceExpression,
   OperandValueExpressionOrList,
+  FilterObject,
 } from 'kysely'
 import { Database } from '@/database/type';
 import { MutationFail } from '@/database/base';
@@ -20,7 +21,11 @@ import { MutationFail } from '@/database/base';
 // ExtractTableAliasがストッパーになってる気がする。ExtractTableAlias<DB, T>するとaliasが渡されるけど、ここでtableが型情報から落ちる。
 // でも呼び出した先のSelectQueryBuilderはaliasというよりtableを欲しがっているように読めるので、混乱する
 
-type KeyValue<T extends keyof Database & string> = [ReferenceExpression<Database, T>, OperandValueExpressionOrList<Database, T, ReferenceExpression<Database, T>>];
+// type NonSpaceString<T> = T extends `${string} as ${string}` ? never : T;
+// export type ExtractTableAlias<DB, TE> = TE extends keyof DB ? TE :
+//   TE extends `${string} as ${infer TA}` ?
+//     TA extends keyof DB ? TA : never :
+//     never;
 
 export function create(db: Kysely<Database>) {
   return async function <T extends keyof Database & string>(tableName: T, newRecords: ReadonlyArray<Insertable<Database[T]>>): Promise<Selectable<Database[T]>[] | MutationFail> {
@@ -41,43 +46,35 @@ export function create(db: Kysely<Database>) {
 }
 
 export function read(db: Kysely<Database>) {
-  return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>): Promise<Selectable<Database[T]>[]> {
+  //return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>): Promise<Selectable<Database[T]>[]> {
+  return async function <T extends keyof Database & string>(tableName: T, criteria: FilterObject<Database, T>): Promise<Selectable<Database[T]>[]> {
     return await db
       .selectFrom(tableName)
       .where((eb) => eb.and(criteria))
-      .selectAll()
+      .selectAll(tableName)
       .execute();
   };
 }
 
 export function update(db: Kysely<Database>) {
-  return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>, updateWith: Updateable<Database[T]>): Promise<Database[T][]> {
+  //return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>, updateWith: Updateable<Database[T]>): Promise<Database[T][]> {
+  return async function <T extends keyof Database & string>(tableName: T, criteria: FilterObject<Database, T>, updateWith: UpdateObject<Database, T>): Promise<Selectable<Database[T]>[]> {
     return await db
       .updateTable(tableName)
       .set(updateWith)
       .where((eb) => eb.and(criteria))
-      .returningAll()
-      .execute();
-  };
-}
-
-export function updateObject(db: Kysely<Database>) {
-  return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>, updateWith: UpdateObject<Database, T>): Promise<Selectable<Database[T]>[]> {
-    return await db
-      .updateTable(tableName)
-      .set(updateWith)
-      .where((eb) => eb.and(criteria))
-      .returningAll()
+      .returningAll(tableName)
       .execute();
   };
 }
 
 export function destroy(db: Kysely<Database>) {
-  return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>): Promise<Selectable<Database[T]>[]> {
+  //return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>): Promise<Selectable<Database[T]>[]> {
+  return async function <T extends keyof Database & string>(tableName: T, criteria: FilterObject<Database, T>): Promise<Selectable<Database[T]>[]> {
     return await db
       .deleteFrom(tableName)
       .where((eb) => eb.and(criteria))
-      .returningAll()
+      .returningAll(tableName)
       .execute();
   };
 }
