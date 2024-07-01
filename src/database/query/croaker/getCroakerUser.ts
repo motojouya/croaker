@@ -1,31 +1,30 @@
 import { Kysely } from 'kysely'
 import { Croaker } from '@/database/query/croaker/croaker';
+import { Database } from '@/database/type';
 
-export type GetCroakerUser = (db: Kysely) => (userId: string) => Promise<Croaker | null>;
+export type GetCroakerUser = (db: Kysely<Database>) => (userId: string) => Promise<Croaker | null>;
 export const getCroakerUser: GetCroakerUser = (db) => async (userId) => {
 
   const results = await db
-    .selectFrom('croaker')
+    .selectFrom('croaker as ker')
+    .innerJoin('role as r', 'ker.role_id', 'r.role_id')
     .select([
-      'croaker.croaker_id as croaker_id',
-      'croaker.name as croaker_name',
-      'croaker.description as description',
-      'croaker.status as status',
-      'croaker.form_agreement as form_agreement',
-      'croaker.created_date as created_date',
-      'croaker.updated_date as updated_date',
-      'role.name as role_name',
-      'role.ban_power as role_ban_power',
-      'role.delete_other_post as role_delete_other_pos',t
-      'role.post as role_post',
-      'role.post_file as role_post_file',
-      'role.top_post_interval as role_top_post_interval',
-      'role.show_other_activities as role_show_other_activities',
+      'ker.croaker_id as croaker_id',
+      'ker.name as croaker_name',
+      'ker.description as description',
+      'ker.status as status',
+      'ker.form_agreement as form_agreement',
+      'ker.created_date as created_date',
+      'ker.updated_date as updated_date',
+      'r.name as role_name',
+      'r.ban_power as role_ban_power',
+      'r.delete_other_post as role_delete_other_post',
+      'r.post as role_post',
+      'r.post_file as role_post_file',
+      'r.top_post_interval as role_top_post_interval',
+      'r.show_other_activities as role_show_other_activities',
     ])
-    .innerJoin('role', (join) => {
-      join.onRef('croaker.role_id', '=', 'role.role_id');
-    })
-    .where('croaker.user_id', '=', userId)
+    .where('ker.user_id', '=', userId)
     .execute();
 
   if (results.length > 1) {
@@ -44,7 +43,7 @@ export const getCroakerUser: GetCroakerUser = (db) => async (userId) => {
     role_post_file,
     role_top_post_interval,
     role_show_other_activities,
-    ...rest,
+    ...rest
   } = results[0];
 
   return {

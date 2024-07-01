@@ -1,14 +1,15 @@
 import { Kysely } from 'kysely'
 import {
-  CroakTable,
-  LinkTable,
-  FileTable,
+  CroakRecord,
+  LinkRecord,
+  FileRecord,
 } from '@/database/type/croak'
+import { Database } from '@/database/type';
 
-export type Link = LinkTable;
-export type File = FileTable;
-export type Croak = Omit<CroakTable, 'user_id'> & {
-  has_thread: bool;
+export type Link = LinkRecord;
+export type File = FileRecord;
+export type Croak = Omit<CroakRecord, 'user_id'> & {
+  has_thread: boolean;
   croaker_name: string;
   links: Link[];
   files: File[];
@@ -16,7 +17,7 @@ export type Croak = Omit<CroakTable, 'user_id'> & {
 
 export type CroakSimple = Omit<Croak, 'links' | 'files'>;
 
-type GetLinks = (db: Kysely) => (croakIds: number[]) => Promise<Link[]>;
+type GetLinks = (db: Kysely<Database>) => (croakIds: number[]) => Promise<Link[]>;
 const getLinks: GetLinks = (db) => async (croakIds) => {
   return await db
     .selectFrom('link')
@@ -25,7 +26,7 @@ const getLinks: GetLinks = (db) => async (croakIds) => {
     .execute();
 }
 
-type GetFiles = (db: Kysely) => (croakIds: number[]) => Promise<Link[]>;
+type GetFiles = (db: Kysely<Database>) => (croakIds: number[]) => Promise<File[]>;
 const getFiles: GetFiles = (db) => async (croakIds) => {
   return await db
     .selectFrom('file')
@@ -34,22 +35,22 @@ const getFiles: GetFiles = (db) => async (croakIds) => {
     .execute();
 }
 
-export type ComplementCroak = (db: Kysely, getCroaks: () => Promise<CroakSimple[]>) => Promise<Croak[]>;
-export const complementCroak: ComplementCroak = (db, getCroaks) => {
+export type ComplementCroak = (db: Kysely<Database>, getCroaks: () => Promise<CroakSimple[]>) => Promise<Croak[]>;
+export const complementCroak: ComplementCroak = async (db, getCroaks) => {
 
   const croaks = await getCroaks();
 
   const croakIds = croaks.map(croak => croak.croak_id);
 
   const links = await getLinks(db)(croakIds);
-  const croakIdLinkDic = Object.groupBy('croak_id', links);
+  const croakIdLinkDic = Object.groupBy(links, (link) => link.croak_id);
 
   const files = await getFiles(db)(croakIds);
-  const croakIdFileDic = Object.groupBy('croak_id', files);
+  const croakIdFileDic = Object.groupBy(files, (file) => file.croak_id);
 
   return croaks.map(croak => ({
     ...croak,
-    links: croakIdLinkDic[croak.id] || [],
-    files: croakIdFileDic[croak.id] || [],
+    links: croakIdLinkDic[croak.croak_id] || [],
+    files: croakIdFileDic[croak.croak_id] || [],
   }));
 };
