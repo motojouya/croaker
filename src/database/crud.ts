@@ -46,8 +46,8 @@ export function create(db: Kysely<Database>) {
 }
 
 export function read(db: Kysely<Database>) {
-  // return async function <T extends keyof Database & string>(tableName: T, criteria: FilterObject<Database, T>): Promise<Selectable<Database[T]>[]> {
-  return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>): Promise<Selectable<Database[T]>[]> {
+  // return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>): Promise<Selectable<Database[T]>[]> {
+  return async function <T extends keyof Database & string>(tableName: T, criteria: FilterObject<Database, T>): Promise<Selectable<Database[T]>[]> {
     return await db
       .selectFrom(tableName)
       .where((eb) => eb.and(criteria))
@@ -57,8 +57,8 @@ export function read(db: Kysely<Database>) {
 }
 
 export function update(db: Kysely<Database>) {
-  // return async function <T extends keyof Database & string>(tableName: T, criteria: FilterObject<Database, T>, updateWith: UpdateObject<Database, T>): Promise<Selectable<Database[T]>[]> {
-  return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>, updateWith: Updateable<Database[T]>): Promise<Database[T][]> {
+  // return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>, updateWith: Updateable<Database[T]>): Promise<Database[T][]> {
+  return async function <T extends keyof Database & string>(tableName: T, criteria: FilterObject<Database, T>, updateWith: UpdateObject<Database, T>): Promise<Selectable<Database[T]>[]> {
     return await db
       .updateTable(tableName)
       .set(updateWith)
@@ -69,8 +69,8 @@ export function update(db: Kysely<Database>) {
 }
 
 export function destroy(db: Kysely<Database>) {
-  // return async function <T extends keyof Database & string>(tableName: T, criteria: FilterObject<Database, T>): Promise<Selectable<Database[T]>[]> {
-  return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>): Promise<Selectable<Database[T]>[]> {
+  // return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>): Promise<Selectable<Database[T]>[]> {
+  return async function <T extends keyof Database & string>(tableName: T, criteria: FilterObject<Database, T>): Promise<Selectable<Database[T]>[]> {
     return await db
       .deleteFrom(tableName)
       .where((eb) => eb.and(criteria))

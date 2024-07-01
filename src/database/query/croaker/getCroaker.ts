@@ -1,5 +1,5 @@
 import { Kysely } from 'kysely'
-import { Croaker } from '@/database/query/croaker/croaker';
+import { Croaker, createCroaker } from '@/database/query/croaker/croaker';
 import { Database } from '@/database/type';
 
 export type GetCroaker = (db: Kysely<Database>) => (croakerId: string) => Promise<Croaker | null>;
@@ -27,35 +27,5 @@ export const getCroaker: GetCroaker = (db) => async (croakerId) => {
     .where('ker.croaker_id', '=', croakerId)
     .execute();
 
-  if (results.length > 1) {
-    throw new Error('croaker is unique by croaker_id!');
-  }
-
-  if (results.length === 0) {
-    return null;
-  }
-
-  const {
-    role_name,
-    role_ban_power,
-    role_delete_other_post,
-    role_post,
-    role_post_file,
-    role_top_post_interval,
-    role_show_other_activities,
-    ...rest
-  } = results[0];
-
-  return {
-    ...rest,
-    role: {
-      name: role_name,
-      ban_power: role_ban_power,
-      delete_other_post: role_delete_other_post,
-      post: role_post,
-      post_file: role_post_file,
-      top_post_interval: role_top_post_interval,
-      show_other_activities: role_show_other_activities,
-    }
-  };
+  return createCroaker(results);
 };
