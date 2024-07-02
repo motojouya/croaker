@@ -5,6 +5,9 @@ import { Database } from '@/database/type';
 
 export type RecentActivities = (db: Kysely<Database>) => (croakerId: string, days: number) => Promise<CroakSimple[]>;
 export const recentActivities: RecentActivities = (db) => async (croakerId, days) => {
+
+  const daysAgo = db.fn('strftime', [db.fn('datetime', ['now', 'localtime', `-${days} days`])]);
+
   return await db
     .selectFrom('croak as k')
     .innerJoin('croaker as ker', 'k.croaker_id', 'ker.croaker_id')
@@ -12,11 +15,7 @@ export const recentActivities: RecentActivities = (db) => async (croakerId, days
       (eb) => eb
         .selectFrom('croak as subk')
         .groupBy('subk.croaker_id')
-        .where(
-          (ebs) => ebs.fn('strftime', ['subk.posted_date']),
-          '>',
-          db.fn('strftime', [db.fn('datetime', ['now', 'localtime', `-${days} days`])])
-        )
+        .where((ebs) => ebs.fn('strftime', ['subk.posted_date']), '>', daysAgo)
         .where('subk.deleted_date', 'is not', null)
         .select((ebs) => ([
           'subk.croaker_id as croaker_id',
@@ -35,11 +34,7 @@ export const recentActivities: RecentActivities = (db) => async (croakerId, days
       'ker.croaker_id as croaker_id',
       'ker.name as croaker_name',
     ]))
-    .where(
-      (ebs) => ebs.fn('strftime', ['k.posted_date']),
-      '>',
-      db.fn('strftime', [db.fn('datetime', ['now', 'localtime', `-${days} days`])])
-    )
+    .where((ebs) => ebs.fn('strftime', ['k.posted_date']), '>', daysAgo)
     .where('k.deleted_date', 'is not', null)
     .where('ker.status', '=', CROAKER_STATUS_ACTIVE)
     .where('ker.croaker_id', '<>', croakerId)

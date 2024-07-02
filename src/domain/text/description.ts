@@ -1,9 +1,9 @@
-import { InvalidArgumentsError } from '@/lib/base/validation';
+import { InvalidArgumentsFail } from '@/lib/base/validation';
 import { trimText, charCount } from '@/domain/text/text';
 
 export const DESCRIPTION_COUNT_MAX = 1000;
 
-export type TrimDescription = (description?: string) => string | InvalidArgumentsError;
+export type TrimDescription = (description?: string) => string | InvalidArgumentsFail;
 export const trimDescription: TrimDescription = (description) => {
 
   if (!description) {
@@ -17,7 +17,7 @@ export const trimDescription: TrimDescription = (description) => {
 
   const len = charCount(lines);
   if (DESCRIPTION_COUNT_MAX < len) {
-    return new InvalidArgumentsError('name', name, `説明は${DESCRIPTION_COUNT_MAX}以下です`);
+    return new InvalidArgumentsFail('description', description, `説明は${DESCRIPTION_COUNT_MAX}以下です`);
   }
 
   return lines.join('\n');

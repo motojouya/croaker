@@ -51,7 +51,7 @@ export function read(db: Kysely<Database>) {
     return await db
       .selectFrom(tableName)
       .where((eb) => eb.and(criteria))
-      .selectAll() // ? .selectAll(tableName)
+      .selectAll()
       .execute();
   };
 }
@@ -63,7 +63,7 @@ export function update(db: Kysely<Database>) {
       .updateTable(tableName)
       .set(updateWith)
       .where((eb) => eb.and(criteria))
-      .returningAll() // ? .returningAll(tableName)
+      .returningAll()
       .execute();
   };
 }
@@ -74,7 +74,7 @@ export function destroy(db: Kysely<Database>) {
     return await db
       .deleteFrom(tableName)
       .where((eb) => eb.and(criteria))
-      .returningAll() // ? .returningAll(tableName)
+      .returningAll()
       .execute();
   };
 }

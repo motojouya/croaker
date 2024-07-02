@@ -1,19 +1,19 @@
 import { Fail, isFailJSON } from '@/lib/base/fail';
-import { Croaker } from '@/database/query/getCroaker';
+import { Croaker } from '@/database/query/croaker/croaker';
 
-import { Banned } from '@/authorization/validation/banned';
-import { BanPower } from '@/authorization/validation/banPower';
-import { FormAgreement } from '@/authorization/validation/formAgreement';
-import { PostCroak } from '@/authorization/validation/postCroak';
-import { PostFile } from '@/authorization/validation/postFile';
-import { ShowOtherActivities } from '@/authorization/validation/showOtherActivities';
-import { DeleteOtherPost } from '@/authorization/validation/deleteOtherPost';
+import { Banned } from '@/domain/authorization/validation/banned';
+import { BanPower } from '@/domain/authorization/validation/banPower';
+import { FormAgreement } from '@/domain/authorization/validation/formAgreement';
+import { PostCroak } from '@/domain/authorization/validation/postCroak';
+import { PostFile } from '@/domain/authorization/validation/postFile';
+import { ShowOtherActivities } from '@/domain/authorization/validation/showOtherActivities';
+import { DeleteOtherPost } from '@/domain/authorization/validation/deleteOtherPost';
 
 import { InvalidArgumentsFail } from '@/lib/base/validation';
 
 export type IdentifierAnonymous = { type: 'anonymous' };
 export type IdentifierUserId = { type: 'user_id', user_id: string };
-export type Identifier = ActorAnonymous | ActorUserId;
+export type Identifier = IdentifierAnonymous | IdentifierUserId;
 
 /*
  * 設計方針として、next-authはclientサイドで参照しない
@@ -33,19 +33,19 @@ export type ClientCroaker = ClientCroakerAnonymous | ClientCroakerLogined | Clie
 export type AuthorizeValidation = (croaker: Croaker) => undefined | AuthorityFail;
 
 export type JustLoginUser = (
-  identifier: identifier
-  getCroaker: () => Promise<Croaker | null>
+  identifier: Identifier,
+  getCroaker: (userId: string) => Promise<Croaker | null>
 ) => Promise<string | AuthorityFail | InvalidArgumentsFail>;
 export const justLoginUser: JustLoginUser = async (identifier, getCroaker) => {
 
   if (identifier.type === 'anonymous') {
-    return new AuthorityFail(null, 'login', 'ログインしてください');
+    return new AuthorityFail('anonymous', 'login', 'ログインしてください');
   }
   const userId = identifier.user_id;
 
   const croaker = await getCroaker(userId);
   if (croaker) {
-    return new InvalidArgumentsFail('croaker', croaker, 'すでに登録済みです');
+    return new InvalidArgumentsFail('croaker', croaker.croaker_id, 'すでに登録済みです');
   }
 
   return userId;
@@ -61,40 +61,41 @@ export type Validation =
   | DeleteOtherPost;
 
 export type AuthorizeCroaker = (
-  identifier: identifier,
-  getCroaker: (userId: string) => Promise<Croaker | null>
+  identifier: Identifier,
+  getCroaker: (userId: string) => Promise<Croaker | null>,
   additionals?: Validation[]
 ) => Promise<Croaker | AuthorityFail>;
 export const authorizeCroaker: AuthorizeCroaker = async (identifier, getCroaker, additionals = []) => {
 
   if (identifier.type === 'anonymous') {
-    return new AuthorityFail(null, 'login', 'ログインしてください');
+    return new AuthorityFail('anonymous', 'login', 'ログインしてください');
   }
 
   const croaker = await getCroaker(identifier.user_id);
 
   if (!croaker) {
-    return new AuthorityFail(null, 'register', '自身の情報の登録をお願いします');
+    return new AuthorityFail('logined', 'register', '自身の情報の登録をお願いします');
   }
 
   for (const addition of additionals) {
 
-    let error:
+    let error;
     switch (addition.type) {
 
-      case 'post_croak':
+      case 'post_croak': {
         const { validation, ...rest } = addition;
         error = await validation(croaker, rest);
         break;
-
-      case 'delete_other_post':
+      }
+      case 'delete_other_post': {
         const { validation, ...rest } = addition;
         error = validation(croaker, rest);
         break;
-
-      default:
+      }
+      default: {
         error = addition.validation(croaker);
         break;
+      }
     }
 
     if (error) {

@@ -1,4 +1,4 @@
-import { AuthorizeValidation, AuthorityError } from '@/authorization/base';
+import { AuthorizeValidation, AuthorityFail } from '@/domain/authorization/base';
 
 export type BanPower = {
   type: 'ban_power';
@@ -7,11 +7,11 @@ export type BanPower = {
 
 const authorizeBanPower: AuthorizeValidation = (croaker) => {
   if (!croaker.role.ban_power) {
-    return new AuthorityError(croaker.croaker_id, 'ban_power', '他のユーザのアカウントを停止することはできません');
+    return new AuthorityFail(croaker.croaker_id, 'ban_power', '他のユーザのアカウントを停止することはできません');
   }
 };
 
-export const AUTHORIZE_BAN_POWER = {
+export const AUTHORIZE_BAN_POWER: BanPower = {
   type: 'ban_power',
   validation: authorizeBanPower,
 };

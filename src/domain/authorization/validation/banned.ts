@@ -1,18 +1,18 @@
-import { CROAKER_STATUS_BANNED } from '@/rdb/type/master';
-import { AuthorizeValidation, AuthorityError } from '@/authorization/base';
+import { CROAKER_STATUS_BANNED } from '@/database/type/master';
+import { AuthorizeValidation, AuthorityFail } from '@/domain/authorization/base';
 
-export type BANNED = {
+export type Banned = {
   type: 'banned';
   validation: AuthorizeValidation;
 };
 
-const authorizeBanned: AuthorizeBanned = (croaker) => {
+const authorizeBanned: AuthorizeValidation = (croaker) => {
   if (croaker.status == CROAKER_STATUS_BANNED) {
-    return new AuthorityError(croaker.croaker_id, 'banned', 'ブロックされたユーザです');
+    return new AuthorityFail(croaker.croaker_id, 'banned', 'ブロックされたユーザです');
   }
 };
 
-export const AUTHORIZE_BANNED = {
+export const AUTHORIZE_BANNED: Banned = {
   type: 'banned',
   validation: authorizeBanned,
 };

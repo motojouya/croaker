@@ -1,5 +1,5 @@
 import Sqlite from 'better-sqlite3'
-import { Kysely, SqliteDialect, Transaction, sql } from 'kysely';
+import { Kysely, SqliteDialect, Transaction, sql, expressionBuilder } from 'kysely';
 import { Database } from '@/database/type';
 import { Fail, isFailJSON } from '@/lib/base/fail';
 import { KyselyAuth } from "@auth/kysely-adapter";
@@ -30,7 +30,7 @@ export type Query<Q extends GetQuery> = {
 
 export type Transact<T extends GetQuery> = <R>(callback: (trx: Query<T>) => Promise<R>) => Promise<R>;
 
-// T extends Record<never, never> だと普通に成立するので逆
+// T extends Record<never, never> だと普通に成立するので逆にしておく
 export type DB<Q extends GetQuery, T extends GetQuery> = Query<Q> & {
   transact: (
     Record<never, never> extends T
@@ -38,14 +38,6 @@ export type DB<Q extends GetQuery, T extends GetQuery> = Query<Q> & {
       : Transact<T>
   )
 };
-
-declare function assertSame<A, B>(
-  expect: [A] extends [B] ? ([B] extends [A] ? true : false) : false
-): void;
-declare function assertExtends<A, B>(
-  expect: [A] extends [B] ? true : false
-): void;
-assertExtends<Record<never, never>, {a: 'a'}>(false);
 
 export function getDatabase<T extends GetQuery>(queries: null, transactionQueries: T): DB<Record<never, never>, T>;
 export function getDatabase<Q extends GetQuery>(queries: Q, transactionQueries: null): DB<Q, Record<never, never>>;
@@ -116,7 +108,7 @@ function getQuery<T extends GetQuery>(db: Kysely<Database>, queries: T, acc: obj
   }, acc) as Query<T>; // FIXME as!
 };
 
-export const sqlNow = () => sql`datetime('now', 'localtime')`;
+export const getSqlNow = (db: Kysely<Database>) => () => db.fn('datetime', ['now', 'localtime']);
 
 export class RecordAlreadyExistFail extends Fail {
   constructor(

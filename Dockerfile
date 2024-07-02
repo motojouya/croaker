@@ -4,7 +4,7 @@ ARG UID
 ARG GID
 ARG USERNAME
 ARG GROUPNAME
-run apt update && apt upgrade
+run apt update -y && apt upgrade -y
 RUN apt install -y sqlite3
 RUN groupadd -g ${GID} ${GROUPNAME} -f && \
     useradd -m -s /bin/bash -u ${UID} -g ${GID} ${USERNAME}

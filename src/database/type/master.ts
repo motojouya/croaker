@@ -12,7 +12,7 @@ export interface RoleTable {
   delete_other_post: boolean;
   post: string;
   post_file: boolean;
-  top_post_interval: number;
+  top_post_interval: string;
   show_other_activities: boolean;
 }
 export type RoleRecord = Selectable<RoleTable>

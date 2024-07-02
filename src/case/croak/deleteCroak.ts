@@ -1,7 +1,6 @@
-import { getDatabase, RecordNotFoundFail, sqlNow } from '@/database/base';
+import { getDatabase, RecordNotFoundFail, getSqlNow } from '@/database/base';
 import { CroakRecord } from '@/database/type/croak';
 import { read, update } from '@/database/crud';
-// import { deleteCroak } from '@/database/command/deleteCroak';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
 import { Identifier, AuthorityFail, authorizeCroaker } from '@/domain/authorization/base';
 import { getCroakerUser } from '@/database/query/croaker/getCroakerUser';
@@ -9,23 +8,12 @@ import { AUTHORIZE_FORM_AGREEMENT } from '@/domain/authorization/validation/form
 import { AUTHORIZE_BANNED } from '@/domain/authorization/validation/banned';
 import { getAuthorizeDeleteOtherPost } from '@/domain/authorization/validation/deleteOtherPost';
 
-// export type DeleteCroak = ContextFullFunction<
-//   {
-//     session: Session,
-//     db: DB<{}, {
-//       read: ReturnType<typeof read>,
-//       update: ReturnType<typeof update>,
-//     }>,
-//   },
-//   (croakId: number) => Promise<Croak | AuthorityFail>
-// >;
-
 export type Croak = CroakRecord;
 
 export type FunctionResult = Croak | AuthorityFail | RecordNotFoundFail;
 
 const deleteCroakContext = {
-  db: () => getDatabase(null, { getCroakerUser, read, update }), // deleteCroakを使わない
+  db: () => getDatabase({ getSqlNow }, { getCroakerUser, read, update }),
 } as const;
 
 export type DeleteCroak = ContextFullFunction<
@@ -50,8 +38,8 @@ export const deleteCroak: DeleteCroak = ({ db }) => (identifier) => async (croak
       return croaker;
     }
 
-    //return await trx.deleteCroak(croakId);
-    const result = await trx.update('croak', { croak_id: croakId }, { deleted_date: sqlNow() });
+    // TODO ファイル末尾参照
+    const result = await trx.update('croak', { croak_id: croakId }, { deleted_date: db.getSqlNow() });
     if (result.length !== 1) {
       throw new Error('croak shoud be unique by croak_id');
     }
@@ -73,3 +61,20 @@ const getCroak: GetCroak = async (db, croakId) => {
 
   return croaks[0];
 };
+
+// 以下の書き方はtypescript&kysely的には正しい。
+// まんまを表現したいので、純粋にdb.getSqlNow()を渡して大丈夫なはず。
+//
+// import { Kysely } from 'kysely';
+// import { Database } from '@/database/type';
+// import { CroakRecord } from '@/database/type/croak'
+//
+// type UpdateCroakDate = (db: Kysely<Database>) => (croakId: number) => Promise<CroakRecord[]>;
+// const updateCroakDate: UpdateCroakDate = (db) => async (croakId) => {
+//   return db
+//     .updateTable('croak')
+//     .set({ deleted_date: db.fn('datetime', ['now', 'localtime']) })
+//     .where((eb) => eb.and({ croak_id: croakId }))
+//     .returningAll()
+//     .execute();
+// }

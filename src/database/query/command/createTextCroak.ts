@@ -30,20 +30,19 @@ export const createTextCroak: CreateTextCroak = (db) => async (croak, links) => 
       .returningAll()
       .executeTakeFirstOrThrow();
 
-  const linkRecords = [];
-  let linkRecord;
+  const croakIdFilled = links.map(link => ({
+    ...link,
+    croak_id: croakRecord.croak_id,
+  }));
 
-  // TODO 並列化
-  for (const link of links) {
-    linkRecord = await db.insertInto('link')
-        .values({
-          croak_id: croakRecord.croak_id,
-          ...link
-        })
-        .returningAll()
-        .executeTakeFirstOrThrow();
+  const linkRecords = await db
+    .insertInto('link')
+    .values(croakIdFilled)
+    .returningAll()
+    .execute();
 
-    linkRecords.push(linkRecord);
+  if (linkRecords.length !== links.length) {
+    throw new Error('fail insert to link!');
   }
 
   return { ...croakRecord, links: linkRecords, };

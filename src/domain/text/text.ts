@@ -1,18 +1,18 @@
 export const URL_REG_EXP = new RegExp('^https:\/\/\S+$');
 
 export type GetLinks = (text: string) => string[];
-export const getLinks = (text) => {
+export const getLinks: GetLinks = (text) => {
   const lines = trimText(text);
   return lines.filter(line => URL_REG_EXP.test(line))
 };
 
-exprt type TrimText = (text: string) => string[];
-exprt const trimText: TrimText = (text) => text
+export type TrimText = (text: string) => string[];
+export const trimText: TrimText = (text) => text
   .split('\n')
   .map(line => line.trimEnd());
 
-exprt type CharCount = (lines: string[]) => number;
-exprt const charCount: CharCount = (lines) => {
+export type CharCount = (lines: string[]) => number;
+export const charCount: CharCount = (lines) => {
 
   if (lines.length === 0) {
     return 0;
