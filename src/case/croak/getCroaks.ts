@@ -7,16 +7,7 @@ import { Context, ContextFullFunction, setContext } from '@/lib/base/context';
 import { Identifier } from '@/domain/authorization/base';
 import { FileRecord } from '@/database/type/croak';
 import { getDatabase } from '@/database/base';
-
-export type FileResource = {
-  name: string;
-  url: string;
-  content_type: string;
-};
-
-export type Croak = Omit<CroakFromDB, 'files'> & {
-  files: FileResource[]
-};
+import { resolveFileUrl, Croak } from '@/domain/croak/croak';
 
 export type CroakList = {
   croaks: Croak[];
@@ -28,32 +19,21 @@ export const DISPLAY_LIMIT = 20;
 type SetFileUrl = (storage: Storage, croaksFromTable: CroakFromDB[]) => Promise<Croak[] | FileFail>
 const setFileUrl: SetFileUrl = async (storage, croaksFromTable) => {
 
-  const croaks = [];
   const promises = [];
+  const croaks: Croak[] = [];
   const errors: FileFail[] = [];
 
   for (const croak of croaksFromTable) {
-    const files: FileResource[] = [];
-    croaks.push({
-      ...croak,
-      files: files,
-    });
-
-    for (const file of croak.files) {
-      promises.push(new Promise(async (resolve) => {
-        const fileUrl = await storage.generatePreSignedUrl(file.source);
-        if (fileUrl instanceof FileFail) {
-          errors.push(fileUrl);
-        } else {
-          files.push({
-            name: file.name,
-            url: fileUrl,
-            content_type: file.content_type,
-          });
-        }
-        resolve(null);
-      }));
-    }
+    const { files, ...rest } = croak;
+    promises.push(new Promise(async (resolve) => {
+      const resolvedCroak = await resolveFileUrl(storage, rest, files);
+      if (resolvedCroak instanceof FileFail) {
+        errors.push(resolvedCroak);
+      } else {
+        croaks.push(resolvedCroak);
+      }
+      resolve(null);
+    }));
   }
 
   await Promise.allSettled(promises);

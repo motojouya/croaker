@@ -27,11 +27,11 @@ const createStorage: CreateStorage = () => {
   };
 }
 
-type UploadFile = (config: StorageConfig) => (localFilePath: string, extension: string) => Promise<string | FileFail>;
+type UploadFile = (config: StorageConfig) => (localFilePath: string, extension: string | null) => Promise<string | FileFail>;
 const uploadFile: UploadFile = ({ storage, bucketName, directory }) => async (localFilePath, extension) => {
 
   try {
-    const storageFileName = `${v4()}.${extension}`;
+    const storageFileName = !!extension ? `${v4()}.${extension}` : v4();
 
     const bucket = storage.bucket(bucketName);
 

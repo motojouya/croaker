@@ -1,14 +1,15 @@
 import { getDatabase } from '@/database/base';
-import { Croak } from '@/database/query/croak/croak';
+import { Croak as CroakFromDB } from '@/database/query/croak/croak';
 import { getLastCroak } from '@/database/query/croakSimple/getLastCroak';
 import { createFileCroak } from '@/database/query/command/createFileCroak';
 import { STORAGE_TYPE_GCS } from '@/database/type/croak';
 import { InvalidArgumentsFail } from '@/lib/base/validation';
-import { getImageFile, ImageCommandFail, ImageInformationFail } from '@/lib/io/image';
-import { getStorage, FileFail } from '@/lib/io/fileStorage';
+import { ImageFile, getImageFile, ImageCommandFail, ImageInformationFail } from '@/lib/io/image';
+import { Storage, getStorage, FileFail } from '@/lib/io/fileStorage';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
-import { getLocal } from '@/lib/io/local';
+import { Local, getLocal } from '@/lib/io/local';
 import { Identifier, AuthorityFail, authorizeCroaker } from '@/domain/authorization/base';
+import { Croaker } from '@/database/query/croaker/croaker';
 import { getCroakerUser } from '@/database/query/croaker/getCroakerUser';
 import { AUTHORIZE_FORM_AGREEMENT } from '@/domain/authorization/validation/formAgreement';
 import { AUTHORIZE_BANNED } from '@/domain/authorization/validation/banned';
@@ -16,9 +17,11 @@ import { getAuthorizePostCroak } from '@/domain/authorization/validation/postCro
 import { AUTHORIZE_POST_FILE } from '@/domain/authorization/validation/postFile';
 import { trimContents } from '@/domain/text/contents';
 import { nullableId } from '@/domain/id';
+import { FileData } from '@/lib/io/file';
+import { resolveFileUrl, Croak } from '@/domain/croak/croak';
 
 export type FunctionResult =
-  | Omit<Croak, 'has_thread' | 'links'>
+  | Croak
   | AuthorityFail
   | InvalidArgumentsFail
   | FileFail
@@ -34,14 +37,9 @@ const postFileContext = {
 
 export type PostFile = ContextFullFunction<
   typeof postFileContext,
-  (identifier: Identifier) => (file: File, thread?: number) => Promise<FunctionResult>
+  (identifier: Identifier) => (file: FileData, thread?: number) => Promise<FunctionResult>
 >;
-// TODO Fileにどういう情報が入ってるかよくわかっていない
 export const postFile: PostFile = ({ db, storage, local, imageFile }) => (identifier) => async (file, thread) => {
-
-  if (!file) {
-    return null;
-  }
 
   const nullableThread = nullableId('thread', thread);
   if (nullableThread instanceof InvalidArgumentsFail) {
@@ -53,24 +51,19 @@ export const postFile: PostFile = ({ db, storage, local, imageFile }) => (identi
     return croaker;
   }
 
-  // TODO storage.uploadFileのための処理なので、関数きってまとめる
-  const uploadFilePath = await imageFile.convert(file.name);
+  const uploadedSource = await uploadImage(file, storage, imageFile);
   if (
-    uploadFilePath instanceof ImageCommandFail ||
-    uploadFilePath instanceof ImageInformationFail
+    uploadedSource instanceof ImageCommandFail ||
+    uploadedSource instanceof ImageInformationFail ||
+    uploadedSource instanceof FileFail
   ) {
-    return uploadFilePath;
-  }
-
-  const uploadedSource = await storage.uploadFile(uploadFilePath, file.extension);
-  if (uploadedSource instanceof FileFail) {
     return uploadedSource;
   }
 
   const croakData = {
     croaker_id: croaker.croaker_id,
     contents: null,
-    thread: nullableThread,
+    thread: nullableThread || undefined,
   };
   const fileData = {
     storage_type: STORAGE_TYPE_GCS,
@@ -79,24 +72,17 @@ export const postFile: PostFile = ({ db, storage, local, imageFile }) => (identi
     content_type: file.type,
   };
 
-  const croak = await db.transact((trx) => trx.createFileCroak(croakData, fileData));
+  const croakResult = await db.transact((trx) => trx.createFileCroak(croakData, fileData));
 
-  // TODO return valueを整える処理なので、まとめる。ドメインがいいかも。file croakerみたいな
-  const fileUrl = await storage.generatePreSignedUrl(uploadedSource);
-  if (fileUrl instanceof FileFail) {
-    return fileUrl;
-  }
-
-  const { files, ...rest } = croak;
-  return {
+  const { files, ...rest } = croakResult;
+  const croak = {
     ...rest,
-    croaker_name: croaker.name,
-    files: files.map(file => {
-      name: file.name,
-      url: fileUrl,
-      content_type: file.content_type,
-    }),
+    has_thread: false,
+    croaker_name: croaker.croaker_name,
+    links: [],
   };
+
+  return await resolveFileUrl(storage, croak, files);
 };
 
 setContext(postFile, postFileContext);
@@ -110,7 +96,7 @@ const getCroaker: GetCroaker = async (identifier, isThread, local, db) => {
 
   const authorizePostCroak = getAuthorizePostCroak(
     isThread,
-    local.now,
+    async () => local.now(),
     async (croaker_id) => {
       const lastCroak = await db.getLastCroak(croaker_id);
       return lastCroak ? lastCroak.posted_date : null;
@@ -122,4 +108,23 @@ const getCroaker: GetCroaker = async (identifier, isThread, local, db) => {
     db.getCroakerUser,
     [AUTHORIZE_FORM_AGREEMENT, AUTHORIZE_BANNED, authorizePostCroak, AUTHORIZE_POST_FILE]
   );
+};
+
+type uploadImage = (file: FileData, storage: Storage, imageFile: ImageFile) => Promise<string | ImageCommandFail | ImageInformationFail | FileFail>;
+const uploadImage: uploadImage = async (file, storage, imageFile) => {
+
+  const uploadFilePath = await imageFile.convert(file.path);
+  if (
+    uploadFilePath instanceof ImageCommandFail ||
+    uploadFilePath instanceof ImageInformationFail
+  ) {
+    return uploadFilePath;
+  }
+
+  const uploadedSource = await storage.uploadFile(uploadFilePath, file.extension);
+  if (uploadedSource instanceof FileFail) {
+    return uploadedSource;
+  }
+
+  return uploadedSource;
 };
