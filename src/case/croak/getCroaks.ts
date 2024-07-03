@@ -2,17 +2,20 @@ import { Croak as CroakFromDB } from '@/database/query/croak/croak';
 import { top } from '@/database/query/croak/top';
 import { search } from '@/database/query/croak/search';
 import { thread } from '@/database/query/croak/thread';
-import { Storage } from '@/lib/io/fileStorage';
+import { Storage, getStorage, FileFail } from '@/lib/io/fileStorage';
 import { Context, ContextFullFunction, setContext } from '@/lib/base/context';
 import { Identifier } from '@/domain/authorization/base';
+import { FileRecord } from '@/database/type/croak';
+import { getDatabase } from '@/database/base';
 
-export type Resource = {
+export type FileResource = {
   name: string;
   url: string;
+  content_type: string;
 };
 
 export type Croak = Omit<CroakFromDB, 'files'> & {
-  files: Resource[]
+  files: FileResource[]
 };
 
 export type CroakList = {
@@ -22,16 +25,15 @@ export type CroakList = {
 
 export const DISPLAY_LIMIT = 20;
 
-type SetFileUrl = (storage: Storage, croaksFromTable: CroakFromDB[]) => Promise<Croak[] | FileError>
+type SetFileUrl = (storage: Storage, croaksFromTable: CroakFromDB[]) => Promise<Croak[] | FileFail>
 const setFileUrl: SetFileUrl = async (storage, croaksFromTable) => {
 
   const croaks = [];
-  let files;
   const promises = [];
-  const errors = [];
+  const errors: FileFail[] = [];
 
-  for (const croak of croaks) {
-    files = [];
+  for (const croak of croaksFromTable) {
+    const files: FileResource[] = [];
     croaks.push({
       ...croak,
       files: files,
@@ -39,8 +41,8 @@ const setFileUrl: SetFileUrl = async (storage, croaksFromTable) => {
 
     for (const file of croak.files) {
       promises.push(new Promise(async (resolve) => {
-        const fileUrl = await generatePreSignedUrl(context.storage)(file.source);
-        if (fileUrl instanceof FileError) {
+        const fileUrl = await storage.generatePreSignedUrl(file.source);
+        if (fileUrl instanceof FileFail) {
           errors.push(fileUrl);
         } else {
           files.push({
@@ -49,7 +51,7 @@ const setFileUrl: SetFileUrl = async (storage, croaksFromTable) => {
             content_type: file.content_type,
           });
         }
-        resolve();
+        resolve(null);
       }));
     }
   }
@@ -63,10 +65,10 @@ const setFileUrl: SetFileUrl = async (storage, croaksFromTable) => {
   return croaks;
 }
 
-type GetCroakList = (croaks: Croak[]) => Promise<CroakList>
+type GetCroakList = (croaks: Croak[]) => CroakList;
 const getCroakList: GetCroakList = (croaks) => {
   if (croaks.length > DISPLAY_LIMIT) {
-    const limited = result.toSpliced(DISPLAY_LIMIT - 1, 1);
+    const limited = croaks.toSpliced(DISPLAY_LIMIT - 1, 1);
     return {
       croaks: limited,
       has_next: true,
@@ -80,29 +82,32 @@ const getCroakList: GetCroakList = (croaks) => {
   }
 }
 
-type GetCroaks = (storage: Storage, query: () => Promise<CroakFromDB>) => Promise<CroakList | FileError>;
+type GetCroaks = (storage: Storage, query: () => Promise<CroakFromDB[]>) => Promise<CroakList | FileFail>;
 const getCroaks: GetCroaks = async (storage, query) => {
 
   const result = await query();
   if (!result || result.length === 0) {
-    return [];
+    return {
+      croaks: [],
+      has_next: false,
+    };
   }
 
   const croaks = await setFileUrl(storage, result);
-  if (croaks instanceof FileError) {
+  if (croaks instanceof FileFail) {
     return croaks;
   }
 
   return getCroakList(croaks);
 };
 
-export type FunctionResult = CroakList | FileError;
+export type FunctionResult = CroakList | FileFail;
 
 /*
  * top
  */
 const getTopCroakContext = {
-  db: () => getDatabase({ top }),
+  db: () => getDatabase({ top }, null),
   storage: getStorage,
 } as const;
 
@@ -122,7 +127,7 @@ setContext(getTopCroaks, getTopCroakContext);
  * thread
  */
 const getThreadCroaksContext = {
-  db: () => getDatabase({ thread }),
+  db: () => getDatabase({ thread }, null),
   storage: getStorage,
 } as const;
 
@@ -142,7 +147,7 @@ setContext(getThreadCroaks, getThreadCroaksContext);
  * search
  */
 const searchCroaksContext = {
-  db: () => getDatabase({ search }),
+  db: () => getDatabase({ search }, null),
   storage: getStorage,
 } as const;
 

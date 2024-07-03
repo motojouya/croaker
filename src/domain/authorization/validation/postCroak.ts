@@ -33,17 +33,20 @@ const authorizePostCroak: AuthorizePostCroak = async (croaker, config) => {
 
   const lastCroakDate = await config.getLastCroakTime(croaker.croaker_id);
   if (lastCroakDate) {
-    const nowDate = config.getNow();
 
     const duration = getDuration(croaker.role.top_post_interval);
-    const croakTimePassed = !!compareAsc(add(lastCroakDate, duration), nowDate);
+    if (duration) {
 
-    if (croaker.role.post === POST_AUTHORITY_TOP && !croakTimePassed) {
-      let durationText = '';
-      if (duration) {
-        durationText = toStringDuration(duration);
+      const nowDate = await config.getNow();
+      const croakTimePassed = !!compareAsc(add(lastCroakDate, duration), nowDate);
+
+      if (croaker.role.post === POST_AUTHORITY_TOP && !croakTimePassed) {
+        let durationText = '';
+        if (duration) {
+          durationText = toStringDuration(duration);
+        }
+        return new AuthorityFail(croaker.croaker_id, 'post_thread', `前回の投稿から${durationText}以上たってから投稿してください`);
       }
-      return new AuthorityFail(croaker.croaker_id, 'post_thread', `前回の投稿から${durationText}以上たってから投稿してください`);
     }
   }
 };

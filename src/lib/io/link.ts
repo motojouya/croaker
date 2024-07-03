@@ -1,4 +1,5 @@
 import { JSDOM } from 'jsdom';
+import { Fail, isFailJSON } from '@/lib/base/fail';
 
 export type Ogp = {
   source: string,
@@ -36,7 +37,7 @@ const getOgp: GetOgp = (dom) => {
     }, {});
 }
 
-type FetchOgp = (link: string) => Promise<Ogp>;
+type FetchOgp = (link: string) => Promise<Ogp | FetchAccessFail>;
 const fetchOgp: FetchOgp = async (link) => {
 
   try {
@@ -82,9 +83,19 @@ const fetchOgp: FetchOgp = async (link) => {
     };
 
   } catch(e) {
-    return { source: link };
+    return new FetchAccessFail(link, `${link}へのアクセスに失敗しました`);
   }
 };
+
+export class FetchAccessFail extends Fail {
+  constructor(
+    readonly link: string,
+    readonly message: string,
+  ) {
+    super('lib.io.linl.FetchAccessFail');
+  }
+}
+export const isFetchAccessFail = isFailJSON(new FetchAccessFail('', ''));
 
 export type Fetcher = {
   fetchOgp: FetchOgp;

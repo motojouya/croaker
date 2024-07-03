@@ -2,50 +2,28 @@ import { getDatabase } from '@/database/base';
 import { Croak } from '@/database/query/croak/croak';
 import { getLastCroak } from '@/database/query/croakSimple/getLastCroak';
 import { createTextCroak } from '@/database/query/command/createTextCroak';
-import { InvalidArgumentsError } from '@/lib/base/validation';
+import { InvalidArgumentsFail } from '@/lib/base/validation';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
-import {
-  CHARACTOR_COUNT_MAX,
-  trimText,
-  charCount,
-  getLinks,
-} from '@/domain/text';
-import { getFetcher, Ogp } from '@/lib/io/link';
-import { getLocal } from '@/lib/io/local';
-import { Identifier, AuthorityError, authorizeCroaker } from '@/authorization/base';
-import { getCroakerUser } from '@/database/getCroakerUser';
-import { AUTHORIZE_FORM_AGREEMENT } from '@/authorization/validation/formAgreement';
-import { AUTHORIZE_BANNED } from '@/authorization/validation/banned';
-import { getAuthorizePostCroak } from '@/authorization/validation/postCroak';
+import { getLinks } from '@/domain/text/text';
+import { getFetcher, Ogp, Fetcher, FetchAccessFail } from '@/lib/io/link';
+import { getLocal, Local } from '@/lib/io/local';
+import { Identifier, AuthorityFail, authorizeCroaker } from '@/domain/authorization/base';
+import { getCroakerUser } from '@/database/query/croaker/getCroakerUser';
+import { Croaker } from '@/database/query/croaker/croaker';
+import { AUTHORIZE_FORM_AGREEMENT } from '@/domain/authorization/validation/formAgreement';
+import { AUTHORIZE_BANNED } from '@/domain/authorization/validation/banned';
+import { getAuthorizePostCroak } from '@/domain/authorization/validation/postCroak';
 import { trimContents } from '@/domain/text/contents';
 import { nullableId } from '@/domain/id';
 
-// export type PostCroak = ContextFullFunction<
-//   {
-//     session: Session,
-//     fetcher: Fetcher,
-//     local: Local,
-//     db: DB<
-//       {
-//         read: ReturnType<typeof read>,
-//         getLastCroak: ReturnType<typeof getLastCroak>,
-//       },
-//       {
-//         create: ReturnType<typeof create>
-//       }
-//     >,
-//   },
-//   (text: string, thread?: number) => Promise<
-//     | Omit<Croak, 'has_thread' | 'files'>
-//     | AuthorityError
-//     | InvalidArgumentsError
-//   >
-// >;
+import { pipe } from "fp-ts/function";
+import { Do, bind, bindA, map, toUnion } from '@/lib/base/fp';
 
 export type FunctionResult =
     | Omit<Croak, 'has_thread' | 'files'>
-    | AuthorityError
-    | InvalidArgumentsError;
+    | AuthorityFail
+    | FetchAccessFail
+    | InvalidArgumentsFail;
 
 const postCroakContext = {
   db: () => getDatabase({ getCroakerUser, getLastCroak }, { createTextCroak }),
@@ -60,33 +38,36 @@ export type PostCroak = ContextFullFunction<
 export const postCroak: PostCroak = ({ db, local, fetcher }) => (identifier) => async (text, thread) => {
 
   const trimedContents = trimContents(text);
-  if (trimedContents instanceof InvalidArgumentsError) {
+  if (trimedContents instanceof InvalidArgumentsFail) {
     return trimedContents;
   }
 
-  const nullableThread = nullableId(thread, 'thread');
-  if (nullableThread instanceof InvalidArgumentsError) {
+  const nullableThread = nullableId('thread', thread);
+  if (nullableThread instanceof InvalidArgumentsFail) {
     return nullableThread;
   }
 
   const croaker = await getCroaker(identifier, !!nullableThread, local, db);
-  if (croaker instanceof AuthorityError) {
+  if (croaker instanceof AuthorityFail) {
     return croaker;
   }
 
   const createCroak = {
     croaker_id: croaker.croaker_id,
     contents: trimedContents,
-    thread: nullableThread,
+    thread: nullableThread || undefined,
   };
 
   const links = await getOgps(fetcher, trimedContents);
+  if (links instanceof FetchAccessFail) {
+    return links;
+  }
 
   const croak = await db.transact((trx) => trx.createTextCroak(createCroak, links));
 
   return {
     ...croak,
-    croaker_name: croaker.name,
+    croaker_name: croaker.croaker_name,
   };
 };
 
@@ -96,12 +77,12 @@ type ReadableDB = {
   getCroakerUser: ReturnType<typeof getCroakerUser>,
   getLastCroak: ReturnType<typeof getLastCroak>,
 };
-type GetCroaker = (identifier: Identifier, isThread: boolean, local: Local, db: ReadableDB) => Promise<Croaker | AuthorityError>;
+type GetCroaker = (identifier: Identifier, isThread: boolean, local: Local, db: ReadableDB) => Promise<Croaker | AuthorityFail>;
 const getCroaker: GetCroaker = async (identifier, isThread, local, db) => {
 
   const authorizePostCroak = getAuthorizePostCroak(
     isThread,
-    local.now,
+    async () => local.now(),
     async (croaker_id) => {
       const lastCroak = await db.getLastCroak(croaker_id);
       return lastCroak ? lastCroak.posted_date : null;
@@ -115,12 +96,57 @@ const getCroaker: GetCroaker = async (identifier, isThread, local, db) => {
   );
 };
 
-type GetOgps = (fetcher: Fetcher, trimedContents: string) => Promise<Ogp[]>;
+type GetOgps = (fetcher: Fetcher, trimedContents: string) => Promise<Ogp[] | FetchAccessFail>;
 const getOgps: GetOgps = async (fetcher, trimedContents) => {
 
   const links = getLinks(trimedContents);
 
   const requests = links.map(link => fetcher.fetchOgp(link));
 
-  return await Promise.allSettled(requests);
+  const result = await Promise.allSettled(requests);
+
+  if (result.filter((r) => r.status === 'rejected').length > 0) {
+    throw new Error('Promise shoud not return error');
+  }
+
+  // @ts-ignore
+  const values = result.filter((r) => r.status === 'fulfilled').map((r) => r.value);
+
+  for (const val of values) {
+    if (val instanceof FetchAccessFail) {
+      return val; // TODO とりあえず最初の1つだけ
+    }
+  }
+
+  return values;
 };
+
+export const postCroakFP: PostCroak =
+  ({ db, local, fetcher }) =>
+  (identifier) =>
+  async (text, thread) =>
+  pipe(
+    Do,
+    bind("trimedContents", () => trimContents(text)),
+    bind("nullableThread", () => nullableId('thread', thread)),
+
+    bindA("croaker", ({ nullableThread }) => getCroaker(identifier, !!nullableThread, local, db)),
+    bindA("links", ({ trimedContents }) => getOgps(fetcher, trimedContents)),
+
+    bind("croakData", ({ croaker, trimedContents, nullableThread }) => ({
+      croaker_id: croaker.croaker_id,
+      contents: trimedContents,
+      thread: nullableThread || undefined,
+    })),
+    bindA("croak", ({ croakData, links }) => db.transact((trx) => trx.createTextCroak(croakData, links))),
+
+    map(({ croak, croaker }) => {
+      return {
+        ...croak,
+        croaker_name: croaker.croaker_name,
+      };
+    }),
+    toUnion
+  );
+
+setContext(postCroakFP, postCroakContext);

@@ -2,12 +2,7 @@ import * as E from 'fp-ts/Either';
 import * as TE from 'fp-ts/TaskEither';
 import { Fail } from '@/lib/base/fail';
 
-export type Success<A> = A extends Fail ? never : A;
-export type Failure<A> = A extends Fail ? A : never;
-export type FailUnion<A, E extends Fail = never> = A | E;
-export type FailReturn<A> = FailUnion<Success<A>, Failure<A>>;
-
-export function execute<A>(func: () => FailReturn<A>): E.Either<Failure<A>, Success<A>> {
+export function execute<A, E extends Fail>(func: () => A | E): E.Either<E, A> {
   const result = func();
   if (result instanceof Fail) {
     return E.left(result);
@@ -16,7 +11,7 @@ export function execute<A>(func: () => FailReturn<A>): E.Either<Failure<A>, Succ
   }
 }
 
-export function executeT<A>(func: () => Promise<FailReturn<A>>): TE.TaskEither<Failure<A>, Success<A>> {
+export function executeT<A, E extends Fail>(func: () => Promise<A | E>): TE.TaskEither<E, A> {
   return async function () {
     const result = await func();
     if (result instanceof Fail) {
@@ -28,18 +23,18 @@ export function executeT<A>(func: () => Promise<FailReturn<A>>): TE.TaskEither<F
 }
 
 // for sync function
-export const bind: <N extends string, A, B>(
+export const bind: <N extends string, A, B, E2 extends Fail>(
   name: Exclude<N, keyof A>,
-  f: (a: A) => FailReturn<B>
-) => <E>(fa: TE.TaskEither<E, A>) => TE.TaskEither<Failure<B> | E, { readonly [K in N | keyof A]: K extends keyof A ? A[K] : Success<B> }> =
-  (name, f) => TE.bindW(name, (v) => TE.fromEither(execute(() => f(v))));
+  f: (a: A) => B | E2
+) => <E1 extends Fail>(fa: TE.TaskEither<E1, A>) => TE.TaskEither<E2 | E1, { readonly [K in N | keyof A]: K extends keyof A ? A[K] : B }> =
+  (name, f) => TE.bindW(name, (v) => TE.fromEither(execute(() => f(v)))) as any;
 
 // A for async function
-export const bindA: <N extends string, A, B>(
+export const bindA: <N extends string, A, B, E2 extends Fail>(
   name: Exclude<N, keyof A>,
-  f: (a: A) => Promise<FailReturn<B>>
-) => <E>(fa: TE.TaskEither<E, A>) => TE.TaskEither<Failure<B> | E, { readonly [K in N | keyof A]: K extends keyof A ? A[K] : Success<B> }> =
-  (name, f) => TE.bindW(name, (v) => executeT(() => f(v)));
+  f: (a: A) => Promise<B | E2>
+) => <E1 extends Fail>(fa: TE.TaskEither<E1, A>) => TE.TaskEither<E2 | E1, { readonly [K in N | keyof A]: K extends keyof A ? A[K] : B }> =
+  (name, f) => TE.bindW(name, (v) => executeT(() => f(v))) as any;
 
 export const Do = TE.Do;
 export const map = TE.map;
@@ -81,19 +76,6 @@ export const toUnion = TE.toUnion;
 //     }
 //   });
 
-// TODO test
 declare function assertSame<A, B>(
   expect: [A] extends [B] ? ([B] extends [A] ? true : false) : false
 ): void;
-
-// type A = ErrorReturn<RangeError | ReferenceError, string | number>
-// type B = ErrorReturn<string | number | RangeError | ReferenceError>;
-// assertSame<A, B>(true);
-
-type C = RangeError | RangeError;
-type D = RangeError;
-assertSame<C, D>(true);
-
-type E = never | RangeError;
-type F = RangeError;
-assertSame<E, F>(true);
