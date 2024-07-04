@@ -19,7 +19,6 @@ import { Croak } from '@/domain/croak/croak';
 import { pipe } from "fp-ts/function";
 import * as TE from 'fp-ts/TaskEither';
 import { execute, executeA } from '@/lib/base/fp';
-// import { Do, bind, bindA, map, toUnion } from '@/lib/base/fp';
 
 export type FunctionResult =
     | Croak
@@ -125,25 +124,27 @@ const getOgps: GetOgps = async (fetcher, trimedContents) => {
   return values;
 };
 
+// import { Do, bind, bindA, map, toUnion } from '@/lib/base/fp';
+//
 // export const postCroakFP: PostCroak =
 //   ({ db, local, fetcher }) =>
 //   (identifier) =>
-//   async (text, thread) =>
+//   (text, thread) =>
 //   pipe(
 //     Do,
 //     bind("trimedContents", () => trimContents(text)),
 //     bind("nullableThread", () => nullableId('thread', thread)),
-// 
+//
 //     bindA("croaker", ({ nullableThread }) => getCroaker(identifier, !!nullableThread, local, db)),
 //     bindA("links", ({ trimedContents }) => getOgps(fetcher, trimedContents)),
-// 
+//
 //     bind("croakData", ({ croaker, trimedContents, nullableThread }) => ({
 //       croaker_id: croaker.croaker_id,
 //       contents: trimedContents,
 //       thread: nullableThread || undefined,
 //     })),
 //     bindA("croak", ({ croakData, links }) => db.transact((trx) => trx.createTextCroak(croakData, links))),
-// 
+//
 //     map(({ croak, croaker }) => {
 //       return {
 //         ...croak,
@@ -153,7 +154,7 @@ const getOgps: GetOgps = async (fetcher, trimedContents) => {
 //       };
 //     }),
 //     toUnion
-//   );
+//   )();
 
 type CroakData = {
   croaker_id: string,

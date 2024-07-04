@@ -2,7 +2,10 @@ import * as E from 'fp-ts/Either';
 import * as TE from 'fp-ts/TaskEither';
 import { Fail } from '@/lib/base/fail';
 
-export function execute<A, E extends Fail = never>(func: () => A | E): E.Either<E, A> {
+export type Result<A, E extends Fail = never> = A | E;
+
+// for sync function
+export function execute<A, E extends Fail = never>(func: () => Result<A, E>): E.Either<E, A> {
   const result = func();
   if (result instanceof Fail) {
     return E.left(result);
@@ -11,7 +14,8 @@ export function execute<A, E extends Fail = never>(func: () => A | E): E.Either<
   }
 }
 
-export function executeA<A, E extends Fail = never>(func: () => Promise<A | E>): TE.TaskEither<E, A> {
+// A for async function
+export function executeA<A, E extends Fail = never>(func: () => Promise<Result<A, E>>): TE.TaskEither<E, A> {
   return async function () {
     const result = await func();
     if (result instanceof Fail) {
@@ -23,18 +27,18 @@ export function executeA<A, E extends Fail = never>(func: () => Promise<A | E>):
 }
 
 // for sync function
-export const bind: <N extends string, A, B, E2 extends Fail>(
+export const bind: <N extends string, A, B, E2 extends Fail = never>(
   name: Exclude<N, keyof A>,
-  f: (a: A) => B | E2
+  f: (a: A) => Result<B, E2>
 ) => <E1 extends Fail>(fa: TE.TaskEither<E1, A>) => TE.TaskEither<E2 | E1, { readonly [K in N | keyof A]: K extends keyof A ? A[K] : B }> =
-  (name, f) => TE.bindW(name, (v) => TE.fromEither(execute(() => f(v)))) as any;
+  (name, f) => TE.bindW(name, (v) => TE.fromEither(execute(() => f(v))));
 
 // A for async function
-export const bindA: <N extends string, A, B, E2 extends Fail>(
+export const bindA: <N extends string, A, B, E2 extends Fail = never>(
   name: Exclude<N, keyof A>,
-  f: (a: A) => Promise<B | E2>
+  f: (a: A) => Promise<Result<B, E2>>
 ) => <E1 extends Fail>(fa: TE.TaskEither<E1, A>) => TE.TaskEither<E2 | E1, { readonly [K in N | keyof A]: K extends keyof A ? A[K] : B }> =
-  (name, f) => TE.bindW(name, (v) => executeA(() => f(v))) as any;
+  (name, f) => TE.bindW(name, (v) => executeA(() => f(v)));
 
 export const Do = TE.Do;
 export const map = TE.map;

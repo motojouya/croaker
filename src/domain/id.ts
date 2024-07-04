@@ -9,7 +9,7 @@ export const validateId: ValidateId = (value, name) => {
   return value;
 };
 
-export type NullableId = (name: string, value?: number) => InvalidArgumentsFail | number | null;
+export type NullableId = (name: string, value?: number) => number | null | InvalidArgumentsFail;
 export const nullableId: NullableId = (name, value) => {
   if (!value) {
     return null;

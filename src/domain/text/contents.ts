@@ -3,7 +3,7 @@ import { trimText, charCount } from '@/domain/text/text';
 
 export const CONTENTS_COUNT_MAX = 140;
 
-export type TrimContents = (contents?: string) => InvalidArgumentsFail | string;
+export type TrimContents = (contents?: string) => string | InvalidArgumentsFail;
 export const trimContents: TrimContents = (contents) => {
 
   if (!contents) {
