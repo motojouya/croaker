@@ -6,7 +6,7 @@ import { z } from 'zod';
 export type ResponseType = FunctionResult;
 
 const bodySchema = z.object({
-  croaker_editable: z.object({
+  croaker_editable_input: z.object({
     name: z.string(),
     description: z.string(),
   }),
@@ -16,7 +16,10 @@ const bodySchema = z.object({
 export const POST = getBodyHandler(
   null,
   bodySchema,
-  (identifier, b) => bindContext(editCroaker)(identifier)(b.croaker_editable, b.form_agreement)
+  (identifier, p, b) => bindContext(editCroaker)(identifier)(
+    b.croaker_editable_input,
+    b.form_agreement || undefined
+  )
 );
 
 export type FetchAPI = (name: string, description: string, formAgreement?: boolean) => Promise<ResponseType>;

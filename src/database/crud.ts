@@ -12,7 +12,6 @@ import {
   FilterObject,
 } from 'kysely'
 import { Database } from '@/database/type';
-import { MutationFail } from '@/database/base';
 
 // TODO 型推論が途中で止まっている気がする。
 // ALEのtscだと限界あるのかな。とりあえずほっておいて、実際にコンパイルしてみて結果を見る。
@@ -27,21 +26,14 @@ import { MutationFail } from '@/database/base';
 //     TA extends keyof DB ? TA : never :
 //     never;
 
+export const getSqlNow = (db: Kysely<Database>) => () => db.fn('datetime', ['now', 'localtime']);
+
 export function create(db: Kysely<Database>) {
-  return async function <T extends keyof Database & string>(tableName: T, newRecords: ReadonlyArray<Insertable<Database[T]>>): Promise<Selectable<Database[T]>[] | MutationFail> {
-
-    const recordCount = newRecords.length;
-
-    const result = await db.insertInto(tableName)
+  return async function <T extends keyof Database & string>(tableName: T, newRecords: ReadonlyArray<Insertable<Database[T]>>): Promise<Selectable<Database[T]>[]> {
+    return await db.insertInto(tableName)
       .values(newRecords)
       .returningAll()
       .execute();
-
-    if (result.length !== recordCount) {
-      return new MutationFail('insert', tableName, newRecords, `${tableName}テーブルへのinsertに失敗しました`);
-    }
-
-    return result;
   };
 }
 

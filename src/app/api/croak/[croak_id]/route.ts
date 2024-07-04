@@ -17,7 +17,11 @@ const querySchema = z.object({
 export const GET = getQueryHandler(
   pathSchema,
   querySchema,
-  (identifier, p, q) => bindContext(getThreadCroaks)(identifier)(p.croak_id, q.reverse, q.offset_cursor)
+  (identifier, p, q) => bindContext(getThreadCroaks)(identifier)(
+    p.croak_id,
+    q.reverse || undefined,
+    q.offset_cursor || undefined
+  )
 );
 
 export type FetchAPI = (croak_id: string, reverse: boolean, offsetCursor?: number) => Promise<ResponseType>;

@@ -1,11 +1,3 @@
-export const URL_REG_EXP = new RegExp('^https:\/\/\S+$');
-
-export type GetLinks = (text: string) => string[];
-export const getLinks: GetLinks = (text) => {
-  const lines = trimText(text);
-  return lines.filter(line => URL_REG_EXP.test(line))
-};
-
 export type TrimText = (text: string) => string[];
 export const trimText: TrimText = (text) => text
   .split('\n')

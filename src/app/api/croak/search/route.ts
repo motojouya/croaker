@@ -14,7 +14,11 @@ const querySchema = z.object({
 export const GET = getQueryHandler(
   null,
   querySchema,
-  (identifier, p, q) => bindContext(searchCroaks)(identifier)(q.text, q.reverse, q.offset_cursor)
+  (identifier, p, q) => bindContext(searchCroaks)(identifier)(
+    q.text,
+    q.reverse || undefined,
+    q.offset_cursor || undefined
+  )
 );
 
 export type FetchAPI = (text: string, reverse: boolean, offsetCursor?: number) => Promise<ResponseType>;

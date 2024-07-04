@@ -15,7 +15,7 @@ import { AUTHORIZE_FORM_AGREEMENT } from '@/domain/authorization/validation/form
 import { AUTHORIZE_BANNED } from '@/domain/authorization/validation/banned';
 import { getAuthorizePostCroak } from '@/domain/authorization/validation/postCroak';
 import { AUTHORIZE_POST_FILE } from '@/domain/authorization/validation/postFile';
-import { trimContents } from '@/domain/text/contents';
+import { trimContents } from '@/domain/croak/croak';
 import { nullableId } from '@/domain/id';
 import { FileData } from '@/lib/io/file';
 import { resolveFileUrl, Croak } from '@/domain/croak/croak';

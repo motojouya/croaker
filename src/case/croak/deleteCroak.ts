@@ -1,6 +1,6 @@
-import { getDatabase, RecordNotFoundFail, getSqlNow } from '@/database/base';
+import { getDatabase, RecordNotFoundFail } from '@/database/base';
 import { CroakRecord } from '@/database/type/croak';
-import { read, update } from '@/database/crud';
+import { read, update, getSqlNow } from '@/database/crud';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
 import { Identifier, AuthorityFail, authorizeCroaker } from '@/domain/authorization/base';
 import { getCroakerUser } from '@/database/query/croaker/getCroakerUser';

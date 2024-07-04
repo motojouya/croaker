@@ -108,8 +108,6 @@ function getQuery<T extends GetQuery>(db: Kysely<Database>, queries: T, acc: obj
   }, acc) as Query<T>; // FIXME as!
 };
 
-export const getSqlNow = (db: Kysely<Database>) => () => db.fn('datetime', ['now', 'localtime']);
-
 export class RecordAlreadyExistFail extends Fail {
   constructor(
     readonly table: string,

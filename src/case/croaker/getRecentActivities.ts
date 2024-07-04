@@ -1,16 +1,16 @@
-import { getDatabase } from '@/lib/database/base';
-import { CroakMini } from '@/database/query/croak';
-import { recentActivities } from '@/database/query/recentActivities';
+import { getDatabase } from '@/database/base';
+import { CroakSimple } from '@/database/query/croakSimple/croakSimple';
+import { recentActivities } from '@/database/query/croakSimple/recentActivities';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
-import { Identifier, AuthorityError, authorizeCroaker } from '@/authorization/base';
-import { getCroakerUser } from '@/database/getCroakerUser';
-import { AUTHORIZE_FORM_AGREEMENT } from '@/authorization/validation/formAgreement'; 
-import { AUTHORIZE_BANNED } from '@/authorization/validation/banned'; 
-import { AUTHORIZE_SHOW_OTHER_ACTIVITIES } from '@/authorization/validation/showOtherActivities'; 
+import { Identifier, AuthorityFail, authorizeCroaker } from '@/domain/authorization/base';
+import { getCroakerUser } from '@/database/query/croaker/getCroakerUser';
+import { AUTHORIZE_FORM_AGREEMENT } from '@/domain/authorization/validation/formAgreement'; 
+import { AUTHORIZE_BANNED } from '@/domain/authorization/validation/banned'; 
+import { AUTHORIZE_SHOW_OTHER_ACTIVITIES } from '@/domain/authorization/validation/showOtherActivities'; 
 
 const RECENT_ACTIVITIES_DAYS = 10;
 
-export type FunctionResult = CroakMini[] | AuthorityError;
+export type FunctionResult = CroakSimple[] | AuthorityFail;
 
 const getRecentActivitiesContext = {
   db: () => getDatabase({ getCroakerUser, recentActivities }, null),
@@ -28,7 +28,7 @@ export const getRecentActivities: GetRecentActivities = ({ db }) => (identifier)
     [AUTHORIZE_FORM_AGREEMENT, AUTHORIZE_BANNED, AUTHORIZE_SHOW_OTHER_ACTIVITIES]
   );
 
-  if (croaker instanceof AuthorityError) {
+  if (croaker instanceof AuthorityFail) {
     return croaker;
   }
 

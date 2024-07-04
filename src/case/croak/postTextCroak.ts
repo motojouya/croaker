@@ -3,7 +3,7 @@ import { getLastCroak } from '@/database/query/croakSimple/getLastCroak';
 import { createTextCroak, ReturnCroak } from '@/database/query/command/createTextCroak';
 import { InvalidArgumentsFail } from '@/lib/base/validation';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
-import { getLinks } from '@/domain/text/text';
+import { getLinks } from '@/domain/croak/croak';
 import { getFetcher, Ogp, Fetcher, FetchAccessFail } from '@/lib/io/link';
 import { getLocal, Local } from '@/lib/io/local';
 import { Identifier, AuthorityFail, authorizeCroaker } from '@/domain/authorization/base';
@@ -12,7 +12,7 @@ import { Croaker } from '@/database/query/croaker/croaker';
 import { AUTHORIZE_FORM_AGREEMENT } from '@/domain/authorization/validation/formAgreement';
 import { AUTHORIZE_BANNED } from '@/domain/authorization/validation/banned';
 import { getAuthorizePostCroak } from '@/domain/authorization/validation/postCroak';
-import { trimContents } from '@/domain/text/contents';
+import { trimContents } from '@/domain/croak/croak';
 import { nullableId } from '@/domain/id';
 import { Croak } from '@/domain/croak/croak';
 

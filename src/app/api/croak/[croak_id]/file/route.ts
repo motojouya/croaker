@@ -13,7 +13,12 @@ export const POST = getFormHandler(
   pathSchema,
   null,
   'file',
-  (identifier, p, f, file) => bindContext(postFile)(identifier)(file, p.croak_id)
+  (identifier, p, f, file) => {
+    if (!file) {
+      throw new Error('file should be exist!');
+    }
+    return bindContext(postFile)(identifier)(file, p.croak_id);
+  }
 );
 
 export type FetchAPI = (thread: number, file: File) => Promise<ResponseType>;

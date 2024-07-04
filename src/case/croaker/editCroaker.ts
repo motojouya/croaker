@@ -1,23 +1,22 @@
-import { getDatabase, RecordNotFoundError, sqlNow } from '@/lib/database/base';
-import { CroakerTable } from '@/database/type/croak';
-import { read, update } from '@/database/crud';
-import { getCroakerUser } from '@/database/query/getCroakerUser';
-import { InvalidArgumentsError } from '@/lib/base/validation';
+import { getDatabase, RecordNotFoundFail } from '@/database/base';
+import { CroakerRecord } from '@/database/type/croak';
+import { read, update, getSqlNow } from '@/database/crud';
+import { getCroakerUser } from '@/database/query/croaker/getCroakerUser';
+import { InvalidArgumentsFail } from '@/lib/base/validation';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
-import { getLocal } from '@/lib/local';
+import { getLocal } from '@/lib/io/local';
 import {
   Identifier,
-  AuthorityError,
+  AuthorityFail,
   authorizeCroaker,
-} from '@/authorization/base';
-import { trimName } from '@/domain/text/name';
-import { trimDescription } from '@/domain/text/description';
+} from '@/domain/authorization/base';
+import { CroakerEditableInput, trimCroakerEditableInput } from '@/domain/croaker/croaker';
 
 export type FunctionResult =
-    | Omit<CroakerTable, 'user_id'>
-    | AuthorityError
-    | InvalidArgumentsError
-    | RecordNotFoundError;
+    | Omit<CroakerRecord, 'user_id'>
+    | AuthorityFail
+    | InvalidArgumentsFail
+    | RecordNotFoundFail;
 
 const editCroakerContext = {
   db: () => getDatabase(null, { getCroakerUser, read, update }),
@@ -25,35 +24,33 @@ const editCroakerContext = {
 
 export type EditCroaker = ContextFullFunction<
   typeof editCroakerContext,
-  (identifier: Identifier) => (name: string, description: string, formAgreement?: boolean) => Promise<FunctionResult>
+  (identifier: Identifier) => (input: CroakerEditableInput, formAgreement?: boolean) => Promise<FunctionResult>
 >;
-export const editCroaker: EditCroaker = ({ db }) => (identifier) => async (name, description, formAgreement) => {
+export const editCroaker: EditCroaker = ({ db }) => (identifier) => async (input, formAgreement) => {
 
-  const trimedName = trimName(name);
-  if (trimedName instanceof InvalidArgumentsError) {
-    return trimedName;
-  }
-
-  const trimedDescription = trimDescription(description);
-  if (trimedDescription instanceof InvalidArgumentsError) {
-    return trimedDescription;
+  const trimmedInput = trimCroakerEditableInput(input);
+  if (trimmedInput instanceof InvalidArgumentsFail) {
+    return trimmedInput;
   }
 
   return await db.transact(async (trx) => {
 
     const croaker = await authorizeCroaker(identifier, trx.getCroakerUser);
-    if (croaker instanceof AuthorityError) {
+    if (croaker instanceof AuthorityFail) {
       return croaker;
     }
 
     const croakerResult = await trx.update('croaker', { croaker_id: croaker.croaker_id }, {
-      name: trimedName,
-      description: trimedDescription,
+      name: trimmedInput.name,
+      description: trimmedInput.description,
       form_agreement: croaker.form_agreement || !!formAgreement,
-      updated_date: sqlNow(), // trigger不要のはず
+      updated_date: getSqlNow(),
     });
+    if (croakerResult.length !== 1) {
+      throw new Error('update croaker should be only one!');
+    }
 
-    const { 'user_id', ...rest } = croakerResult;
+    const { user_id, ...rest } = croakerResult[0];
     return rest;
   });
 };

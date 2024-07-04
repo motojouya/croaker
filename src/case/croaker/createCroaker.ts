@@ -1,47 +1,40 @@
-import { getDatabase } from '@/lib/database/base';
-import { CroakerTable } from '@/database/type/croak';
+import { getDatabase } from '@/database/base';
+import { CroakerRecord, CROAKER_STATUS_ACTIVE } from '@/database/type/croak';
 import { RoleTable } from '@/database/type/master';
 import { read, create } from '@/database/crud';
-import { getCroakerUser } from '@/database/query/getCroakerUser';
+import { getCroakerUser } from '@/database/query/croaker/getCroakerUser';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
-import { getLocal } from '@/lib/io/local';
-import { Identifier, AuthorityError, justLoginUser } from '@/domain/authorize';
-import { InvalidArgumentsError } from '@/lib/base/validation';
+import { Local, getLocal } from '@/lib/io/local';
+import { Identifier, AuthorityFail, justLoginUser } from '@/domain/authorization/base';
+import { InvalidArgumentsFail } from '@/lib/base/validation';
 import { getCroakerId as getCroakerIdRandom } from '@/domain/id';
-import { trimName } from '@/domain/text/name';
-import { trimDescription } from '@/domain/text/description';
+import { CroakerEditableInput, trimCroakerEditableInput } from '@/domain/croaker/croaker';
 
-export type FunctionResult = Omit<CroakerTable, 'user_id'> | InvalidArgumentsError;
+export type FunctionResult = Omit<CroakerRecord, 'user_id'> | InvalidArgumentsFail | AuthorityFail;
 
 const createCroakerContext = {
-  db: () => getDatabase({ read, getCroakerUser }, { read, create }),
+  db: () => getDatabase(null, { read, create, getCroakerUser }),
   local: getLocal,
   f: () => ({ getCroakerIdRandom }),
 } as const;
 
 export type CreateCroaker = ContextFullFunction<
   typeof createCroakerContext,
-  (identifier: Identifier) => (name: string, description: string, formAgreement?: boolean) => Promise<FunctionResult>
+  (identifier: Identifier) => (input: CroakerEditableInput, formAgreement?: boolean) => Promise<FunctionResult>
 >;
-export const createCroaker: CreateCroaker = ({ db, local, f }) => (identifier) => async (name, description, formAgreement) => {
+export const createCroaker: CreateCroaker = ({ db, local, f }) => (identifier) => async (input, formAgreement) => {
 
-  // TODO name,descriptionは一つの型にまとめる。croakerEditablePropsみたいな感じかな
-  const trimedName = trimName(name);
-  if (trimedName instanceof InvalidArgumentsError) {
-    return trimedName;
-  }
-
-  const trimedDescription = trimDescription(description);
-  if (trimedDescription instanceof InvalidArgumentsError) {
-    return trimedDescription;
+  const trimmedInput = trimCroakerEditableInput(input);
+  if (trimmedInput instanceof InvalidArgumentsFail) {
+    return trimmedInput;
   }
 
   return db.transact(async (trx) => {
 
     const userId = await justLoginUser(identifier, trx.getCroakerUser);
     if (
-      userId instanceof AuthorityError ||
-      userId instanceof InvalidArgumentsError
+      userId instanceof AuthorityFail ||
+      userId instanceof InvalidArgumentsFail
     ) {
       return userId;
     }
@@ -50,17 +43,20 @@ export const createCroaker: CreateCroaker = ({ db, local, f }) => (identifier) =
 
     const croakerId = await getCroakerId(trx, local, f);
 
-    const croaker = await trx.create('croaker', {
+    const croakers = await trx.create('croaker', [{
       user_id: userId,
       croaker_id: croakerId,
-      name: trimedName,
-      description: trimedDescription,
+      name: trimmedInput.name,
+      description: trimmedInput.description,
       status: CROAKER_STATUS_ACTIVE,
       role_id: defaultRoleId,
       form_agreement: !!formAgreement,
-    });
+    }]);
+    if (croakers.length !== 1) {
+      throw new Error('insert croaker shoud be only one!');
+    }
 
-    const { user_id, ...rest } = croaker;
+    const { user_id, ...rest } = croakers[0];
     return rest;
   });
 };
@@ -69,13 +65,13 @@ type ReadableDB = { read: ReturnType<typeof read> };
 type Func = { getCroakerIdRandom: typeof getCroakerIdRandom };
 
 type GetDefaultRoleId = (db: ReadableDB) => Promise<number>
-const getDefaultRoleId: GetDefaultRoleId = (db) => {
+const getDefaultRoleId: GetDefaultRoleId = async (db) => {
 
-  const configurations = db.read('configuration', {});
+  const configurations = await db.read('configuration', {});
   if (configurations.length !== 1) {
     throw new Error('configuration should be single record!');
   }
-  const configuration = configuration[0];
+  const configuration = configurations[0];
 
   return configuration.default_role_id;
 };
@@ -98,4 +94,4 @@ const getCroakerId: GetCroakerId = async (db, local, f) => {
   throw new Error('croaker identifier conflicted!');
 };
 
-setContext(editCroaker, editCroakerContext);
+setContext(createCroaker, createCroakerContext);

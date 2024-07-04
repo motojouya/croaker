@@ -1,14 +1,15 @@
 import { getDatabase } from '@/database/base';
-import { CroakerTable } from '@/database/type/croak';
+import { CroakerRecord } from '@/database/type/croak';
 import { read } from '@/database/crud';
-import { getCroaker } from '@/database/getCroaker';
+import { Croaker } from '@/database/query/croaker/croaker';
+import { getCroaker as getCroakerDB } from '@/database/query/croaker/getCroaker';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
+import { Identifier } from '@/domain/authorization/base';
 
-export type Croaker = Omit<CroakerTable, 'user_id' | 'role_id'>;
 export type FunctionResult = Croaker | null;
 
 const getCroakerContext = {
-  db: () => getDatabase({ read }, null),
+  db: () => getDatabase({ getCroakerDB }, null),
 } as const;
 
 export type GetCroaker = ContextFullFunction<
@@ -19,6 +20,6 @@ export const getCroaker: GetCroaker =
   ({ db }) =>
   (identifier) =>
   (croakerId) =>
-  db.getCroaker(croakerId);
+  db.getCroakerDB(croakerId);
 
 setContext(getCroaker, getCroakerContext);

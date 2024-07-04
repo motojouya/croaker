@@ -170,8 +170,11 @@ export function getBodyHandler<P extends z.SomeZodObject, B extends z.SomeZodObj
   });
 }
 
-// TODO 以下のようにでてしまうのでコメントアウト
+// TODO どうもfileNameが型引数を取らないのでoverloadできないっぽい
+// file: FileData | nullを許容して、利用側でthrow Errorする
 // This overload signature is not compatible with its implementation signature.
+//
+// ほんとは以下の感じで書きたい
 // export function getFormHandler<F extends z.SomeZodObject, R>(
 //   pathSchema: null, formSchema: F, fileName: null,
 //   callback: (identifier: Identifier, path: null, form: z.infer<F>, file: null) => Promise<R>
@@ -196,7 +199,30 @@ export function getBodyHandler<P extends z.SomeZodObject, B extends z.SomeZodObj
 //   pathSchema: P, formSchema: F, fileName: string,
 //   callback: (identifier: Identifier, path: z.infer<P>, form: z.infer<F>, file: FileData) => Promise<R>
 // ): AppRouteHandlerFn;
-// TODO どうもfileNameが型引数を取らないので推論できないっぽい
+export function getFormHandler<R>(
+  pathSchema: null,
+  formSchema: null,
+  fileName: string | null,
+  callback: (identifier: Identifier, path: null, form: null, file: FileData | null) => Promise<R>
+): AppRouteHandlerFn
+export function getFormHandler<F extends z.SomeZodObject, R>(
+  pathSchema: null,
+  formSchema: F,
+  fileName: string | null,
+  callback: (identifier: Identifier, path: null, form: z.infer<F>, file: FileData | null) => Promise<R>
+): AppRouteHandlerFn
+export function getFormHandler<P extends z.SomeZodObject, R>(
+  pathSchema: P,
+  formSchema: null,
+  fileName: string | null,
+  callback: (identifier: Identifier, path: z.infer<P>, form: null, file: FileData | null) => Promise<R>
+): AppRouteHandlerFn
+export function getFormHandler<P extends z.SomeZodObject, F extends z.SomeZodObject, R>(
+  pathSchema: P,
+  formSchema: F,
+  fileName: string | null,
+  callback: (identifier: Identifier, path: z.infer<P>, form: z.infer<F>, file: FileData | null) => Promise<R>
+): AppRouteHandlerFn
 export function getFormHandler<P extends z.SomeZodObject, F extends z.SomeZodObject, R>(
   pathSchema: P | null,
   formSchema: F | null,
@@ -246,6 +272,7 @@ export function getFormHandler<P extends z.SomeZodObject, F extends z.SomeZodObj
         const formFileFail = new ValueTypeFail(fileName, 'File', 'null', `${fileName}はファイルではありません`);
         return NextResponse.json(formFileFail.toJSON());
       }
+
       const localFile = getLocalFile();
       fileData = await localFile.saveTempFile(file);
     }
