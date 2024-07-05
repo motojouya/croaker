@@ -59,7 +59,7 @@ function getTransact<T extends GetQuery>(db: Kysely<Database>, queries: T): Tran
   return async function <R>(callback: (trx: Query<T>) => Promise<R>): Promise<R> {
     try {
       return db.transaction().execute((trx) => {
-        const transactedQueries = getQuery(db, queries, {});
+        const transactedQueries = getQuery(trx, queries, {});
 
         const result = callback(transactedQueries);
 
