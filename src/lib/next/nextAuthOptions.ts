@@ -5,11 +5,11 @@ import GoogleProvider from "next-auth/providers/google";
 import { KyselyAdapter } from "@auth/kysely-adapter";
 import { getKysely } from "@/database/base";
 
-declare module 'next-auth' {
+declare module "next-auth" {
   interface Session {
     user: {
       id: string;
-    } & DefaultSession['user'];
+    } & DefaultSession["user"];
   }
 }
 
@@ -25,7 +25,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
     // CredentialsProvider({
     //   name: "Sign in",
@@ -77,7 +77,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           ...session.user,
           id: user.id,
         },
-      }
+      };
       // console.log("in session", { session, token });
       // token.accessToken
       // return {
@@ -88,5 +88,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       //   },
       // };
     },
-  }
+  },
 });

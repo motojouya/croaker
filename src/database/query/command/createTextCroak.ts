@@ -1,15 +1,12 @@
-import { Kysely } from 'kysely'
-import {
-  CroakRecord,
-  LinkRecord,
-} from '@/database/type/croak'
-import { Database } from '@/database/type'
+import { Kysely } from "kysely";
+import { CroakRecord, LinkRecord } from "@/database/type/croak";
+import { Database } from "@/database/type";
 
-export type ArgCroak = Pick<CroakRecord, 'croaker_id' | 'contents'> & {
+export type ArgCroak = Pick<CroakRecord, "croaker_id" | "contents"> & {
   thread?: number;
-}
+};
 
-export type ArgLink = Pick<LinkRecord, 'source'> & {
+export type ArgLink = Pick<LinkRecord, "source"> & {
   url?: string;
   type?: string;
   title?: string;
@@ -19,31 +16,23 @@ export type ArgLink = Pick<LinkRecord, 'source'> & {
 };
 
 export type ReturnCroak = CroakRecord & {
-  links: LinkRecord[]
+  links: LinkRecord[];
 };
 
 export type CreateTextCroak = (db: Kysely<Database>) => (croak: ArgCroak, links: ArgLink[]) => Promise<ReturnCroak>;
 export const createTextCroak: CreateTextCroak = (db) => async (croak, links) => {
+  const croakRecord = await db.insertInto("croak").values(croak).returningAll().executeTakeFirstOrThrow();
 
-  const croakRecord = await db.insertInto('croak')
-      .values(croak)
-      .returningAll()
-      .executeTakeFirstOrThrow();
-
-  const croakIdFilled = links.map(link => ({
+  const croakIdFilled = links.map((link) => ({
     ...link,
     croak_id: croakRecord.croak_id,
   }));
 
-  const linkRecords = await db
-    .insertInto('link')
-    .values(croakIdFilled)
-    .returningAll()
-    .execute();
+  const linkRecords = await db.insertInto("link").values(croakIdFilled).returningAll().execute();
 
   if (linkRecords.length !== links.length) {
-    throw new Error('fail insert to link!');
+    throw new Error("fail insert to link!");
   }
 
-  return { ...croakRecord, links: linkRecords, };
+  return { ...croakRecord, links: linkRecords };
 };

@@ -1,8 +1,8 @@
-import { FunctionResult, postCroak } from '@/case/croak/postTextCroak';
-import { bindContext } from '@/lib/base/context';
-import { getBodyHandler } from '@/lib/next/routeHandler';
-import { z } from 'zod';
-import { ResultJson } from '@/lib/base/fail';
+import { FunctionResult, postCroak } from "@/case/croak/postTextCroak";
+import { bindContext } from "@/lib/base/context";
+import { getBodyHandler } from "@/lib/next/routeHandler";
+import { z } from "zod";
+import { ResultJson } from "@/lib/base/fail";
 
 export type ResponseType = ResultJson<FunctionResult>;
 
@@ -10,10 +10,8 @@ const bodySchema = z.object({
   contents: z.string(),
 });
 
-export const POST = getBodyHandler(
-  null,
-  bodySchema,
-  (identifier, p, b) => bindContext(postCroak)(identifier)(b.contents)
+export const POST = getBodyHandler(null, bodySchema, (identifier, p, b) =>
+  bindContext(postCroak)(identifier)(b.contents),
 );
 
 // import { FetchType, executeFetch } from '@/lib/next/routeHandler';

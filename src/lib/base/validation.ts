@@ -1,4 +1,4 @@
-import { Fail, isFailJSON } from '@/lib/base/fail';
+import { Fail, isFailJSON } from "@/lib/base/fail";
 
 export class InvalidArgumentsFail extends Fail {
   constructor(
@@ -6,7 +6,7 @@ export class InvalidArgumentsFail extends Fail {
     public readonly value: string,
     public readonly message: string,
   ) {
-    super('lib.validation.InvalidArgumentsFail');
+    super("lib.validation.InvalidArgumentsFail");
   }
 }
-export const isInvalidArguments = isFailJSON(new InvalidArgumentsFail('', '', ''));
+export const isInvalidArguments = isFailJSON(new InvalidArgumentsFail("", "", ""));

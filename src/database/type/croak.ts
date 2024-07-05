@@ -1,13 +1,7 @@
-import {
-  GeneratedAlways,
-  Generated,
-  Insertable,
-  Selectable,
-  Updateable
-} from 'kysely'
+import { GeneratedAlways, Generated, Insertable, Selectable, Updateable } from "kysely";
 
-export const CROAKER_STATUS_ACTIVE = 'ACTIVE';
-export const CROAKER_STATUS_BANNED = 'BANNED';
+export const CROAKER_STATUS_ACTIVE = "ACTIVE";
+export const CROAKER_STATUS_BANNED = "BANNED";
 
 export interface CroakerTable {
   user_id: string;
@@ -20,9 +14,9 @@ export interface CroakerTable {
   created_date: Generated<Date>;
   updated_date: Generated<Date>;
 }
-export type CroakerRecord = Selectable<CroakerTable>
-export type NewCroaker = Insertable<CroakerTable>
-export type CroakerUpdate = Updateable<CroakerTable>
+export type CroakerRecord = Selectable<CroakerTable>;
+export type NewCroaker = Insertable<CroakerTable>;
+export type CroakerUpdate = Updateable<CroakerTable>;
 
 export interface CroakTable {
   croak_id: GeneratedAlways<number>;
@@ -32,9 +26,9 @@ export interface CroakTable {
   posted_date: Generated<Date>;
   deleted_date: Date | null;
 }
-export type CroakRecord = Selectable<CroakTable>
-export type NewCroak = Insertable<CroakTable>
-export type CroakUpdate = Updateable<CroakTable>
+export type CroakRecord = Selectable<CroakTable>;
+export type NewCroak = Insertable<CroakTable>;
+export type CroakUpdate = Updateable<CroakTable>;
 
 export interface LinkTable {
   croak_id: number;
@@ -47,11 +41,11 @@ export interface LinkTable {
   site_name: string | null;
   created_date: Generated<Date>;
 }
-export type LinkRecord = Selectable<LinkTable>
-export type NewLink = Insertable<LinkTable>
-export type LinkUpdate = Updateable<LinkTable>
+export type LinkRecord = Selectable<LinkTable>;
+export type NewLink = Insertable<LinkTable>;
+export type LinkUpdate = Updateable<LinkTable>;
 
-export const STORAGE_TYPE_GCS = 'GCS';
+export const STORAGE_TYPE_GCS = "GCS";
 
 export interface FileTable {
   file_id: GeneratedAlways<number>;
@@ -62,7 +56,6 @@ export interface FileTable {
   content_type: string;
   created_date: Generated<Date>;
 }
-export type FileRecord = Selectable<FileTable>
-export type NewFile = Insertable<FileTable>
-export type FileUpdate = Updateable<FileTable>
-
+export type FileRecord = Selectable<FileTable>;
+export type NewFile = Insertable<FileTable>;
+export type FileUpdate = Updateable<FileTable>;

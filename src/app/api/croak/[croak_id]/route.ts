@@ -1,8 +1,8 @@
-import { FunctionResult, getThreadCroaks } from '@/case/croak/getCroaks';
-import { bindContext } from '@/lib/base/context';
-import { getQueryHandler } from '@/lib/next/routeHandler';
-import { z } from 'zod';
-import { ResultJson } from '@/lib/base/fail';
+import { FunctionResult, getThreadCroaks } from "@/case/croak/getCroaks";
+import { bindContext } from "@/lib/base/context";
+import { getQueryHandler } from "@/lib/next/routeHandler";
+import { z } from "zod";
+import { ResultJson } from "@/lib/base/fail";
 
 export type ResponseType = ResultJson<FunctionResult>;
 
@@ -15,14 +15,8 @@ const querySchema = z.object({
   offset_cursor: z.coerce.number().nullable(),
 });
 
-export const GET = getQueryHandler(
-  pathSchema,
-  querySchema,
-  (identifier, p, q) => bindContext(getThreadCroaks)(identifier)(
-    p.croak_id,
-    q.reverse || undefined,
-    q.offset_cursor || undefined
-  )
+export const GET = getQueryHandler(pathSchema, querySchema, (identifier, p, q) =>
+  bindContext(getThreadCroaks)(identifier)(p.croak_id, q.reverse || undefined, q.offset_cursor || undefined),
 );
 
 // import { FetchType, executeFetch } from '@/lib/next/routeHandler';

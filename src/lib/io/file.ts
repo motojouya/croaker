@@ -1,5 +1,5 @@
-import fs from 'fs/promises';
-import { v4 } from 'uuid';
+import fs from "fs/promises";
+import { v4 } from "uuid";
 
 export type FileData = {
   path: string;
@@ -10,8 +10,7 @@ export type FileData = {
 
 type GetExtension = (fileName: string) => string | null;
 const getExtension: GetExtension = (fileName) => {
-
-  const ret = fileName.match(new RegExp('\.(.)+$'));
+  const ret = fileName.match(new RegExp(".(.)+$"));
 
   if (ret && ret.length > 2) {
     const [_, value, ...rest] = ret;
@@ -21,7 +20,7 @@ const getExtension: GetExtension = (fileName) => {
   }
 
   return null;
-}
+};
 
 // TODO 例外処理？
 type SaveTempFile = (file: File) => Promise<FileData>;
@@ -31,7 +30,7 @@ const saveTempFile: SaveTempFile = async (file) => {
     path: `./public/uploads/${v4()}`,
     name: fileName,
     type: file.type,
-    extension:getExtension(fileName), 
+    extension: getExtension(fileName),
   };
 
   const arrayBuffer = await file.arrayBuffer();
@@ -43,7 +42,7 @@ const saveTempFile: SaveTempFile = async (file) => {
 };
 
 export type LocalFile = {
-  saveTempFile: SaveTempFile,
+  saveTempFile: SaveTempFile;
 };
 
 export type GetLocalFile = () => LocalFile;

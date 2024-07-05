@@ -1,8 +1,8 @@
-import { FunctionResult, editCroaker } from '@/case/croaker/editCroaker';
-import { bindContext } from '@/lib/base/context';
-import { getBodyHandler } from '@/lib/next/routeHandler';
-import { z } from 'zod';
-import { ResultJson } from '@/lib/base/fail';
+import { FunctionResult, editCroaker } from "@/case/croaker/editCroaker";
+import { bindContext } from "@/lib/base/context";
+import { getBodyHandler } from "@/lib/next/routeHandler";
+import { z } from "zod";
+import { ResultJson } from "@/lib/base/fail";
 
 export type ResponseType = ResultJson<FunctionResult>;
 
@@ -14,13 +14,8 @@ const bodySchema = z.object({
   form_agreement: z.boolean().nullable(),
 });
 
-export const POST = getBodyHandler(
-  null,
-  bodySchema,
-  (identifier, p, b) => bindContext(editCroaker)(identifier)(
-    b.croaker_editable_input,
-    b.form_agreement || undefined
-  )
+export const POST = getBodyHandler(null, bodySchema, (identifier, p, b) =>
+  bindContext(editCroaker)(identifier)(b.croaker_editable_input, b.form_agreement || undefined),
 );
 
 // import { FetchType, executeFetch } from '@/lib/next/routeHandler';

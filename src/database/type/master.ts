@@ -1,9 +1,4 @@
-import {
-  GeneratedAlways,
-  Insertable,
-  Selectable,
-  Updateable
-} from 'kysely'
+import { GeneratedAlways, Insertable, Selectable, Updateable } from "kysely";
 
 export interface RoleTable {
   role_id: number;
@@ -15,9 +10,9 @@ export interface RoleTable {
   top_post_interval: string;
   show_other_activities: boolean;
 }
-export type RoleRecord = Selectable<RoleTable>
-export type NewRole = Insertable<RoleTable>
-export type RoleUpdate = Updateable<RoleTable>
+export type RoleRecord = Selectable<RoleTable>;
+export type NewRole = Insertable<RoleTable>;
+export type RoleUpdate = Updateable<RoleTable>;
 
 export interface ConfigurationTable {
   active: boolean;
@@ -25,12 +20,12 @@ export interface ConfigurationTable {
   default_role_id: number;
   about_contents: string;
 }
-export type ConfigurationRecord = Selectable<ConfigurationTable>
-export type NewConfiguration = Insertable<ConfigurationTable>
-export type ConfigurationUpdate = Updateable<ConfigurationTable>
+export type ConfigurationRecord = Selectable<ConfigurationTable>;
+export type NewConfiguration = Insertable<ConfigurationTable>;
+export type ConfigurationUpdate = Updateable<ConfigurationTable>;
 
-export const POST_AUTHORITY_TOP = 'TOP';
-export const POST_AUTHORITY_THREAD = 'THREAD';
-export const POST_AUTHORITY_DISABLE = 'DISABLE';
-export const CROAKER_STATUS_BANNED = 'BANNED';
-export const CROAKER_STATUS_ACTIVE = 'ACTIVE';
+export const POST_AUTHORITY_TOP = "TOP";
+export const POST_AUTHORITY_THREAD = "THREAD";
+export const POST_AUTHORITY_DISABLE = "DISABLE";
+export const CROAKER_STATUS_BANNED = "BANNED";
+export const CROAKER_STATUS_ACTIVE = "ACTIVE";

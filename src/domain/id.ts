@@ -1,5 +1,5 @@
-import { InvalidArgumentsFail } from '@/lib/base/validation';
-import { Random } from '@/lib/io/local';
+import { InvalidArgumentsFail } from "@/lib/base/validation";
+import { Random } from "@/lib/io/local";
 
 export type ValidateId = (value: number, name: string) => InvalidArgumentsFail | number;
 export const validateId: ValidateId = (value, name) => {
@@ -27,13 +27,14 @@ const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 export type GetCroakerId = (random: Random) => string;
 export const getCroakerId: GetCroakerId = (random) => {
-
   const head = ALPHABET[Math.floor(random())];
 
-  const middle = Array.from(Array(3)).map(() => {
-    const index = Math.floor(random() * ALPHABET_NUMBER.length);
-    return ALPHABET_NUMBER[index];
-  }).join('');
+  const middle = Array.from(Array(3))
+    .map(() => {
+      const index = Math.floor(random() * ALPHABET_NUMBER.length);
+      return ALPHABET_NUMBER[index];
+    })
+    .join("");
 
   const tail = ALPHABET[Math.floor(random())];
 

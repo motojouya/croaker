@@ -1,14 +1,14 @@
-import { JSDOM } from 'jsdom';
-import { Fail, isFailJSON } from '@/lib/base/fail';
+import { JSDOM } from "jsdom";
+import { Fail, isFailJSON } from "@/lib/base/fail";
 
 export type Ogp = {
-  source: string,
-  url?: string,
+  source: string;
+  url?: string;
   type?: string;
-  title?: string,
-  description?: string,
-  site_name?: string,
-  image?: string,
+  title?: string;
+  description?: string;
+  site_name?: string;
+  image?: string;
 };
 
 type GetOgp = (dom: JSDOM) => Record<string, string>;
@@ -17,7 +17,6 @@ const getOgp: GetOgp = (dom) => {
   return Array.from(meta)
     .filter((element) => element.hasAttribute("property"))
     .reduce((acc, ogp) => {
-
       const properties = ogp.getAttribute("property");
       if (!properties) {
         return acc;
@@ -28,30 +27,28 @@ const getOgp: GetOgp = (dom) => {
       if (prop && content) {
         return {
           ...acc,
-          [prop]: content
+          [prop]: content,
         };
       }
 
       return acc;
-
     }, {});
-}
+};
 
 type FetchOgp = (link: string) => Promise<Ogp | FetchAccessFail>;
 const fetchOgp: FetchOgp = async (link) => {
-
   try {
     const res = await fetch(link);
     if (!res) {
       return { source: link };
     }
 
-    const contentType = res.headers.get('Content-Type');
+    const contentType = res.headers.get("Content-Type");
     if (!contentType) {
       return { source: link };
     }
 
-    if (contentType.startsWith('image/')) {
+    if (contentType.startsWith("image/")) {
       return {
         source: link,
         url: link,
@@ -60,7 +57,7 @@ const fetchOgp: FetchOgp = async (link) => {
       };
     }
 
-    if (!contentType.startsWith('text/')) {
+    if (!contentType.startsWith("text/")) {
       return { source: link };
     }
 
@@ -81,8 +78,7 @@ const fetchOgp: FetchOgp = async (link) => {
       url: url || link,
       source: link,
     };
-
-  } catch(e) {
+  } catch (e) {
     return new FetchAccessFail(link, `${link}へのアクセスに失敗しました`);
   }
 };
@@ -92,10 +88,10 @@ export class FetchAccessFail extends Fail {
     readonly link: string,
     readonly message: string,
   ) {
-    super('lib.io.linl.FetchAccessFail');
+    super("lib.io.linl.FetchAccessFail");
   }
 }
-export const isFetchAccessFail = isFailJSON(new FetchAccessFail('', ''));
+export const isFetchAccessFail = isFailJSON(new FetchAccessFail("", ""));
 
 export type Fetcher = {
   fetchOgp: FetchOgp;
