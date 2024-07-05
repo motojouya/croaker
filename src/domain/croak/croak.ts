@@ -26,7 +26,6 @@ export type ResolveFileUrl = (
 ) => Promise<Croak | FileFail>;
 
 export const resolveFileUrl: ResolveFileUrl = async (storage, croak, files) => {
-
   const promises = [];
   const fileResources: FileResource[] = [];
   const errors: FileFail[] = [];
@@ -64,7 +63,6 @@ export const CONTENTS_COUNT_MAX = 140;
 
 export type TrimContents = (contents?: string) => string | InvalidArgumentsFail;
 export const trimContents: TrimContents = (contents) => {
-
   if (!contents) {
     return new InvalidArgumentsFail("contents", "", "入力してください");
   }

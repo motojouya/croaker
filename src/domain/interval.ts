@@ -13,7 +13,6 @@ export type Duration =
 
 export type GetDuration = (interval: string) => Duration | null;
 export const getDuration: GetDuration = (interval) => {
-
   for (const key of durationKeys) {
     const duration = getSpecificDuration(interval, key);
     if (duration) {
@@ -26,7 +25,6 @@ export const getDuration: GetDuration = (interval) => {
 
 type GetSpecificDuration = (interval: string, unit: DurationKey) => Duration | null;
 const getSpecificDuration: GetSpecificDuration = (interval, unit) => {
-
   const regExp = new RegExp(`^(\d{2})${unit}$`, "i");
   const ret = interval.match(regExp);
 
@@ -41,7 +39,6 @@ const getSpecificDuration: GetSpecificDuration = (interval, unit) => {
 
 export type ToStringDuration = (duration: Duration) => string;
 export const toStringDuration: ToStringDuration = (duration) => {
-
   const keys = Object.keys(duration);
   switch (keys[0]) {
     case "years":

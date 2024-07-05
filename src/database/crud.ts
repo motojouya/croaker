@@ -20,7 +20,6 @@ export function create(db: Kysely<Database>) {
     tableName: T,
     newRecords: ReadonlyArray<Insertable<Database[T]>>,
   ): Promise<Selectable<Database[T]>[]> {
-
     return await db.insertInto(tableName).values(newRecords).returningAll().execute();
   };
 }
@@ -34,7 +33,6 @@ export function read(db: Kysely<Database>) {
     tableName: T,
     criteria: FilterObject<Database, T>,
   ): Promise<Selectable<Database[T]>[]> {
-
     // @ts-ignore
     return await db
       .selectFrom(tableName)
@@ -56,7 +54,6 @@ export function update(db: Kysely<Database>) {
     criteria: FilterObject<Database, T>,
     updateWith: UpdateObject<Database, T>,
   ): Promise<Selectable<Database[T]>[]> {
-
     // @ts-ignore
     return await db
       .updateTable(tableName)
@@ -78,7 +75,6 @@ export function destroy(db: Kysely<Database>) {
     tableName: T,
     criteria: FilterObject<Database, T>,
   ): Promise<Selectable<Database[T]>[]> {
-
     // @ts-ignore
     return await db
       .deleteFrom(tableName)

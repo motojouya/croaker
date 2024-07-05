@@ -5,7 +5,6 @@ export const DESCRIPTION_COUNT_MAX = 1000;
 
 export type TrimDescription = (description?: string) => string | InvalidArgumentsFail;
 export const trimDescription: TrimDescription = (description) => {
-
   if (!description) {
     return "";
   }
@@ -27,7 +26,6 @@ export const NAME_COUNT_MAX = 40;
 
 export type TrimName = (name?: string) => string | InvalidArgumentsFail;
 export const trimName: TrimName = (name) => {
-
   if (!name) {
     return new InvalidArgumentsFail("name", "", "名前を入力してください");
   }
@@ -58,7 +56,6 @@ export type CroakerEditableInput = {
 
 export type TrimCroakerEditableInput = (input: CroakerEditableInput) => CroakerEditableInput | InvalidArgumentsFail;
 export const trimCroakerEditableInput: TrimCroakerEditableInput = (input) => {
-
   const name = trimName(input.name);
   if (name instanceof InvalidArgumentsFail) {
     return name;
