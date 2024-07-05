@@ -13,19 +13,6 @@ import {
 } from 'kysely'
 import { Database } from '@/database/type';
 
-// TODO 型推論が途中で止まっている気がする。
-// ALEのtscだと限界あるのかな。とりあえずほっておいて、実際にコンパイルしてみて結果を見る。
-// 型としては、見る限りあってそうで、大丈夫そうならignoreしてしまう
-//
-// ExtractTableAliasがストッパーになってる気がする。ExtractTableAlias<DB, T>するとaliasが渡されるけど、ここでtableが型情報から落ちる。
-// でも呼び出した先のSelectQueryBuilderはaliasというよりtableを欲しがっているように読めるので、混乱する
-
-// type NonSpaceString<T> = T extends `${string} as ${string}` ? never : T;
-// export type ExtractTableAlias<DB, TE> = TE extends keyof DB ? TE :
-//   TE extends `${string} as ${infer TA}` ?
-//     TA extends keyof DB ? TA : never :
-//     never;
-
 export const getSqlNow = (db: Kysely<Database>) => () => db.fn('datetime', ['now', 'localtime']);
 
 export function create(db: Kysely<Database>) {
@@ -40,8 +27,10 @@ export function create(db: Kysely<Database>) {
 export function read(db: Kysely<Database>) {
   // return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>): Promise<Selectable<Database[T]>[]> {
   return async function <T extends keyof Database & string>(tableName: T, criteria: FilterObject<Database, T>): Promise<Selectable<Database[T]>[]> {
+    // @ts-ignore
     return await db
       .selectFrom(tableName)
+      // @ts-ignore
       .where((eb) => eb.and(criteria))
       .selectAll()
       .execute();
@@ -51,9 +40,12 @@ export function read(db: Kysely<Database>) {
 export function update(db: Kysely<Database>) {
   // return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>, updateWith: Updateable<Database[T]>): Promise<Database[T][]> {
   return async function <T extends keyof Database & string>(tableName: T, criteria: FilterObject<Database, T>, updateWith: UpdateObject<Database, T>): Promise<Selectable<Database[T]>[]> {
+    // @ts-ignore
     return await db
       .updateTable(tableName)
+      // @ts-ignore
       .set(updateWith)
+      // @ts-ignore
       .where((eb) => eb.and(criteria))
       .returningAll()
       .execute();
@@ -63,8 +55,10 @@ export function update(db: Kysely<Database>) {
 export function destroy(db: Kysely<Database>) {
   // return async function <T extends keyof Database & string>(tableName: T, criteria: Partial<Selectable<Database[T]>>): Promise<Selectable<Database[T]>[]> {
   return async function <T extends keyof Database & string>(tableName: T, criteria: FilterObject<Database, T>): Promise<Selectable<Database[T]>[]> {
+    // @ts-ignore
     return await db
       .deleteFrom(tableName)
+      // @ts-ignore
       .where((eb) => eb.and(criteria))
       .returningAll()
       .execute();

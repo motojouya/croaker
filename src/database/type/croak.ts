@@ -17,8 +17,8 @@ export interface CroakerTable {
   status: string;
   role_id: number;
   form_agreement: boolean;
-  created_date: Date;
-  updated_date: Date;
+  created_date: Generated<Date>;
+  updated_date: Generated<Date>;
 }
 export type CroakerRecord = Selectable<CroakerTable>
 export type NewCroaker = Insertable<CroakerTable>

@@ -1,9 +1,10 @@
 import { FunctionResult, editCroaker } from '@/case/croaker/editCroaker';
 import { bindContext } from '@/lib/base/context';
-import { FetchType, getBodyHandler, executeFetch } from '@/lib/next/routeHandler';
+import { getBodyHandler } from '@/lib/next/routeHandler';
 import { z } from 'zod';
+import { ResultJson } from '@/lib/base/fail';
 
-export type ResponseType = FunctionResult;
+export type ResponseType = ResultJson<FunctionResult>;
 
 const bodySchema = z.object({
   croaker_editable_input: z.object({
@@ -22,17 +23,19 @@ export const POST = getBodyHandler(
   )
 );
 
-export type FetchAPI = (name: string, description: string, formAgreement?: boolean) => Promise<ResponseType>;
-export const fetchAPI: FetchAPI = async (name, description, formAgreement) => {
-  const result = await executeFetch(() => {
-    return fetch(`/api/croaker/self/edit`, {
-      method: 'POST',
-      body: JSON.stringify({
-        name,
-        description,
-        form_agreement: formAgreement,
-      }),
-    })
-  });
-  return result as ResponseType;
-};
+// import { FetchType, executeFetch } from '@/lib/next/routeHandler';
+//
+// export type FetchAPI = (name: string, description: string, formAgreement?: boolean) => Promise<ResponseType>;
+// export const fetchAPI: FetchAPI = async (name, description, formAgreement) => {
+//   const result = await executeFetch(() => {
+//     return fetch(`/api/croaker/self/edit`, {
+//       method: 'POST',
+//       body: JSON.stringify({
+//         name,
+//         description,
+//         form_agreement: formAgreement,
+//       }),
+//     })
+//   });
+//   return result as ResponseType;
+// };

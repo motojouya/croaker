@@ -44,6 +44,7 @@ export const editCroaker: EditCroaker = ({ db }) => (identifier) => async (input
       name: trimmedInput.name,
       description: trimmedInput.description,
       form_agreement: croaker.form_agreement || !!formAgreement,
+      // @ts-ignore
       updated_date: getSqlNow(),
     });
     if (croakerResult.length !== 1) {

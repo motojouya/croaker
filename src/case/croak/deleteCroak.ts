@@ -38,7 +38,8 @@ export const deleteCroak: DeleteCroak = ({ db }) => (identifier) => async (croak
       return croaker;
     }
 
-    // TODO ファイル末尾参照
+    // NOTE ファイル末尾参照
+    // @ts-ignore
     const result = await trx.update('croak', { croak_id: croakId }, { deleted_date: db.getSqlNow() });
     if (result.length !== 1) {
       throw new Error('croak shoud be unique by croak_id');

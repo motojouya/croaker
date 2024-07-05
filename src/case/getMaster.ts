@@ -1,12 +1,12 @@
 import { getDatabase } from '@/database/base';
-import { RoleTable, ConfigurationTable } from '@/database/type/master';
+import { ConfigurationRecord } from '@/database/type/master';
 import { read } from '@/database/crud';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
 import { ClientCroaker, Identifier } from '@/domain/authorization/base';
 import { getCroakerUser } from '@/database/query/croaker/getCroakerUser';
 
 export type Master = {
-  configuration: ConfigurationTable;
+  configuration: ConfigurationRecord;
   croaker: ClientCroaker;
 };
 export type FunctionResult = Master;

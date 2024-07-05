@@ -15,6 +15,8 @@ export type FailJSON<F extends Fail> = {
   )
 };
 
+export type ResultJson<T> = T extends Fail ? FailJSON<T> : T;
+
 export abstract class Fail {
 
   constructor(public readonly _prototype_fail_name: string) {}

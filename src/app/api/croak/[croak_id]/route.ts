@@ -1,9 +1,10 @@
 import { FunctionResult, getThreadCroaks } from '@/case/croak/getCroaks';
 import { bindContext } from '@/lib/base/context';
-import { FetchType, getQueryHandler, executeFetch } from '@/lib/next/routeHandler';
+import { getQueryHandler } from '@/lib/next/routeHandler';
 import { z } from 'zod';
+import { ResultJson } from '@/lib/base/fail';
 
-export type ResponseType = FunctionResult;
+export type ResponseType = ResultJson<FunctionResult>;
 
 const pathSchema = z.object({
   croak_id: z.coerce.number(),
@@ -24,10 +25,12 @@ export const GET = getQueryHandler(
   )
 );
 
-export type FetchAPI = (croak_id: string, reverse: boolean, offsetCursor?: number) => Promise<ResponseType>;
-export const fetchAPI: FetchAPI = async (croak_id, reverse, offsetCursor) => {
-  const result = await executeFetch(() => {
-    return fetch(`/api/croak/${croak_id}?reverse=${reverse}&offset_cursor=${offsetCursor}`);
-  });
-  return result as ResponseType;
-};
+// import { FetchType, executeFetch } from '@/lib/next/routeHandler';
+//
+// export type FetchAPI = (croak_id: string, reverse: boolean, offsetCursor?: number) => Promise<ResponseType>;
+// export const fetchAPI: FetchAPI = async (croak_id, reverse, offsetCursor) => {
+//   const result = await executeFetch(() => {
+//     return fetch(`/api/croak/${croak_id}?reverse=${reverse}&offset_cursor=${offsetCursor}`);
+//   });
+//   return result as ResponseType;
+// };

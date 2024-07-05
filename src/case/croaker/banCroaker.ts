@@ -1,5 +1,5 @@
 import { getDatabase, RecordNotFoundFail } from '@/database/base';
-import { CroakerTable, CROAKER_STATUS_BANNED } from '@/database/type/croak';
+import { CroakerRecord, CROAKER_STATUS_BANNED } from '@/database/type/croak';
 import { read, update, getSqlNow } from '@/database/crud';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
 import { Identifier, AuthorityFail, authorizeCroaker } from '@/domain/authorization/base';
@@ -8,7 +8,7 @@ import { AUTHORIZE_FORM_AGREEMENT } from '@/domain/authorization/validation/form
 import { AUTHORIZE_BANNED } from '@/domain/authorization/validation/banned'; 
 import { AUTHORIZE_BAN_POWER } from '@/domain/authorization/validation/banPower'; 
 
-export type Croaker = Omit<CroakerTable, 'user_id'>;
+export type Croaker = Omit<CroakerRecord, 'user_id'>;
 
 export type FunctionResult = Croaker | AuthorityFail | RecordNotFoundFail;
 
@@ -43,6 +43,7 @@ export const banCroaker: BanCroaker = ({ db }) => (identifier) => async (croaker
       throw new Error('update croaker should be only one!');
     }
 
+    // @ts-ignore
     await trx.update('croak', { croaker_id: croakerId }, { deleted_date: getSqlNow() });
 
     const { user_id, ...rest } = croakerUpdated[0];
@@ -53,7 +54,7 @@ export const banCroaker: BanCroaker = ({ db }) => (identifier) => async (croaker
 setContext(banCroaker, banCroakerContext);
 
 type ReadableDB = { read: ReturnType<typeof read> };
-type GetCroaker = (db: ReadableDB, croakerId: string) => Promise<CroakerTable | RecordNotFoundFail>
+type GetCroaker = (db: ReadableDB, croakerId: string) => Promise<CroakerRecord | RecordNotFoundFail>
 const getCroaker: GetCroaker = async (db, croakerId) => {
 
     const croakers = await db.read('croaker', { croaker_id: croakerId });

@@ -117,7 +117,7 @@ const getOgps: GetOgps = async (fetcher, trimedContents) => {
 
   for (const val of values) {
     if (val instanceof FetchAccessFail) {
-      return val; // TODO とりあえず最初の1つだけ
+      return val; // FIXME とりあえず最初の1つだけ
     }
   }
 

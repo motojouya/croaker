@@ -1,6 +1,5 @@
 import { getDatabase } from '@/database/base';
 import { CroakerRecord, CROAKER_STATUS_ACTIVE } from '@/database/type/croak';
-import { RoleTable } from '@/database/type/master';
 import { read, create } from '@/database/crud';
 import { getCroakerUser } from '@/database/query/croaker/getCroakerUser';
 import { ContextFullFunction, setContext } from '@/lib/base/context';
