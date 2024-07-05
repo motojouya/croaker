@@ -21,7 +21,7 @@ export const getKysely: GetKysely = () => {
 };
 
 export type Query<Q extends GetQuery> = {
-  [K in keyof Q]: Q[K] extends (db: Kysely<Database>) => infer Q ? Q : never;
+  [K in keyof Q]: Q[K] extends (db: Kysely<Database>) => infer F ? F : never;
 };
 
 export type Transact<T extends GetQuery> = <R>(callback: (trx: Query<T>) => Promise<R>) => Promise<R>;

@@ -3,6 +3,7 @@ export const trimText: TrimText = (text) => text.split("\n").map((line) => line.
 
 export type CharCount = (lines: string[]) => number;
 export const charCount: CharCount = (lines) => {
+
   if (lines.length === 0) {
     return 0;
   }

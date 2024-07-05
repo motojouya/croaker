@@ -3,6 +3,7 @@ import { Random } from "@/lib/io/local";
 
 export type ValidateId = (value: number, name: string) => InvalidArgumentsFail | number;
 export const validateId: ValidateId = (value, name) => {
+
   if (!Number.isSafeInteger(value) || value < 1) {
     return new InvalidArgumentsFail(name, String(value), `${name}は1以上の整数です`);
   }
@@ -11,6 +12,7 @@ export const validateId: ValidateId = (value, name) => {
 
 export type NullableId = (name: string, value?: number) => number | null | InvalidArgumentsFail;
 export const nullableId: NullableId = (name, value) => {
+
   if (!value) {
     return null;
   }
@@ -27,6 +29,7 @@ const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 export type GetCroakerId = (random: Random) => string;
 export const getCroakerId: GetCroakerId = (random) => {
+
   const head = ALPHABET[Math.floor(random())];
 
   const middle = Array.from(Array(3))

@@ -9,7 +9,11 @@ export type ContextFullFunction<T extends GetContext, F> = {
   (context: Context<T>): F;
 };
 
-export function setContext<T extends GetContext, F>(func: ContextFullFunction<T, F>, contextSetting: T): void {
+// prettier-ignore
+export function setContext<T extends GetContext, F>(
+  func: ContextFullFunction<T, F>,
+  contextSetting: T
+): void {
   func._context_setting = contextSetting;
 }
 
@@ -35,7 +39,7 @@ export function bindContext<T extends GetContext, F>(func: ContextFullFunction<T
       ...acc,
       [key]: val(),
     };
-  }, {}) as Context<T>; // TODO ここas大丈夫？
+  }, {}) as Context<T>; // FIXME as!
 
   return func(context);
 }

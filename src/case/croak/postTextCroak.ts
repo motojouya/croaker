@@ -146,14 +146,12 @@ const getOgps: GetOgps = async (fetcher, trimedContents) => {
 //     })),
 //     bindA("croak", ({ croakData, links }) => db.transact((trx) => trx.createTextCroak(croakData, links))),
 //
-//     map(({ croak, croaker }) => {
-//       return {
-//         ...croak,
-//         croaker_name: croaker.croaker_name,
-//         has_thread: false,
-//         files: [],
-//       };
-//     }),
+//     map(({ croak, croaker }) => ({
+//       ...croak,
+//       croaker_name: croaker.croaker_name,
+//       has_thread: false,
+//       files: [],
+//     })),
 //     toUnion
 //   )();
 
@@ -193,14 +191,12 @@ export const postCroakFP: PostCroak =
         executeA<ReturnCroak>(() => db.transact((trx) => trx.createTextCroak(croakData, links))),
       ),
 
-      TE.map(({ croak, croaker }) => {
-        return {
-          ...croak,
-          croaker_name: croaker.croaker_name,
-          has_thread: false,
-          files: [],
-        };
-      }),
+      TE.map(({ croak, croaker }) => ({
+        ...croak,
+        croaker_name: croaker.croaker_name,
+        has_thread: false,
+        files: [],
+      })),
       TE.toUnion,
     )();
 

@@ -10,8 +10,10 @@ type PostCroakConfig = {
   getNow: () => Promise<Date>;
   getLastCroakTime: (croaker_id: string) => Promise<Date | null>;
 };
+
 type AuthorizePostCroak = (croaker: Croaker, config: PostCroakConfig) => Promise<undefined | AuthorityFail>;
 const authorizePostCroak: AuthorizePostCroak = async (croaker, config) => {
+
   if (croaker.role.post === POST_AUTHORITY_DISABLE) {
     return new AuthorityFail(croaker.croaker_id, "post_disable", "投稿することはできません");
   }

@@ -36,7 +36,9 @@ export type JustLoginUser = (
   identifier: Identifier,
   getCroaker: (userId: string) => Promise<Croaker | null>,
 ) => Promise<string | AuthorityFail | InvalidArgumentsFail>;
+
 export const justLoginUser: JustLoginUser = async (identifier, getCroaker) => {
+
   if (identifier.type === "anonymous") {
     return new AuthorityFail("anonymous", "login", "ログインしてください");
   }
@@ -64,7 +66,9 @@ export type AuthorizeCroaker = (
   getCroaker: (userId: string) => Promise<Croaker | null>,
   additionals?: Validation[],
 ) => Promise<Croaker | AuthorityFail>;
+
 export const authorizeCroaker: AuthorizeCroaker = async (identifier, getCroaker, additionals = []) => {
+
   if (identifier.type === "anonymous") {
     return new AuthorityFail("anonymous", "login", "ログインしてください");
   }
