@@ -15,6 +15,7 @@ export type NewRole = Insertable<RoleTable>;
 export type RoleUpdate = Updateable<RoleTable>;
 
 export interface ConfigurationTable {
+  title: string;
   active: boolean;
   account_create_available: boolean;
   default_role_id: number;

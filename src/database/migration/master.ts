@@ -6,6 +6,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
 
   await db.schema
     .createTable("configuration")
+    .addColumn("title", "string", (col) => col.notNull()) // Croaker
     .addColumn("active", "boolean", (col) => col.notNull())
     .addColumn("account_create_available", "boolean", (col) => col.notNull())
     .addColumn("default_role_id", "integer", (col) => col.notNull())
