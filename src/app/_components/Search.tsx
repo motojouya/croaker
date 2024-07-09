@@ -14,15 +14,17 @@ export type UseSeachReturn = {
   action: (callback: ActionCallback) => void,
 };
 
-export type UseSearch = (defaultSearchText) => UseSeachReturn;
-  export const useSearch: UseSearch = (defaultSearchText) => {
+  export type SetText = (text: string) => void;
+
+export type UseSearch = (defaultSearchText: string) => UseSeachReturn;
+export const useSearch: UseSearch = (defaultSearchText) => {
 
   const [inputState, setInputState] = useState(false);
   const [searchText, setSearchText] = useState(defaultSearchText);
 
-  const action = (callback) => {
+  const action = (callback: SetText) => {
 
-    if (!searchState) {
+    if (!inputState) {
       setInputState(true);
       setSearchText(defaultSearchText);
       return;
@@ -44,22 +46,24 @@ export type UseSearch = (defaultSearchText) => UseSeachReturn;
   };
 };
 
-export const Search: React.FC<{
-  inputState: boolean,
-  setText: (text: string) => void,
-  action: () => void,
-}> = ({ inputState, setText, action }) => {
-  return (
-    {inputState && (
-      <Input type="text" placeholder="Search" onChange={setText}/>
-    )}
-    <Button
-      type="submit"
-      variant="outline"
-      size="icon"
-      onSubmit={action}
-    >
-      <MagnifyingGlassIcon className="h-4 w-4" />
-    </Button>
-  );
-};
+// export const Search: React.FC<{
+//   inputState: boolean,
+//   setText: SetText,
+//   action: () => void,
+// }> = ({ inputState, setText, action }) => {
+//   return (
+//     <>
+//       {!!inputState && (
+//         <Input type="text" placeholder="Search" onChange={(e) => setText(e.target.value)}/>
+//       )}
+//       <Button
+//         type="submit"
+//         variant="outline"
+//         size="icon"
+//         onSubmit={action}
+//       >
+//         <MagnifyingGlassIcon className="h-4 w-4" />
+//       </Button>
+//     </>
+//   );
+// };

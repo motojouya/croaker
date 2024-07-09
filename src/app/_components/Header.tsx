@@ -1,17 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import Image from 'next/image'
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { useMaster } from '@/app/SessionProvider';
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { MagnifyingGlassIcon, GearIcon } from "@radix-ui/react-icons"
-import { useSearch, Search } from '@/app/_components/Search'
+import { useSearch } from '@/app/_components/Search'
 
 export const dynamic = 'force-dynamic';
 
-export const Header: React.FC<{ searchTextInput: string }> = ({ searchTextInput }) => {
+export const Header: React.FC<{}> = () => {
+
+  const searchParams = useSearchParams();
+  const searchParamText = searchParams.get("text") || '';
 
   const master = useMaster();
   if (!master) {
@@ -23,26 +27,37 @@ export const Header: React.FC<{ searchTextInput: string }> = ({ searchTextInput 
 
   const {
     inputState,
-    setText: setSearchText,
+    setText,
     action,
-  } = useSearch(searchTextInput);
+  } = useSearch(searchParamText);
 
   return (
-    <header className="sticky flex justify-between px-8 w-screen h-16 bg-teal-400 items-center drop-shadow-2xl border-b border-gray-300 shadow-md">
-      <h1 className="font-bold text-2xl">
-        <Link href={'/'}>
-          <p>C{/* TODO favicon */}</p>
+    <header className="sticky flex justify-between px-8 w-screen h-16 bg-white-400 items-center border-b border-gray-300">
+      <h1 className="flex gap-3">
+        <Link href={'/'} className="flex">
+          <Image
+            src="/icon.png"
+            width={30}
+            height={30}
+            alt="Croaker"
+          />
           {!inputState && (
             <p>{configuration.title}</p>
           )}
         </Link>
       </h1>
       <div className="flex gap-3">
-        <Search
-          inputState={inputState}
-          setText={setText}
-          action={() => {action((searchText) => router.push(`/search?text=${searchText}`))}}
-        />
+        {!!inputState && (
+          <Input type="text" placeholder="Search" onChange={(e) => setText(e.target.value)}/>
+        )}
+        <Button
+          type="submit"
+          variant="outline"
+          size="icon"
+          onClick={() => { action((searchText) => router.push(`/search?text=${searchText}`)) }}
+        >
+          <MagnifyingGlassIcon className="h-4 w-4" />
+        </Button>
       </div>
       <div className="flex gap-3">
         <Link href={'/setting'}>
