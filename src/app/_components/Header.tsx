@@ -27,43 +27,53 @@ export const Header: React.FC<{}> = () => {
 
   const {
     inputState,
+    searchText,
     setText,
     action,
   } = useSearch(searchParamText);
 
   return (
-    <header className="sticky flex justify-between px-8 w-screen h-16 bg-white-400 items-center border-b border-gray-300">
-      <h1 className="flex gap-3">
-        <Link href={'/'} className="flex">
+    <header className="fixed top-0 left-0 w-screen h-12 flex flex-nowrap justify-between items-center bg-white border-b">
+      <div className="grow-0 shrink-0 w-30 h-30 m-2">
+        <Link href={'/'}>
           <Image
             src="/icon.png"
             width={30}
             height={30}
             alt="Croaker"
           />
+        </Link>
+      </div>
+      <div className="grow shrink m-2">
+        <Link href={'/'}>
           {!inputState && (
             <p>{configuration.title}</p>
           )}
         </Link>
-      </h1>
-      <div className="flex gap-3">
+      </div>
+      <div className="grow shrink m-2">
         {!!inputState && (
-          <Input type="text" placeholder="Search" onChange={(e) => setText(e.target.value)}/>
+          <Input
+            type="text"
+            placeholder="Search"
+            value={searchText}
+            onChange={(e) => setText(e.target.value)}
+          />
         )}
+      </div>
+      <div className="grow-0 shrink-0 m-2">
         <Button
-          type="submit"
-          variant="outline"
+          type="button"
+          variant="link"
           size="icon"
           onClick={() => { action((searchText) => router.push(`/search?text=${searchText}`)) }}
         >
-          <MagnifyingGlassIcon className="h-4 w-4" />
+          <MagnifyingGlassIcon />
         </Button>
       </div>
-      <div className="flex gap-3">
-        <Link href={'/setting'}>
-          <div className="w-100 h-20 flex items-center">
-            <GearIcon />
-          </div>
+      <div className="grow-0 shrink-0 m-2">
+        <Link href={'/setting'} className="w-10 h-10">
+          <GearIcon />
         </Link>
       </div>
     </header>

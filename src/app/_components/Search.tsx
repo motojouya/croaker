@@ -19,20 +19,21 @@ export type UseSeachReturn = {
 export type UseSearch = (defaultSearchText: string) => UseSeachReturn;
 export const useSearch: UseSearch = (defaultSearchText) => {
 
+  console.log(defaultSearchText);
   const [inputState, setInputState] = useState(false);
   const [searchText, setSearchText] = useState(defaultSearchText);
 
   const action = (callback: SetText) => {
 
     if (!inputState) {
-      setInputState(true);
       setSearchText(defaultSearchText);
+      setInputState(true);
       return;
     }
 
     if (!searchText || searchText === defaultSearchText) {
-      setInputState(false);
       setSearchText(defaultSearchText);
+      setInputState(false);
       return;
     }
 
@@ -41,6 +42,7 @@ export const useSearch: UseSearch = (defaultSearchText) => {
 
   return {
     inputState,
+    searchText,
     setText: setSearchText,
     action,
   };
