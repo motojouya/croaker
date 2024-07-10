@@ -33,48 +33,52 @@ export const Header: React.FC<{}> = () => {
   } = useSearch(searchParamText);
 
   return (
-    <header className="fixed top-0 left-0 w-screen h-12 flex flex-nowrap justify-between items-center bg-white border-b">
-      <div className="grow-0 shrink-0 w-30 h-30 m-2">
-        <Link href={'/'}>
-          <Image
-            src="/icon.png"
-            width={30}
-            height={30}
-            alt="Croaker"
-          />
-        </Link>
-      </div>
-      <div className="grow shrink m-2">
-        <Link href={'/'}>
-          {!inputState && (
-            <p>{configuration.title}</p>
-          )}
-        </Link>
-      </div>
-      <div className="grow shrink m-2">
-        {!!inputState && (
-          <Input
-            type="text"
-            placeholder="Search"
-            value={searchText}
-            onChange={(e) => setText(e.target.value)}
-          />
+    <header className="fixed top-0 left-0 w-screen h-12 flex flex-nowrap justify-center items-center bg-white border-b">
+      <div className="flex flex-nowrap justify-between items-center w-full max-w-5xl">
+        <div className="grow-0 shrink-0 w-30 h-30 m-2">
+          <Link href={'/'}>
+            <Image
+              src="/icon.png"
+              width={30}
+              height={30}
+              alt="Croaker"
+            />
+          </Link>
+        </div>
+        {!inputState && (
+          <div className="grow shrink m-2">
+            <Link href={'/'}>
+              <p>{configuration.title}</p>
+            </Link>
+          </div>
         )}
-      </div>
-      <div className="grow-0 shrink-0 m-2">
-        <Button
-          type="button"
-          variant="link"
-          size="icon"
-          onClick={() => { action((searchText) => router.push(`/search?text=${searchText}`)) }}
-        >
-          <MagnifyingGlassIcon />
-        </Button>
-      </div>
-      <div className="grow-0 shrink-0 m-2">
-        <Link href={'/setting'} className="w-10 h-10">
-          <GearIcon />
-        </Link>
+        {!!inputState && (
+          <div className="grow shrink m-2">
+            <Input
+              type="text"
+              placeholder="Search"
+              value={searchText}
+              onChange={(e) => setText(e.target.value)}
+            />
+          </div>
+        )}
+        <div className="grow-0 shrink-0 m-2">
+          <Button
+            type="button"
+            variant="link"
+            size="icon"
+            onClick={() => { action((searchText) => router.push(`/search?text=${searchText}`)) }}
+          >
+            <MagnifyingGlassIcon />
+          </Button>
+        </div>
+        <div className="grow-0 shrink-0 m-2">
+          <Link href={'/setting'} className="inline-block text-center w-8">
+            <center>
+              <GearIcon />
+            </center>
+          </Link>
+        </div>
       </div>
     </header>
   );

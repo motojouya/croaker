@@ -107,6 +107,7 @@ export class RecordAlreadyExistFail extends Fail {
     super("lib.db.RecordAlreadyExistFail");
   }
 }
+export const isRecordAlreadyExist = isFailJSON(new RecordAlreadyExistFail("", {}, ""));
 
 export class RecordNotFoundFail extends Fail {
   constructor(
@@ -117,6 +118,7 @@ export class RecordNotFoundFail extends Fail {
     super("lib.db.RecordNotFoundFail");
   }
 }
+export const isRecordNotFound = isFailJSON(new RecordNotFoundFail("", {}, ""));
 
 export class MutationFail extends Fail {
   constructor(
@@ -128,3 +130,4 @@ export class MutationFail extends Fail {
     super("lib.db.MutationFail");
   }
 }
+export const isMutationFail = isFailJSON(new MutationFail("", "", {}, ""));
