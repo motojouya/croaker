@@ -12,6 +12,7 @@ import { useSearch } from '@/app/_components/Search'
 
 export const dynamic = 'force-dynamic';
 
+export type SetText = (text: string) => void;
 export const Header: React.FC<{}> = () => {
 
   const searchParams = useSearchParams();
@@ -25,12 +26,25 @@ export const Header: React.FC<{}> = () => {
 
   const router = useRouter();
 
-  const {
-    inputState,
-    searchText,
-    setText,
-    action,
-  } = useSearch(searchParamText);
+  const [inputState, setInputState] = useState(false);
+  const [searchText, setSearchText] = useState(searchParamText);
+
+  const action = (callback: SetText) => {
+
+    if (!inputState) {
+      setSearchText(searchParamText);
+      setInputState(true);
+      return;
+    }
+
+    if (!searchText || searchText === searchParamText) {
+      setSearchText(searchParamText);
+      setInputState(false);
+      return;
+    }
+
+    callback(searchText);
+  };
 
   return (
     <header className="fixed top-0 left-0 w-screen h-12 flex flex-nowrap justify-center items-center bg-white border-b">
@@ -58,7 +72,7 @@ export const Header: React.FC<{}> = () => {
               type="text"
               placeholder="Search"
               value={searchText}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => setSearchText(e.target.value)}
             />
           </div>
         )}

@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { SessionProvider } from "@/app/SessionProvider";
 import { Header } from "@/app/_components/Header";
 import { bindContext } from "@/lib/base/context";
-import { getIdentifier } from "@/lib/next/routeHandler";
+import { getIdentifier } from "@/lib/next/utility";
 import { getMaster } from "@/case/getMaster";
 import { auth } from "@/lib/next/nextAuthOptions";
 
@@ -25,13 +25,13 @@ const master = {
     value: {
       croaker_id: 'own6r',
       croaker_name: 'test_owner',
-      description: 'I am test owner',
+      description: 'I am test owner. I am test owner. I am test owner. I am test owner. I am test owner.\nI am test owner. I am test owner.',
       status: 'ACTIVE',
       form_agreement: true,
       created_date: new Date(),
       updated_date: new Date(),
       role: {
-        name: 'owner',
+        name: 'OWNER',
         ban_power: true,
         delete_other_post: true,
         post: 'TOP',

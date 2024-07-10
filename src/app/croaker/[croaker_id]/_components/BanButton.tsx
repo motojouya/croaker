@@ -2,10 +2,10 @@
 
 import { Button } from "@/components/ui/button"
 import { ValueNoneIcon } from "@radix-ui/react-icons"
-import { doFetch } from '@/lib/next/routeHandler';
+import { doFetch } from '@/lib/next/utility';
 import { ResponseType } from '@/app/api/croaker/[croaker_id]/ban/route';
-import { RecordNotFoundFail, isRecordNotFound } from "@/database/base";
-import { AuthorityFail, isAuthorityFail } from "@/domain/authorization/base";
+import { isRecordNotFound } from "@/database/fail";
+import { isAuthorityFail } from "@/domain/authorization/base";
 
 const ban = async (croaker_id: string) => {
 
@@ -29,9 +29,9 @@ const ban = async (croaker_id: string) => {
   window.location.reload();
 };
 
-type ParamType = { croaker_id: string };
-
-export function BanButton({ croaker_id }: ParamType) {
+export const BanButton: React.FC<{
+  croaker_id: string
+}> = ({ croaker_id }) => {
   return (
     <Button
       type="button"

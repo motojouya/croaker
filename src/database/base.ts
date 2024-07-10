@@ -1,7 +1,6 @@
 import Sqlite from "better-sqlite3";
 import { Kysely, SqliteDialect, Transaction, sql, expressionBuilder } from "kysely";
 import { Database } from "@/database/type";
-import { Fail, isFailJSON } from "@/lib/base/fail";
 import { KyselyAuth } from "@auth/kysely-adapter";
 
 export type GetQuery = Record<string, (db: Kysely<Database>) => unknown>;
@@ -97,37 +96,3 @@ function getQuery<T extends GetQuery>(db: Kysely<Database>, queries: T, acc: obj
     };
   }, acc) as Query<T>; // FIXME as!
 }
-
-export class RecordAlreadyExistFail extends Fail {
-  constructor(
-    readonly table: string,
-    readonly data: object,
-    readonly message: string,
-  ) {
-    super("lib.db.RecordAlreadyExistFail");
-  }
-}
-export const isRecordAlreadyExist = isFailJSON(new RecordAlreadyExistFail("", {}, ""));
-
-export class RecordNotFoundFail extends Fail {
-  constructor(
-    readonly table: string,
-    readonly keys: object,
-    readonly message: string,
-  ) {
-    super("lib.db.RecordNotFoundFail");
-  }
-}
-export const isRecordNotFound = isFailJSON(new RecordNotFoundFail("", {}, ""));
-
-export class MutationFail extends Fail {
-  constructor(
-    readonly action: string,
-    readonly table: string,
-    readonly value: object,
-    readonly message: string,
-  ) {
-    super("lib.db.MutationFail");
-  }
-}
-export const isMutationFail = isFailJSON(new MutationFail("", "", {}, ""));

@@ -10,11 +10,12 @@ export const dynamic = 'force-dynamic';
 export type ActionCallback = (text: string) => void;
 export type UseSeachReturn = {
   inputState: boolean,
+  searchText: string,
   setText: (text: string) => void,
   action: (callback: ActionCallback) => void,
 };
 
-  export type SetText = (text: string) => void;
+export type SetText = (text: string) => void;
 
 export type UseSearch = (defaultSearchText: string) => UseSeachReturn;
 export const useSearch: UseSearch = (defaultSearchText) => {

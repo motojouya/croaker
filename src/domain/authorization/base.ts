@@ -1,5 +1,5 @@
 import { Fail, isFailJSON } from "@/lib/base/fail";
-import { Croaker } from "@/database/query/croaker/croaker";
+import type { Croaker } from "@/database/query/croaker/croaker";
 
 import { Banned } from "@/domain/authorization/validation/banned";
 import { BanPower } from "@/domain/authorization/validation/banPower";
