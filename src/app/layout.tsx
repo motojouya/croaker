@@ -27,7 +27,7 @@ const master = {
       croaker_name: 'test_owner',
       description: 'I am test owner. I am test owner. I am test owner. I am test owner. I am test owner.\nI am test owner. I am test owner.',
       status: 'ACTIVE',
-      form_agreement: true,
+      form_agreement: false,
       created_date: new Date(),
       updated_date: new Date(),
       role: {
@@ -62,7 +62,11 @@ export default async function RootLayout({
       <body className={cn(inter.className)}>
         <SessionProvider master={master}>
           <Header/>
-          {children}
+          <main className="w-screen min-h-screen flex flex-nowrap justify-center bg-white mt-12">
+            <div className="w-full max-w-5xl">
+              {children}
+            </div>
+          </main>
         </SessionProvider>
       </body>
     </html>

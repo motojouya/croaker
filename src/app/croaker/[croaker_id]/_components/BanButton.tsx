@@ -16,13 +16,8 @@ const ban = async (croaker_id: string) => {
   const res = await doFetch(`/api/croaker/${croaker_id}/ban`, { method: 'POST' });
   const result = res as ResponseType;
 
-  if (isAuthorityFail(result)) {
-    alert('権限がありません');
-    return;
-  }
-
-  if (isRecordNotFound(result)) {
-    alert('既にBANされたユーザです');
+  if (isAuthorityFail(result) || isRecordNotFound(result)) {
+    alert(result.message);
     return;
   }
 
@@ -31,16 +26,14 @@ const ban = async (croaker_id: string) => {
 
 export const BanButton: React.FC<{
   croaker_id: string
-}> = ({ croaker_id }) => {
-  return (
-    <Button
-      type="button"
-      variant="destructive"
-      className="h-7 w-7"
-      size="icon"
-      onClick={() => ban(croaker_id)}
-    >
-      <ValueNoneIcon />
-    </Button>
-  );
-} 
+}> = ({ croaker_id }) => (
+  <Button
+    type="button"
+    variant="destructive"
+    className="h-7 w-7"
+    size="icon"
+    onClick={() => ban(croaker_id)}
+  >
+    <ValueNoneIcon />
+  </Button>
+);

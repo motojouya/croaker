@@ -4,7 +4,6 @@ import { getCroaker } from "@/case/croaker/getCroaker";
 import { auth } from "@/lib/next/nextAuthOptions";
 import { Badge } from "@/components/ui/badge"
 import { BanButton } from "@/app/croaker/[croaker_id]/_components/BanButton"
-import { MainDiv } from "@/app/_components/MainDiv"
 import { Profile } from "@/components/parts/Profile"
 
 const croaker = {
@@ -37,10 +36,8 @@ export default function Page({ params }: ParamsType) {
   // const croaker = await bindContext(getCroaker)(identifier)(params.croaker_id);
 
   return (
-    <MainDiv>
-      <Profile croaker={croaker}>
-        <BanButton croaker_id={params.croaker_id}/>
-      </Profile>
-    </MainDiv>
+    <Profile croaker={croaker}>
+      <BanButton croaker_id={params.croaker_id}/>
+    </Profile>
   );
 }

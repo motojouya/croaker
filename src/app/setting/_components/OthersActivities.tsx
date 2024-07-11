@@ -53,7 +53,7 @@ export const OthersActivities: React.FC<{}> = () => {
       )}
       {data && isAuthorityFail(result) && (
         <div className="w-full m-2 flex flex-nowrap justify-start items-center">
-          <p>No Authority</p>
+          <p>{result.message}</p>
         </div>
       )}
       {croakSimples.map((croak, index) => {

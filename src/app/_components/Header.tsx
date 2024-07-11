@@ -18,18 +18,13 @@ export const Header: React.FC<{}> = () => {
   const searchParams = useSearchParams();
   const searchParamText = searchParams.get("text") || '';
 
-  const master = useMaster();
-  if (!master) {
-    throw new Error('no configurations on session');
-  }
-  const { configuration, croaker } = master;
-
   const router = useRouter();
+  const { configuration, croaker } = useMaster();
 
   const [inputState, setInputState] = useState(false);
   const [searchText, setSearchText] = useState(searchParamText);
 
-  const action = (callback: SetText) => {
+  const action = () => {
 
     if (!inputState) {
       setSearchText(searchParamText);
@@ -43,7 +38,7 @@ export const Header: React.FC<{}> = () => {
       return;
     }
 
-    callback(searchText);
+    router.push(`/search?text=${searchText}`);
   };
 
   return (
@@ -81,7 +76,7 @@ export const Header: React.FC<{}> = () => {
             type="button"
             variant="link"
             size="icon"
-            onClick={() => { action((searchText) => router.push(`/search?text=${searchText}`)) }}
+            onClick={action}
           >
             <MagnifyingGlassIcon />
           </Button>

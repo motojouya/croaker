@@ -1,94 +1,154 @@
 "use client"
 
-import type { Croaker } from "@/database/query/croaker/croaker";
+import type { ResponseType as ResponseTypeNew } from '@/app/api/croaker/self/new/route';
+import type { ResponseType as ResponseTypeEdit } from '@/app/api/croaker/self/edit/route';
 
-import Link from 'next/link';
-import { Profile } from "@/components/parts/Profile"
+import { useRouter } from 'next/navigation';
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-import { MainDiv } from "@/app/_components/MainDiv"
-import { useMaster } from '@/app/SessionProvider';
-import { buttonVariants } from "@/components/ui/button"
-import { AboutCroaker } from '@/components/parts/AboutCroaker'
-import { MultiLineText } from '@/components/parts/MultiLineText'
-
-import Image from 'next/image'
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { MagnifyingGlassIcon, GearIcon } from "@radix-ui/react-icons"
-import { useSearch } from '@/app/_components/Search'
-
 import { Textarea } from "@/components/ui/textarea"
-
 import { Checkbox } from "@/components/ui/checkbox"
+
+import { AboutCroaker } from '@/components/parts/AboutCroaker'
+import { doFetch } from '@/lib/next/utility';
+import { useMaster } from '@/app/SessionProvider';
+import { isRecordNotFound } from "@/database/fail";
+import { isAuthorityFail } from "@/domain/authorization/base";
+import { isInvalidArguments } from '@/lib/base/validation'
+
+const croakerEditFormSchema = z.object({
+  name: z.string().refine((val) => Boolean(val.trim().length), "Name Required"),
+  description: z.string(),
+  form_agreement: z.boolean(),
+});
+type CroakerEditForm = z.infer<typeof croakerEditFormSchema>;
+
+const createCroaker = async (data: CroakerEditForm, callback: () => void) => {
+
+  const body = {
+    croaker_editable_input: {
+      name: data.name,
+      description: data.description,
+    },
+    form_agreement: data.form_agreement,
+  };
+
+  const res = await doFetch(`/api/croaker/self/new`, { method: 'POST', body: JSON.stringify(body), });
+  const result = res as ResponseTypeNew;
+
+  if (isAuthorityFail(result) || isInvalidArguments(result)) {
+    alert(result.message);
+    return;
+  }
+
+  callback();
+};
+
+const editCroaker = async (data: CroakerEditForm, formAgreementAlready: boolean, callback: () => void) => {
+
+  const body = {
+    croaker_editable_input: {
+      name: data.name,
+      description: data.description,
+    }
+  } as any;
+  if (!formAgreementAlready) {
+    body.form_agreement = data.form_agreement;
+  }
+
+  const res = await doFetch(`/api/croaker/self/edit`, { method: 'POST', body: JSON.stringify(body), });
+  const result = res as ResponseTypeEdit;
+
+  if (isAuthorityFail(result) || isRecordNotFound(result) || isInvalidArguments(result)) {
+    alert(result.message);
+    return;
+  }
+
+  callback();
+};
 
 export default function Page() {
 
-  const master = useMaster();
-  if (!master) {
-    throw new Error('no configurations on session');
-  }
-  const { configuration, croaker } = master;
+  const router = useRouter();
+  const { configuration, croaker } = useMaster();
 
-  let sessionCroaker: Croaker | null = null;
+  let defaultValues: CroakerEditForm = {
+      name: '',
+      description: '',
+      form_agreement: false,
+  };
   if (croaker.type === "registered") {
-    sessionCroaker = croaker.value;
+    defaultValues = {
+      name: croaker.value.croaker_name,
+      description: croaker.value.description,
+      form_agreement: croaker.value.form_agreement,
+    };
   }
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<CroakerEditForm>({
+    resolver: zodResolver(croakerEditFormSchema),
+    defaultValues,
+  });
+
+  const onSubmit = async (data: CroakerEditForm) => {
+
+    if (croaker.type !== "registered") {
+      createCroaker(data, () => {
+        // TODO page移動したあとにreload走る？
+        router.push('/setting');
+        window.location.reload();
+      });
+
+    } else {
+      editCroaker(data, croaker.value.form_agreement, () => {
+        // TODO page移動したあとにreload走る？
+        router.push('/setting');
+        window.location.reload();
+      });
+    }
+  };
 
   return (
-    <MainDiv>
-      {!sessionCroaker && (
-        <div>
-          New!
+    <form onSubmit={handleSubmit(onSubmit)}>
+      {croaker.type === "registered" && (
+        <div className="m-2">
+          <p>{`@${croaker.value.croaker_id}`}</p>
         </div>
       )}
-      {!!sessionCroaker && (
-        <>
-          <div className="w-full mt-2 flex flex-nowrap justify-start items-center">
-            <p className="mx-2 text-2xl">{sessionCroaker.croaker_name}</p>
-          </div>
-          <div className="w-full flex flex-nowrap justify-start items-center">
-            <p className="mx-2">{`@${sessionCroaker.croaker_id}`}</p>
-          </div>
-          <div className="w-full mt-5 flex flex-nowrap justify-start items-center">
-            <p className="mx-2"><MultiLineText text={sessionCroaker.description}/></p>
-          </div>
-          <AboutCroaker aboutContents={configuration.about_contents} />
-        </>
-      )}
-      <div className="grow shrink m-2">
-        <Input
-          type="text"
-          placeholder="Search"
-          value={''}
-          onChange={(e) => console.log(e.target.value)}
-        />
+      <div className="m-2">
+        <Input type="text" placeholder="Name" {...register("name")} />
+        {errors.name && <span className="text-red-500">{errors.name.message}</span>}
       </div>
-      <Textarea placeholder="Type your message here." />
-      <div className="items-top flex space-x-2">
-        <Checkbox id="terms1" />
-        <div className="grid gap-1.5 leading-none">
-          <label
-            htmlFor="terms1"
-            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-          >
-            Accept terms and conditions
-          </label>
-          <p className="text-sm text-muted-foreground">
-            You agree to our Terms of Service and Privacy Policy.
-          </p>
+      <div className="m-2">
+        <Textarea placeholder="Description" {...register("description")} />
+      </div>
+      {(croaker.type !== "registered" || !croaker.value.form_agreement) && (
+        <div className="my-5 mx-2">
+          <p className="text-xl">Please Agree About Croaker Condition</p>
+          <AboutCroaker aboutContents={configuration.about_contents} title={false} />
+          <center className="mt-2">
+            <Checkbox id="about_croaker_agreement" {...register("form_agreement")} />
+            <label htmlFor="about_croaker_agreement" className="ml-2">
+              Agree About Croaker Condition
+            </label>
+          </center>
         </div>
+      )}
+      <div className="m-2">
+        <center>
+          <Button type="submit" variant="outline" >
+            <p>Submit</p>
+          </Button>
+        </center>
       </div>
-      <div className="grow-0 shrink-0 m-2">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => console.log('click!')}
-        >
-          <p>Submit</p>
-        </Button>
-      </div>
-    </MainDiv>
+    </form>
   );
 }
