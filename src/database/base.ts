@@ -2,6 +2,7 @@ import Sqlite from "better-sqlite3";
 import { Kysely, SqliteDialect, Transaction, sql, expressionBuilder } from "kysely";
 import { Database } from "@/database/type";
 import { KyselyAuth } from "@auth/kysely-adapter";
+import { Fail } from "@/lib/base/fail";
 
 export type GetQuery = Record<string, (db: Kysely<Database>) => unknown>;
 

@@ -8,7 +8,6 @@ import { useMaster } from '@/app/SessionProvider';
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { MagnifyingGlassIcon, GearIcon } from "@radix-ui/react-icons"
-import { useSearch } from '@/app/_components/Search'
 
 export const dynamic = 'force-dynamic';
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from 'react'
 import { Inter } from "next/font/google";
 import { Inter as FontSans } from "next/font/google";
 import "@/app/globals.css";
@@ -61,7 +62,9 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={cn(inter.className)}>
         <SessionProvider master={master}>
-          <Header/>
+          <Suspense>
+            <Header/>
+          </Suspense>
           <main className="w-screen min-h-screen flex flex-nowrap justify-center bg-white mt-12">
             <div className="w-full max-w-5xl">
               {children}
