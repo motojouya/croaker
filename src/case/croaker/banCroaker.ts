@@ -1,4 +1,5 @@
-import { getDatabase, RecordNotFoundFail } from "@/database/base";
+import { getDatabase } from "@/database/base";
+import { RecordNotFoundFail } from "@/database/fail";
 import { CroakerRecord, CROAKER_STATUS_BANNED } from "@/database/type/croak";
 import { read, update, getSqlNow } from "@/database/crud";
 import { ContextFullFunction, setContext } from "@/lib/base/context";

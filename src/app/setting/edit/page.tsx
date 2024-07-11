@@ -100,19 +100,16 @@ export default function Page() {
 
   const onSubmit = async (data: CroakerEditForm) => {
 
-    if (croaker.type !== "registered") {
-      createCroaker(data, () => {
-        // TODO page移動したあとにreload走る？
-        router.push('/setting');
-        window.location.reload();
-      });
+    const afterCallback = () => {
+      // TODO page移動したあとにreload走る？
+      router.push('/setting');
+      window.location.reload();
+    };
 
+    if (croaker.type === "registered") {
+      editCroaker(data, croaker.value.form_agreement, afterCallback);
     } else {
-      editCroaker(data, croaker.value.form_agreement, () => {
-        // TODO page移動したあとにreload走る？
-        router.push('/setting');
-        window.location.reload();
-      });
+      createCroaker(data, afterCallback);
     }
   };
 
