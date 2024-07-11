@@ -1,5 +1,7 @@
 export default function Page() {
   return (
-    <div><p>developing</p></div>
+    <div>
+      <p>developing</p>
+    </div>
   );
 }

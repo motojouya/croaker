@@ -9,10 +9,10 @@ export type UseMaster = () => Master;
 export const useMaster: UseMaster = () => {
   const master = useContext(SessionContext);
   if (!master) {
-    throw new Error('no configurations on session');
+    throw new Error("no configurations on session");
   }
   return master;
-}
+};
 
 export const SessionProvider: React.FC<{
   children: ReactNode;

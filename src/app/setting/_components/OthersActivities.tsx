@@ -1,39 +1,38 @@
-"use client"
+"use client";
 
-import Link from 'next/link';
-import useSWR from 'swr';
+import Link from "next/link";
+import useSWR from "swr";
 import { format } from "date-fns";
 
-import type { ResponseType } from '@/app/api/croaker/self/recent_activities/route'
-import { loadFetch } from '@/lib/next/utility';
+import type { ResponseType } from "@/app/api/croaker/self/recent_activities/route";
+import { loadFetch } from "@/lib/next/utility";
 import { isAuthorityFail } from "@/domain/authorization/base";
 
 const croakSimples = [
   {
     croak_id: 11,
-    croaker_id: 'tes0t',
-    contents: '',
+    croaker_id: "tes0t",
+    contents: "",
     thread: null,
     posted_date: new Date(),
     deleted_date: null,
-    croaker_name: 'test some visiter',
+    croaker_name: "test some visiter",
     has_thread: false,
   },
   {
     croak_id: 21,
-    croaker_id: 'tes1t',
-    contents: '',
+    croaker_id: "tes1t",
+    contents: "",
     thread: 15,
     posted_date: new Date(),
     deleted_date: null,
-    croaker_name: 'test any visiter',
+    croaker_name: "test any visiter",
     has_thread: false,
   },
 ];
 
 export const OthersActivities: React.FC<{}> = () => {
-
-  const { data, error, isLoading } = useSWR('/api/croaker/self/recent_activities', loadFetch);
+  const { data, error, isLoading } = useSWR("/api/croaker/self/recent_activities", loadFetch);
   const result = data as ResponseType;
 
   return (
@@ -60,7 +59,11 @@ export const OthersActivities: React.FC<{}> = () => {
         // TODO data && !isAuthorityFail(result)が条件
         const linkCroakId = croak.thread || croak.croak_id;
         return (
-          <Link href={`/#${linkCroakId}`} key={`activities-${index}`} className="w-full m-2 flex flex-nowrap justify-start items-center">
+          <Link
+            href={`/#${linkCroakId}`}
+            key={`activities-${index}`}
+            className="w-full m-2 flex flex-nowrap justify-start items-center"
+          >
             <div>{format(croak.posted_date, "yyyy/MM/dd HH:mm")}</div>
             <div className="ml-2">{`${croak.croaker_name}@${croak.croaker_id}`}</div>
           </Link>

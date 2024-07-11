@@ -1,24 +1,24 @@
-"use client"
+"use client";
 
-import type { ResponseType as ResponseTypeNew } from '@/app/api/croaker/self/new/route';
-import type { ResponseType as ResponseTypeEdit } from '@/app/api/croaker/self/edit/route';
+import type { ResponseType as ResponseTypeNew } from "@/app/api/croaker/self/new/route";
+import type { ResponseType as ResponseTypeEdit } from "@/app/api/croaker/self/edit/route";
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 
-import { AboutCroaker } from '@/components/parts/AboutCroaker'
-import { doFetch } from '@/lib/next/utility';
-import { useMaster } from '@/app/SessionProvider';
+import { AboutCroaker } from "@/components/parts/AboutCroaker";
+import { doFetch } from "@/lib/next/utility";
+import { useMaster } from "@/app/SessionProvider";
 import { isRecordNotFound } from "@/database/fail";
 import { isAuthorityFail } from "@/domain/authorization/base";
-import { isInvalidArguments } from '@/lib/base/validation'
+import { isInvalidArguments } from "@/lib/base/validation";
 
 const croakerEditFormSchema = z.object({
   name: z.string().refine((val) => Boolean(val.trim().length), "Name Required"),
@@ -28,7 +28,6 @@ const croakerEditFormSchema = z.object({
 type CroakerEditForm = z.infer<typeof croakerEditFormSchema>;
 
 const createCroaker = async (data: CroakerEditForm, callback: () => void) => {
-
   const body = {
     croaker_editable_input: {
       name: data.name,
@@ -37,7 +36,7 @@ const createCroaker = async (data: CroakerEditForm, callback: () => void) => {
     form_agreement: data.form_agreement,
   };
 
-  const res = await doFetch(`/api/croaker/self/new`, { method: 'POST', body: JSON.stringify(body), });
+  const res = await doFetch(`/api/croaker/self/new`, { method: "POST", body: JSON.stringify(body) });
   const result = res as ResponseTypeNew;
 
   if (isAuthorityFail(result) || isInvalidArguments(result)) {
@@ -49,18 +48,17 @@ const createCroaker = async (data: CroakerEditForm, callback: () => void) => {
 };
 
 const editCroaker = async (data: CroakerEditForm, formAgreementAlready: boolean, callback: () => void) => {
-
   const body = {
     croaker_editable_input: {
       name: data.name,
       description: data.description,
-    }
+    },
   } as any;
   if (!formAgreementAlready) {
     body.form_agreement = data.form_agreement;
   }
 
-  const res = await doFetch(`/api/croaker/self/edit`, { method: 'POST', body: JSON.stringify(body), });
+  const res = await doFetch(`/api/croaker/self/edit`, { method: "POST", body: JSON.stringify(body) });
   const result = res as ResponseTypeEdit;
 
   if (isAuthorityFail(result) || isRecordNotFound(result) || isInvalidArguments(result)) {
@@ -72,14 +70,13 @@ const editCroaker = async (data: CroakerEditForm, formAgreementAlready: boolean,
 };
 
 export default function Page() {
-
   const router = useRouter();
   const { configuration, croaker } = useMaster();
 
   let defaultValues: CroakerEditForm = {
-      name: '',
-      description: '',
-      form_agreement: false,
+    name: "",
+    description: "",
+    form_agreement: false,
   };
   if (croaker.type === "registered") {
     defaultValues = {
@@ -99,10 +96,9 @@ export default function Page() {
   });
 
   const onSubmit = async (data: CroakerEditForm) => {
-
     const afterCallback = () => {
       // TODO page移動したあとにreload走る？
-      router.push('/setting');
+      router.push("/setting");
       window.location.reload();
     };
 
@@ -141,7 +137,7 @@ export default function Page() {
       )}
       <div className="m-2">
         <center>
-          <Button type="submit" variant="outline" >
+          <Button type="submit" variant="outline">
             <p>Submit</p>
           </Button>
         </center>

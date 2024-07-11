@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Suspense } from 'react'
+import { Suspense } from "react";
 import { Inter } from "next/font/google";
 import { Inter as FontSans } from "next/font/google";
 import "@/app/globals.css";
@@ -15,32 +15,33 @@ const inter = Inter({ subsets: ["latin"] });
 
 const master = {
   configuration: {
-    title: 'Croaker',
+    title: "Croaker",
     active: true,
     account_create_available: true,
     default_role_id: 1,
-    about_contents: 'This is about.\nThis is contents.',
+    about_contents: "This is about.\nThis is contents.",
   },
   croaker: {
     type: "registered",
     value: {
-      croaker_id: 'own6r',
-      croaker_name: 'test_owner',
-      description: 'I am test owner. I am test owner. I am test owner. I am test owner. I am test owner.\nI am test owner. I am test owner.',
-      status: 'ACTIVE',
+      croaker_id: "own6r",
+      croaker_name: "test_owner",
+      description:
+        "I am test owner. I am test owner. I am test owner. I am test owner. I am test owner.\nI am test owner. I am test owner.",
+      status: "ACTIVE",
       form_agreement: false,
       created_date: new Date(),
       updated_date: new Date(),
       role: {
-        name: 'OWNER',
+        name: "OWNER",
         ban_power: true,
         delete_other_post: true,
-        post: 'TOP',
+        post: "TOP",
         post_file: true,
-        top_post_interval: '',
+        top_post_interval: "",
         show_other_activities: true,
-      }
-    }
+      },
+    },
   },
 } as const;
 
@@ -63,12 +64,10 @@ export default async function RootLayout({
       <body className={cn(inter.className)}>
         <SessionProvider master={master}>
           <Suspense>
-            <Header/>
+            <Header />
           </Suspense>
           <main className="w-screen min-h-screen flex flex-nowrap justify-center bg-white mt-12">
-            <div className="w-full max-w-5xl">
-              {children}
-            </div>
+            <div className="w-full max-w-5xl">{children}</div>
           </main>
         </SessionProvider>
       </body>

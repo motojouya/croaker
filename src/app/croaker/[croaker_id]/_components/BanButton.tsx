@@ -1,19 +1,18 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { ValueNoneIcon } from "@radix-ui/react-icons"
-import { doFetch } from '@/lib/next/utility';
-import { ResponseType } from '@/app/api/croaker/[croaker_id]/ban/route';
+import { Button } from "@/components/ui/button";
+import { ValueNoneIcon } from "@radix-ui/react-icons";
+import { doFetch } from "@/lib/next/utility";
+import { ResponseType } from "@/app/api/croaker/[croaker_id]/ban/route";
 import { isRecordNotFound } from "@/database/fail";
 import { isAuthorityFail } from "@/domain/authorization/base";
 
 const ban = async (croaker_id: string) => {
-
-  if (!confirm('本当にBANして大丈夫ですか？')) {
+  if (!confirm("本当にBANして大丈夫ですか？")) {
     return;
   }
 
-  const res = await doFetch(`/api/croaker/${croaker_id}/ban`, { method: 'POST' });
+  const res = await doFetch(`/api/croaker/${croaker_id}/ban`, { method: "POST" });
   const result = res as ResponseType;
 
   if (isAuthorityFail(result) || isRecordNotFound(result)) {
@@ -25,15 +24,9 @@ const ban = async (croaker_id: string) => {
 };
 
 export const BanButton: React.FC<{
-  croaker_id: string
+  croaker_id: string;
 }> = ({ croaker_id }) => (
-  <Button
-    type="button"
-    variant="destructive"
-    className="h-7 w-7"
-    size="icon"
-    onClick={() => ban(croaker_id)}
-  >
+  <Button type="button" variant="destructive" className="h-7 w-7" size="icon" onClick={() => ban(croaker_id)}>
     <ValueNoneIcon />
   </Button>
 );
