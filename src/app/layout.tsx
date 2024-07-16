@@ -29,7 +29,7 @@ const master = {
       description:
         "I am test owner. I am test owner. I am test owner. I am test owner. I am test owner.\nI am test owner. I am test owner.",
       status: "ACTIVE",
-      form_agreement: false,
+      form_agreement: true,
       created_date: new Date(),
       updated_date: new Date(),
       role: {

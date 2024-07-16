@@ -16,14 +16,14 @@ export default function Page() {
     <>
       {croaker.type === "anonymous" && (
         <div className="w-full mt-5 flex flex-nowrap justify-center items-center">
-          <Link href={"/auth/signin"} className={buttonVariants({ variant: "destructive" })}>
+          <Link href={"/auth/signin"} className={buttonVariants({ variant: "procedure" })}>
             <p>Login</p>
           </Link>
         </div>
       )}
       {croaker.type === "logined" && (
         <div className="w-full mt-5 flex flex-nowrap justify-center items-center">
-          <Link href={"/setting/edit"} className={buttonVariants({ variant: "destructive" })}>
+          <Link href={"/setting/edit"} className={buttonVariants({ variant: "procedure" })}>
             <p>Edit</p>
           </Link>
         </div>
@@ -31,7 +31,7 @@ export default function Page() {
       {croaker.type === "registered" && (
         <>
           <Profile croaker={croaker.value}>
-            <Link href={"/setting/edit"} className={buttonVariants({ variant: "destructive" })}>
+            <Link href={"/setting/edit"} className={buttonVariants({ variant: "procedure" })}>
               <p>Edit</p>
             </Link>
           </Profile>
