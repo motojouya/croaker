@@ -11,8 +11,12 @@ import { PaperPlaneIcon, ImageIcon } from "@radix-ui/react-icons";
 import { Croak as CroakType } from '@/database/query/croak/croak'
 import { format } from "date-fns";
 import { MultiLineText } from '@/components/parts/MultiLineText'
+import { ResponseType as ResponseTypeDelete } from '@/app/api/croak/[croak_id]/delete/route';
+import { isRecordNotFound } from "@/database/fail";
+import { isAuthorityFail } from "@/domain/authorization/base";
+import { doFetch } from "@/lib/next/utility";
 
-const posts = Array(20).map((v, index) => ({
+const posts = Array(20).fill(0).map((v, index) => ({
   croak_id: index,
   croaker_id: 'own6r',
   contents: 'test' + index,
@@ -25,11 +29,26 @@ const posts = Array(20).map((v, index) => ({
   files: [],
 }));
 
+const deleteCroakFetch = async (croak_id: number, callback: (croak_id: number) => void) => {
+  if (!confirm("本当に削除して大丈夫ですか？")) {
+    return;
+  }
+
+  const res = await doFetch(`/api/croak/${croak_id}/delete`, { method: "POST" });
+  const result = res as ResponseTypeDelete;
+
+  if (isAuthorityFail(result) || isRecordNotFound(result)) {
+    alert(result.message);
+    return;
+  }
+
+  callback(croak_id);
+};
+
 const Croak: React.FC<{
   croak: CroakType;
-  postText: PostText,
-  postFile: PostFile,
-}> = ({ croak }) => {
+  deleteCroak: (croak_id: number) => void,
+}> = ({ croak, deleteCroak }) => {
 
   const [copied, setCopied] = useState(false);
   const copy = () => {
@@ -58,7 +77,7 @@ const Croak: React.FC<{
           </Button>
         </div>
         <div>
-          <Button type="button" variant="link" size="icon" onClick={() => console.log('TODO delete!')}>
+          <Button type="button" variant="link" size="icon" onClick={() => deleteCroakFetch(croak.croak_id, deleteCroak)}>
             <p>Delete</p>
           </Button>
         </div>
@@ -72,8 +91,14 @@ export default function Page() {
   const mock = (text: string) => console.log(text);
   return (
     <>
-      <div className="w-full mt-5 flex flex-nowrap justify-center items-center">
-        <p>Developing</p>
+      <div className="w-full mt-5 flex flex-nowrap flex-col-reverse justify-start items-center">
+        {posts.map(post => (
+          <Croak
+            key={`croak-${post.croak_id}`}
+            croak={post}
+            deleteCroak={(croak_id: number) => console.log('delete', croak_id)}
+          />
+        ))}
       </div>
       <Footer
         postText={mock}
