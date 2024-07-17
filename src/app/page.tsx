@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -23,6 +24,8 @@ import type { ResponseType as ResponseTypeThreadText } from "@/app/api/croak/[cr
 import type { ResponseType as ResponseTypeThreadFile } from "@/app/api/croak/[croak_id]/file/route";
 import type { ResponseType as ResponseTypeTopText } from "@/app/api/croak/top/text/route";
 import type { ResponseType as ResponseTypeTopFile } from "@/app/api/croak/top/file/route";
+import type { ResponseType as ResponseTypeThread } from "@/app/api/croak/[croak_id]/route";
+import type { ResponseType as ResponseTypeTop } from "@/app/api/croak/top/route";
 import { loadFetch } from "@/lib/next/utility";
 import { isFileFail } from "@/lib/io/fileStorage";
 import { isImageCommandFail, isImageInformationFail } from "@/lib/io/image";
@@ -179,56 +182,58 @@ const Croak: React.FC<{
         </div>
       </div>
       <div><MultiLineText text={croak.contents || ''} /></div>
-    </div>
-  );
-};
-
-const posts = Array(20).fill(0).map((v, index) => ({
-  croak_id: number | null,
-  croaker_id: 'own6r',
-  contents: 'test' + index,
-  thread: null,
-  posted_date: Date | null,
-  deleted_date: null,
-  has_thread: false,
-  croaker_name: 'name',
-  links: [],
-  files: [],
-}));
-
-type InstantCroakType = Omit<CroakType, "croak_id">;
-
-const InstantCroak: React.FC<{
-  croak: InstantCroakType;
-}> = ({ croak }) => {
-
-  return (
-    <div>
       <div>
-        <div>{`${croak.croaker_name}@${croak.croaker_id}`}</div>
-        <div>posting...</div>
+        {croak.files.map((file, index) => {
+          if (file.content_type.startsWith('image')) {
+            return <Image key={`croak-${croak.croak_id}-file-${index}`} src={file.url} alt={file.name} />;
+          } else {
+            return file.name;
+          }
+        })}
       </div>
-      <div><MultiLineText text={croak.contents || ''} /></div>
+      <div>
+        {croak.links.map((link, index) => (
+          <React.Fragment key={`croak-${croak.croak_id}-link-${index}`}>
+            <Link href={link.url || ''}>
+              <p>{link.title || ''}</p>
+              {link.image && (
+                <Image src={link.image} alt={link.title || ''} />
+              )}
+              <MultiLineText text={link.description || ''} />
+            </Link>
+          </React.Fragment>
+        ))}
+      </div>
     </div>
   );
 };
+
+type InstantCroak =
+  | {
+    type: 'text';
+    contents: string;
+    thread: number | null;
+  }
+  | {
+    type: 'file';
+    file: File;
+    thread: number | null;
+  };
 
 const PostingFile: React.FC<{
   croaker: Croaker;
   file: File;
   thread: number | null;
-}> = ({ croaker, file, thread }) => {
+  deleteThis: () => void;
+}> = ({ croaker, file, thread, deleteThis }) => {
 
   const [croak, setCroak] = useState<CroakType | null>(null);
-  const [fileSrc, setFileSrc] = useState<string | ArrayBuffer | null>(null);
+  const [fileSrc, setFileSrc] = useState<string | null>(null);
 
   useEffect(() => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
-
-    reader.onload = function  () {
-      setFileSrc(reader.result);
-    };
+    reader.onload = () => setFileSrc(reader.result as string);
   });
 
   useEffect(() => {
@@ -258,16 +263,26 @@ const PostingFile: React.FC<{
       }
     })();
   });
+
   return (
-    <div>
-      <div>
-        <div>{`${croaker.croaker_name}@${croaker.croaker_id}`}</div>
-        <div>posting...</div>
-      </div>
-      {fileSrc && (
-        <div><img src={fileSrc} /></div>
+    <>
+      {!croak && (
+        <div>
+          <div>
+            <div>{`${croaker.croaker_name}@${croaker.croaker_id}`}</div>
+            <div>posting...</div>
+          </div>
+          <div>
+            {fileSrc && (
+              <Image src={fileSrc} alt={file.name} />
+            )}
+          </div>
+        </div>
       )}
-    </div>
+      {croak && (
+        <Croak croak={croak} deleteCroak={deleteThis}/>
+      )}
+    </>
   );
 };
 
@@ -275,9 +290,12 @@ const PostingText: React.FC<{
   croaker: Croaker;
   contents: string;
   thread: number | null;
-}> = ({ croaker, contents, thread }) => {
+  deleteThis: () => void;
+}> = ({ croaker, contents, thread, deleteThis }) => {
 
   const [croak, setCroak] = useState<CroakType | null>(null);
+
+  // TODO ここ1度だけ実行されることが保証されてる？
   useEffect(() => {
     (async () => {
       // @ts-ignore
@@ -295,7 +313,90 @@ const PostingText: React.FC<{
       }
     })();
   });
-  return <></>;
+
+  return (
+    <>
+      {!croak && (
+        <div>
+          <div>
+            <div>{`${croaker.croaker_name}@${croaker.croaker_id}`}</div>
+            <div>posting...</div>
+          </div>
+          <div><MultiLineText text={contents} /></div>
+        </div>
+      )}
+      {croak && (
+        <Croak croak={croak} deleteCroak={deleteThis}/>
+      )}
+    </>
+  );
+};
+
+const InstantCroaks: React.FC<{ croaker: Croaker }> = ({ croaker }) => {
+  const [instantCroaks, setInstantCroaks] = useState<InstantCroak[]>([]);
+  return (
+    <>
+      {instantCroaks.map((instantCroak, index) => {
+        if (instantCroak.type === 'text') {
+          return (
+            <PostingText
+              key={`instant-${index}`}
+              croaker={croaker}
+              contents={instantCroak.contents}
+              thread={instantCroak.thread}
+              deleteThis={() => setInstantCroaks(instantCroaks.toSpliced(index, 1))}
+            />
+          );
+        } else {
+          return (
+            <PostingFile
+              key={`instant-${index}`}
+              croaker={croaker}
+              file={instantCroak.file}
+              thread={instantCroak.thread}
+              deleteThis={() => setInstantCroaks(instantCroaks.toSpliced(index, 1))}
+            />
+          );
+        }
+      })}
+    </>
+  );
+};
+
+const CroakGroup: React.FC<{ croaker: Croaker, thread: number | null }> = ({ croaker, thread }) => {
+  const { data, error, isLoading } = useSWR(`/api/croak/${thread || 'top'}`, loadFetch); // TODO query parameters
+  const result = data as ResponseTypeTop;
+
+  return (
+    <>
+      {isLoading && ('loading...')}
+      {error && ('error!')}
+      {isFileFail(result) && (result.message)}
+      {!isFileFail(result) && <Croaks croakList={result.croaks} />}
+    </>
+  );
+};
+
+type GetSplicedCroak = (croaks: CroakType[], croak_id: number) => CroakType[];
+const getSplicedCroak: GetSplicedCroak = (croaks, croak_id) => {
+  const index = croaks.findIndex((croak) => croak.croak_id === croak_id);
+  return croaks.toSpliced(index, 1);
+};
+
+const Croaks: React.FC<{ croakList: CroakType[] }> = ({ croakList }) => {
+  const [croaks, setCroaks] = useState<CroakType[]>(croakList);
+  // TODO ここでIntersectionObserverで監視する
+  return (
+    <>
+      {croaks.map((croak) => (
+        <Croak
+          key={`croak-${croak.croak_id}`}
+          croak={croak}
+          deleteCroak={(croak_id: number) => setCroaks(getSplicedCroak(croaks, croak_id))}
+        />
+      ))}
+    </>
+  );
 };
 
 export default function Page() {
