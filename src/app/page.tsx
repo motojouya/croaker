@@ -373,32 +373,6 @@ const InstantCroaks: React.FC<{ croaker: Croaker }> = ({ croaker }) => {
   );
 };
 
-const CroakList: React.FC<{
-}> = () => {
-  const croakGroups = [];
-  return (
-    <></>
-  );
-};
-
-const CroakGroup: React.FC<{
-  croaker: Croaker,
-  thread: number | null,
-  loadSurround:  LoadSurround,
-}> = ({ croaker, thread, loadSurround }) => {
-  const { data, error, isLoading } = useSWR(`/api/croak/${thread || 'top'}`, loadFetch); // TODO query parameters reverse=false&offset_cursor=1
-  const result = data as ResponseTypeTop;
-
-  return (
-    <>
-      {isLoading && ('loading...')}
-      {error && ('error!')}
-      {isFileFail(result) && (result.message)}
-      {!isFileFail(result) && result.croaks.length > 0 && <Croaks croakList={result.croaks} loadSurround={loadSurround} />}
-    </>
-  );
-};
-
 type GetSplicedCroak = (croaks: CroakType[], croak_id: number) => CroakType[];
 const getSplicedCroak: GetSplicedCroak = (croaks, croak_id) => {
   const index = croaks.findIndex((croak) => croak.croak_id === croak_id);
@@ -411,11 +385,11 @@ const intersectionObserverOptions ={
   threshold: 0, // 要素が少しでもビューポートに表示された瞬間からコールバックが呼び出される
 }
 
-type LoadSurround = (first: number, last: number) => void;
-type UseInfinityScroll = (loadSurround: () => void) => RefObject<HTMLDivElement | null>;
+type LoadSurround = () => void;
+type UseInfinityScroll = (loadSurround: () => void) => RefObject<HTMLDivElement>;
 const useInfinityScroll: UseInfinityScroll = (loadSurround) => {
 
-  const ref = useRef<HTMLDivElement | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   const scrollObserver = useCallback(() => {
     return new IntersectionObserver((entries) => {
@@ -456,12 +430,203 @@ const Croaks: React.FC<{
       {croaks.map((croak, index) => {
         return (
           <Croak
-            loadSurround={index === 0 ? () => loadSurround(headCroak.croak_id, lastCroak.croak_id) : null}
+            loadSurround={index === 0 ? () => loadSurround() : null}
             key={`croak-${croak.croak_id}`}
             croak={croak}
             deleteCroak={(croak_id: number) => setCroaks(getSplicedCroak(croaks, croak_id))}
           />
         );
+      })}
+    </>
+  );
+};
+
+type CroakGroupInformation = {
+  offsetCursor: number | null;
+  reverse: boolean;
+  startingPoint: boolean;
+};
+type CroakGroupType =
+  | CroakGroupInformation & { type: 'loading'; }
+  | CroakGroupInformation & { type: 'loaded'; croaks: CroakType[]; }
+  | CroakGroupInformation & { type: 'error'; errorMessage: string; };
+
+type GetCroaks = (offsetCursor: number | null, reverse: boolean) => Promise<ResponseTypeTop>; 
+
+type GetTopCroaks = () => GetCroaks;
+const getTopCroaks: GetTopCroaks = () => async (offsetCursor, reverse) => {
+  const res = await doFetch(`/api/croak/top?reverse=${reverse}&offset_cursor=${offsetCursor || ''}`, { method: "GET" });
+  return res as ResponseTypeTop;
+};
+
+type GetThreadCroaks = (thread: number) => GetCroaks;
+const getThreadCroaks: GetThreadCroaks = (thread) => async (offsetCursor, reverse) => {
+  const res = await doFetch(`/api/croak/${thread}?reverse=${reverse}&offset_cursor=${offsetCursor || ''}`, { method: "GET" });
+  return res as ResponseTypeTop;
+};
+
+type SearchCroaks = (text: string) => GetCroaks;
+const searchCroaks: SearchCroaks = (text) => async (offsetCursor, reverse) => {
+  const res = await doFetch(`/api/croak/search?text=${text}&reverse=${reverse}&offset_cursor=${offsetCursor || ''}`, { method: "GET" });
+  return res as ResponseTypeTop;
+};
+
+/*
+ * 順番が重要
+ * 先に先頭をいじってしまうと、indexが変わるのでロジックがおかしくなる
+ * 先に末尾にpush or 末尾削除して、その後、先頭にunshift or 先頭削除する
+ *
+ * ここではロード対象のcroakGroupの登録のみ。
+ * 実際にロードするのは非同期で次のprocessで行う
+ */
+type NewCroakGroup = {
+  changed: boolean;
+  croakGroups: CroakGroupType[];
+};
+type LoadCroaks = (offsetCursor: number) => Promise<void>
+type GetNewCroakGroup = (loadCroaks: LoadCroaks, croakGroupIndex: number, croakGroups: CroakGroupType[], firstCursor: number, lastCursor: number) => NewCroakGroup;
+const getNewCroakGroup: GetNewCroakGroup = (loadCroaks, croakGroupIndex, croakGroups, firstCursor, lastCursor) => {
+
+  let newCroakGroups = [...croakGroups];
+  let croakGroupChanged = false;
+
+  if (croakGroupIndex === (croakGroups.length - 1)) {
+    newCroakGroups.push({
+      offsetCursor: lastCursor,
+      reverse: false,
+      startingPoint: false,
+      type: 'loading',
+    });
+    setTimeout(async () => loadCroaks(lastCursor));
+
+    croakGroupChanged = true;
+
+  } else if (croakGroupIndex < (croakGroups.length - 3)) {
+    const spliceStart = croakGroupIndex + 2;
+    const spliceQuantity = (croakGroups.length - (1 + spliceStart));
+    newCroakGroups.splice(spliceStart, spliceQuantity);
+
+    croakGroupChanged = true;
+  }
+
+  if (croakGroupIndex === 0) {
+    newCroakGroups.unshift({
+      offsetCursor: firstCursor,
+      reverse: true,
+      startingPoint: false,
+      type: 'loading',
+    });
+    setTimeout(async () => loadCroaks(firstCursor));
+
+    croakGroupChanged = true;
+
+  } else if (croakGroupIndex > 2) {
+    newCroakGroups.splice(0, croakGroupIndex - 2);
+    croakGroupChanged = true;
+  }
+
+  return {
+    changed: croakGroupChanged,
+    croakGroups: newCroakGroups,
+  };
+};
+
+// TODO
+// 起点 starting point か origin のflagを入れる
+// 起点がないと、最初にスクロールをあわせるところがわからないので
+//
+const CroakList: React.FC<{
+  croaker: Croaker,
+  getCroaks: GetCroaks,
+}> = ({ croaker, getCroaks }) => {
+
+  const [croakGroups, setCroakGroups] = useState<CroakGroupType[]>([]);
+
+  const loadCroaks = async (offsetCursor: number) => {
+
+    const croakGroupIndex = croakGroups.findIndex((croakGroup) => croakGroup.offsetCursor === offsetCursor);
+    if (croakGroupIndex === -1) {
+      return;
+    }
+    const croakGroup = croakGroups.at(croakGroupIndex) as CroakGroupType;
+    if (croakGroup.type !== 'loading') {
+      return;
+    }
+
+    const result = await getCroaks(croakGroup.offsetCursor, croakGroup.reverse);
+
+    if (isFileFail(result)) {
+      setCroakGroups(croakGroups.toSpliced(croakGroupIndex, 1, {
+        ...croakGroup,
+        type: 'error',
+        errorMessage: result.message,
+      }));
+    } else {
+      setCroakGroups(croakGroups.toSpliced(croakGroupIndex, 1, {
+        ...croakGroup,
+        type: 'loaded',
+        croaks: result.croaks, // TODO 直接resultがcroaksであるように修正する
+      }));
+    }
+  };
+
+  const loadSurround = (offsetCursor: number | null) => () => {
+
+    const croakGroupIndex = croakGroups.findIndex((croakGroup) => croakGroup.offsetCursor === offsetCursor);
+    if (croakGroupIndex === -1) {
+      return;
+    }
+
+    const croakGroup = croakGroups.at(croakGroupIndex) as CroakGroupType;
+    if (croakGroup.type !== 'loaded' || croakGroup.croaks.length === 0) {
+      return;
+    }
+
+    // croakGroup.croaks.length === 0で既に弾いているので必ずある
+    const firstCroak = croakGroup.croaks.at(0) as CroakType;
+    const firstCursor = firstCroak.croak_id;
+    const lastCroak = croakGroup.croaks.at(croakGroup.croaks.length - 1) as CroakType;
+    const lastCursor = lastCroak.croak_id;
+
+    const {
+      changed: croakGroupChanged,
+      croakGroups: newCroakGroups,
+    } = getNewCroakGroup(loadCroaks, croakGroupIndex, croakGroups, firstCursor, lastCursor);
+
+    if (croakGroupChanged) {
+      setCroakGroups(newCroakGroups);
+    }
+  };
+
+  useEffect(() => {
+    if (croakGroups.length === 0) {
+      setCroakGroups([{
+        offsetCursor: null,
+        reverse: false,
+        startingPoint: true,
+        type: 'loading',
+      }]);
+    }
+  }, [croakGroups, setCroakGroups]);
+
+  // TODO keyがおかしい
+  return (
+    <>
+      {croakGroups.map((croakGroup) => {
+        if (croakGroup.type == 'loading') {
+          return (<p key={`croak-group-${croakGroup.offsetCursor || 'none'}`}>loading</p>);
+
+        } else if (croakGroup.type == 'loaded') {
+          return (
+            <>
+              {croakGroup.croaks.length > 0 && <Croaks croakList={croakGroup.croaks} loadSurround={loadSurround(croakGroup.offsetCursor)} />}
+            </>
+          );
+        } else {
+          return (
+            <p key={`croak-group-${croakGroup.offsetCursor || 'none'}`}>{`Error! ${croakGroup.errorMessage}`}</p>
+          );
+        }
       })}
     </>
   );
