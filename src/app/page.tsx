@@ -4,7 +4,7 @@ import React from 'react'
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useRef, useEffect } from "react";
+import { Ref, RefObject, forwardRef, useCallback, useState, useRef, useEffect } from "react";
 import { useMaster } from "@/app/SessionProvider";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -144,21 +144,31 @@ const deleteCroakFetch = async (croak_id: number, callback: (croak_id: number) =
   callback(croak_id);
 };
 
+type CroakProps = {
+};
+
 const Croak: React.FC<{
   croak: CroakType;
   deleteCroak: (croak_id: number) => void,
-}> = ({ croak, deleteCroak }) => {
+  loadSurround: (() => void) | null,
+}> = (({ croak, deleteCroak, loadSurround }) => {
 
   const [copied, setCopied] = useState(false);
   const copy = () => {
     navigator.clipboard.writeText(`${window.location.protocol}://${window.location.host}/#${croak.croak_id}`);
     setCopied(true);
   };
+  const ref = useInfinityScroll(loadSurround || (() => { throw new Error('') }));
 
   return (
     <div>
       <div>
-        <div>{`${croak.croaker_name}@${croak.croaker_id}`}</div>
+        {loadSurround && (
+          <div ref={ref}>{`${croak.croaker_name}@${croak.croaker_id}`}</div>
+        )}
+        {!loadSurround && (
+          <div>{`${croak.croaker_name}@${croak.croaker_id}`}</div>
+        )}
         <div>{format(croak.posted_date, "yyyy/MM/dd HH:mm")}</div>
         <div>
           <Link href={`/thread/${croak.croak_id}`}>
@@ -206,7 +216,7 @@ const Croak: React.FC<{
       </div>
     </div>
   );
-};
+});
 
 type InstantCroak =
   | {
@@ -280,7 +290,7 @@ const PostingFile: React.FC<{
         </div>
       )}
       {croak && (
-        <Croak croak={croak} deleteCroak={deleteThis}/>
+        <Croak croak={croak} deleteCroak={deleteThis} loadSurround={null}/>
       )}
     </>
   );
@@ -326,7 +336,7 @@ const PostingText: React.FC<{
         </div>
       )}
       {croak && (
-        <Croak croak={croak} deleteCroak={deleteThis}/>
+        <Croak croak={croak} deleteCroak={deleteThis} loadSurround={null}/>
       )}
     </>
   );
@@ -363,8 +373,20 @@ const InstantCroaks: React.FC<{ croaker: Croaker }> = ({ croaker }) => {
   );
 };
 
-const CroakGroup: React.FC<{ croaker: Croaker, thread: number | null }> = ({ croaker, thread }) => {
-  const { data, error, isLoading } = useSWR(`/api/croak/${thread || 'top'}`, loadFetch); // TODO query parameters
+const CroakList: React.FC<{
+}> = () => {
+  const croakGroups = [];
+  return (
+    <></>
+  );
+};
+
+const CroakGroup: React.FC<{
+  croaker: Croaker,
+  thread: number | null,
+  loadSurround:  LoadSurround,
+}> = ({ croaker, thread, loadSurround }) => {
+  const { data, error, isLoading } = useSWR(`/api/croak/${thread || 'top'}`, loadFetch); // TODO query parameters reverse=false&offset_cursor=1
   const result = data as ResponseTypeTop;
 
   return (
@@ -372,7 +394,7 @@ const CroakGroup: React.FC<{ croaker: Croaker, thread: number | null }> = ({ cro
       {isLoading && ('loading...')}
       {error && ('error!')}
       {isFileFail(result) && (result.message)}
-      {!isFileFail(result) && <Croaks croakList={result.croaks} />}
+      {!isFileFail(result) && result.croaks.length > 0 && <Croaks croakList={result.croaks} loadSurround={loadSurround} />}
     </>
   );
 };
@@ -383,18 +405,64 @@ const getSplicedCroak: GetSplicedCroak = (croaks, croak_id) => {
   return croaks.toSpliced(index, 1);
 };
 
-const Croaks: React.FC<{ croakList: CroakType[] }> = ({ croakList }) => {
+const intersectionObserverOptions ={
+  root: null, // ルート要素 (viewport) を使用
+  rootMargin: '0px',
+  threshold: 0, // 要素が少しでもビューポートに表示された瞬間からコールバックが呼び出される
+}
+
+type LoadSurround = (first: number, last: number) => void;
+type UseInfinityScroll = (loadSurround: () => void) => RefObject<HTMLDivElement | null>;
+const useInfinityScroll: UseInfinityScroll = (loadSurround) => {
+
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  const scrollObserver = useCallback(() => {
+    return new IntersectionObserver((entries) => {
+      entries
+        .filter((entry) => entry.isIntersecting)
+        .forEach((entry) => loadSurround());
+    }, intersectionObserverOptions);
+  }, [loadSurround]);
+
+  useEffect(() => {
+    const target = ref.current;
+    if (target) {
+      const observer = scrollObserver();
+      observer.observe(target);
+      return () => {
+        observer.unobserve(target);
+      };
+    }
+  }, [scrollObserver, ref]);
+
+  return ref;
+};
+
+
+
+const Croaks: React.FC<{
+  croakList: CroakType[],
+  loadSurround: LoadSurround,
+}> = ({ croakList, loadSurround }) => {
+
+  const headCroak = croakList.at(0) as CroakType;
+  const lastCroak = croakList.at(croakList.length - 1) as CroakType;
+
   const [croaks, setCroaks] = useState<CroakType[]>(croakList);
-  // TODO ここでIntersectionObserverで監視する
+
   return (
     <>
-      {croaks.map((croak) => (
-        <Croak
-          key={`croak-${croak.croak_id}`}
-          croak={croak}
-          deleteCroak={(croak_id: number) => setCroaks(getSplicedCroak(croaks, croak_id))}
-        />
-      ))}
+      {croaks.map((croak, index) => {
+        return (
+          <Croak
+            loadSurround={index === 0 ? () => loadSurround(headCroak.croak_id, lastCroak.croak_id) : null}
+            key={`croak-${croak.croak_id}`}
+            croak={croak}
+            deleteCroak={(croak_id: number) => setCroaks(getSplicedCroak(croaks, croak_id))}
+          />
+        );
+      })}
     </>
   );
 };
@@ -406,6 +474,7 @@ export default function Page() {
       <div className="w-full mt-5 flex flex-nowrap flex-col-reverse justify-start items-center">
         {posts.map(post => (
           <Croak
+            loadSurround={null}
             key={`croak-${post.croak_id}`}
             croak={post}
             deleteCroak={(croak_id: number) => console.log('delete', croak_id)}
