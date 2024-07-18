@@ -29,7 +29,7 @@ export const Header: React.FC<{}> = () => {
       return;
     }
 
-    if (!searchText || searchText === searchParamText) {
+    if (!searchText) {
       setSearchText(searchParamText);
       setInputState(false);
       return;

@@ -29,47 +29,213 @@ import type { ResponseType as ResponseTypeTop } from "@/app/api/croak/top/route"
 import { loadFetch } from "@/lib/next/utility";
 import { isFileFail } from "@/lib/io/fileStorage";
 import { isImageCommandFail, isImageInformationFail } from "@/lib/io/image";
+import { v4 as uuid } from 'uuid'
+
+type PostingText = {
+  key: string;
+  type: 'text';
+  contents: string;
+};
+type PostingFile =  {
+  key: string;
+  type: 'file';
+  file: File;
+};
+type ErrorText = {
+  key: string;
+  type: 'text_error';
+  contents: string;
+  errorMessage: string;
+};
+type ErrorFile = {
+  key: string;
+  type: 'file_error';
+  file: File;
+  errorMessage: string;
+};
+type PostedCroak = {
+  key: string;
+  type: 'posted';
+  croak: CroakType;
+};
+
+type PostedInput = ErrorText | ErrorFile | PostedCroak;
+type InputCroak = PostingText | PostingFile | PostedInput;
 
 type PostText = (text: string) => void;
-type PostFile = (file: string) => void; // TODO 引数
-const Footer: React.FC<{
-  postText: PostText,
-  postFile: PostFile,
-}> = ({ postText, postFile }) => {
-  const { configuration, croaker } = useMaster();
+type PostFile = (file: File) => void;
+
+const setPostedInput = (newInput: PostedInput) => (oldInputs: InputCroak[]) => {
+  const inputIndex = oldInputs.findIndex((oldInput) => oldInput.key === newInput.key);
+  if (inputIndex === -1) {
+    return oldInputs;
+  } else {
+    return oldInputs.toSpliced(inputIndex, 1, newInput);
+  }
+};
+
+const InputableList: React.FC<{
+  croaker: Croaker;
+  thread: number | null;
+}> = ({ croaker, thread }) => {
+
+  const [inputCloaks, setInputCloaks] = useState<InputCroak[]>([]);
+
+  const postText = async (newInput: PostingText) => {
+
+    const res = await doFetch(`/api/croak/${thread || 'top'}/text`, { method: "POST", body: JSON.stringify({ contents: newInput.contents }) });
+    const result = res as ResponseTypeTopText;
+
+    if (isAuthorityFail(result) || isFetchAccessFail(result) || isInvalidArguments(result)) {
+      setInputCloaks(setPostedInput({
+        ...newInput,
+        type: 'text_error',
+        errorMessage: result.message,
+      }));
+
+    } else {
+      setInputCloaks(setPostedInput({
+        key: newInput.key,
+        type: 'posted',
+        croak: result,
+      }));
+    }
+  };
+
+  const setText = (text: string) => {
+
+    const newInput = {
+      key: uuid(),
+      type: 'text',
+      contents: text,
+    } as const;
+
+    setInputCloaks((oldInputs) => ([...oldInputs, newInput]))
+
+    setTimeout(() => {
+      postText(newInput);
+    });
+  };
+
+  const postFile = async (newInput: PostingFile) => {
+
+    const file = newInput.file;
+    const formData = new FormData();
+    formData.append("file", file, file.name);
+
+    const res = await doFetch(`/api/croak/${thread || 'top'}/file`, { method: "POST", body: formData });
+    const result = res as ResponseTypeTopFile;
+
+    if (
+      isAuthorityFail(result) ||
+      isFetchAccessFail(result) ||
+      isInvalidArguments(result) ||
+      isFileFail(result) ||
+      isImageCommandFail(result) ||
+      isImageInformationFail(result)
+    ) {
+      setInputCloaks(setPostedInput({
+        ...newInput,
+        type: 'file_error',
+        errorMessage: result.message,
+      }));
+
+    } else {
+      setInputCloaks(setPostedInput({
+        key: newInput.key,
+        type: 'posted',
+        croak: result,
+      }));
+    }
+  };
+
+  const setFile = (file: File) => {
+
+    const newInput = {
+      key: uuid(),
+      type: 'file',
+      file: file,
+    } as const;
+
+    setInputCloaks((oldInputs) => ([...oldInputs, newInput]))
+
+    setTimeout(() => {
+      postFile(newInput);
+    });
+  };
+
+  const cancelCroak = (key: string) => () => {
+    setInputCloaks((oldInputs) => {
+      const inputIndex = oldInputs.findIndex((oldInput) => oldInput.key === key);
+      if (inputIndex === -1) {
+        return oldInputs;
+      } else {
+        return oldInputs.toSpliced(inputIndex, 1);
+      }
+    })
+  };
 
   return (
-    <footer className="fixed bottom-0 left-0 w-screen min-h-12 flex flex-nowrap justify-center items-center bg-white border-t">
-      {croaker.type === 'anonymous' && (
-        <div className="flex flex-nowrap justify-between items-center w-full max-w-5xl h-12">
-          <div className="grow shrink m-2">
-            <p>You need Login and Register your Information</p>
-          </div>
-          <div className="grow-0 shrink-0 m-2">
-            <Link href={"/auth/signin"} className={buttonVariants({ variant: "procedure" })}>
-              <p>Login</p>
-            </Link>
-          </div>
-        </div>
-      )}
-      {(croaker.type === 'logined' || (croaker.type === 'registered' && !croaker.value.form_agreement)) && (
-        <div className="flex flex-nowrap justify-between items-center w-full max-w-5xl h-12">
-          <div className="grow shrink m-2">
-            <p>You need Register your Information and Agree Form</p>
-          </div>
-          <div className="grow-0 shrink-0 m-2">
-            <Link href={"/setting/edit"} className={buttonVariants({ variant: "procedure" })}>
-              <p>Register</p>
-            </Link>
-          </div>
-        </div>
-      )}
-      {(croaker.type === 'registered' && croaker.value.form_agreement) && (
-        <CroakInput postText={postText} postFile={postFile}/>
-      )}
-    </footer>
+    <>
+      {inputCloaks.map((inputCloak) => {
+        if (inputCloak.type === 'text') {
+          return (
+            <InputTextCroak
+              key={inputCloak.key}
+              croaker={croaker}
+              contents={inputCloak.contents}
+              message={'loading...'}
+              deleteCroak={cancelCroak(inputCloak.key)}
+            />
+          );
+        } else if (inputCloak.type === 'file') {
+          return (
+            <InputFileCroak
+              key={inputCloak.key}
+              croaker={croaker}
+              file={inputCloak.file}
+              message={'loading...'}
+              deleteCroak={cancelCroak(inputCloak.key)}
+            />
+          );
+        } else if (inputCloak.type === 'text_error') {
+          return (
+            <InputTextCroak
+              key={inputCloak.key}
+              croaker={croaker}
+              contents={inputCloak.contents}
+              message={`Error! ${inputCloak.errorMessage}`}
+              deleteCroak={cancelCroak(inputCloak.key)}
+            />
+          );
+        } else if (inputCloak.type === 'file_error') {
+          return (
+            <InputFileCroak
+              key={inputCloak.key}
+              croaker={croaker}
+              file={inputCloak.file}
+              message={`Error! ${inputCloak.errorMessage}`}
+              deleteCroak={cancelCroak(inputCloak.key)}
+            />
+          );
+        } else {
+          return (
+            <Croak
+              key={inputCloak.key}
+              croak={inputCloak.croak}
+              deleteCroak={cancelCroak(inputCloak.key)}
+              loadSurround={null}
+            />
+          );
+        }
+      })}
+      <footer className="fixed bottom-0 left-0 w-screen min-h-12 flex flex-nowrap justify-center items-center bg-white border-t">
+        <CroakInput postText={setText} postFile={setFile}/>
+      </footer>
+    </>
   );
 };
+
 
 const CroakInput: React.FC<{
   postText: PostText,
@@ -90,10 +256,25 @@ const CroakInput: React.FC<{
     setCroakText('');
   };
 
+  const onChangeFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (files && files[0]) {
+      if (confirm(`${files[0]}をUploadしますか？`)) {
+      postFile(files[0]);
+      }
+    }
+  }
+
   return (
     <div className="flex flex-nowrap justify-between items-center w-full max-w-5xl">
       <div className="grow-0 shrink-0 my-1 mr-0 ml-1">
-        <Button type="button" variant="link" size="icon" onClick={() => postFile('file!')}>
+        <input
+          name="file"
+          type="file"
+          accept="image/*"
+          onChange={onChangeFile}
+        />
+        <Button type="button" variant="link" size="icon" onClick={() => console.log('TODO file!')}>
           <ImageIcon />
         </Button>
       </div>
@@ -144,9 +325,6 @@ const deleteCroakFetch = async (croak_id: number, callback: (croak_id: number) =
   callback(croak_id);
 };
 
-type CroakProps = {
-};
-
 const Croak: React.FC<{
   croak: CroakType;
   deleteCroak: (croak_id: number) => void,
@@ -158,6 +336,7 @@ const Croak: React.FC<{
     navigator.clipboard.writeText(`${window.location.protocol}://${window.location.host}/#${croak.croak_id}`);
     setCopied(true);
   };
+
   const ref = useInfinityScroll(loadSurround || (() => { throw new Error('') }));
 
   return (
@@ -230,14 +409,14 @@ type InstantCroak =
     thread: number | null;
   };
 
-const PostingFile: React.FC<{
+// {`Error! ${errorMessage}`}
+const InputFileCroak: React.FC<{
   croaker: Croaker;
   file: File;
-  thread: number | null;
-  deleteThis: () => void;
-}> = ({ croaker, file, thread, deleteThis }) => {
+  message: string;
+  deleteCroak: () => void,
+}> = ({ croaker, file, message, deleteCroak }) => {
 
-  const [croak, setCroak] = useState<CroakType | null>(null);
   const [fileSrc, setFileSrc] = useState<string | null>(null);
 
   useEffect(() => {
@@ -246,130 +425,46 @@ const PostingFile: React.FC<{
     reader.onload = () => setFileSrc(reader.result as string);
   });
 
-  useEffect(() => {
-    (async () => {
-      // @ts-ignore
-      if (croak.croak_id) {
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append("file", file, file.name);
-
-      const res = await doFetch(`/api/croak/${thread || 'top'}/file`, { method: "POST", body: formData });
-      const result = res as ResponseTypeThreadFile;
-      if (
-        isAuthorityFail(result) ||
-        isFetchAccessFail(result) ||
-        isInvalidArguments(result) ||
-        isFileFail(result) ||
-        isImageCommandFail(result) ||
-        isImageInformationFail(result)
-      ) {
-        alert(result.message);
-        setCroak(null);
-      } else {
-        setCroak(result);
-      }
-    })();
-  });
-
   return (
-    <>
-      {!croak && (
+    <div>
+      <div>
+        <div>{`${croaker.croaker_name}@${croaker.croaker_id}`}</div>
+        <div>{message}</div>
         <div>
-          <div>
-            <div>{`${croaker.croaker_name}@${croaker.croaker_id}`}</div>
-            <div>posting...</div>
-          </div>
-          <div>
-            {fileSrc && (
-              <Image src={fileSrc} alt={file.name} />
-            )}
-          </div>
+          <Button type="button" variant="link" size="icon" onClick={deleteCroak}>
+            <p>Delete</p>
+          </Button>
         </div>
-      )}
-      {croak && (
-        <Croak croak={croak} deleteCroak={deleteThis} loadSurround={null}/>
-      )}
-    </>
+      </div>
+      <div>
+        {fileSrc && (
+          <Image src={fileSrc} alt={file.name} />
+        )}
+      </div>
+    </div>
   );
 };
 
-const PostingText: React.FC<{
+const InputTextCroak: React.FC<{
   croaker: Croaker;
   contents: string;
-  thread: number | null;
-  deleteThis: () => void;
-}> = ({ croaker, contents, thread, deleteThis }) => {
-
-  const [croak, setCroak] = useState<CroakType | null>(null);
-
-  // TODO ここ1度だけ実行されることが保証されてる？
-  useEffect(() => {
-    (async () => {
-      // @ts-ignore
-      if (croak.croak_id) {
-        return;
-      }
-
-      const res = await doFetch(`/api/croak/${thread || 'top'}/text`, { method: "POST", body: JSON.stringify({ contents }) });
-      const result = res as ResponseTypeTopText;
-      if (isAuthorityFail(result) || isFetchAccessFail(result) || isInvalidArguments(result)) {
-        alert(result.message);
-        setCroak(null);
-      } else {
-        setCroak(result);
-      }
-    })();
-  });
+  message: string;
+  deleteCroak: () => void,
+}> = ({ croaker, contents, message, deleteCroak }) => {
 
   return (
-    <>
-      {!croak && (
+    <div>
+      <div>
+        <div>{`${croaker.croaker_name}@${croaker.croaker_id}`}</div>
+        <div>{message}</div>
         <div>
-          <div>
-            <div>{`${croaker.croaker_name}@${croaker.croaker_id}`}</div>
-            <div>posting...</div>
-          </div>
-          <div><MultiLineText text={contents} /></div>
+          <Button type="button" variant="link" size="icon" onClick={deleteCroak}>
+            <p>Delete</p>
+          </Button>
         </div>
-      )}
-      {croak && (
-        <Croak croak={croak} deleteCroak={deleteThis} loadSurround={null}/>
-      )}
-    </>
-  );
-};
-
-const InstantCroaks: React.FC<{ croaker: Croaker }> = ({ croaker }) => {
-  const [instantCroaks, setInstantCroaks] = useState<InstantCroak[]>([]);
-  return (
-    <>
-      {instantCroaks.map((instantCroak, index) => {
-        if (instantCroak.type === 'text') {
-          return (
-            <PostingText
-              key={`instant-${index}`}
-              croaker={croaker}
-              contents={instantCroak.contents}
-              thread={instantCroak.thread}
-              deleteThis={() => setInstantCroaks(instantCroaks.toSpliced(index, 1))}
-            />
-          );
-        } else {
-          return (
-            <PostingFile
-              key={`instant-${index}`}
-              croaker={croaker}
-              file={instantCroak.file}
-              thread={instantCroak.thread}
-              deleteThis={() => setInstantCroaks(instantCroaks.toSpliced(index, 1))}
-            />
-          );
-        }
-      })}
-    </>
+      </div>
+      <div><MultiLineText text={contents} /></div>
+    </div>
   );
 };
 
@@ -413,15 +508,12 @@ const useInfinityScroll: UseInfinityScroll = (loadSurround) => {
   return ref;
 };
 
-
-
+// TODO startingPointを使って最初のものはカーソル移動する
 const Croaks: React.FC<{
   croakList: CroakType[],
   loadSurround: LoadSurround,
-}> = ({ croakList, loadSurround }) => {
-
-  const headCroak = croakList.at(0) as CroakType;
-  const lastCroak = croakList.at(croakList.length - 1) as CroakType;
+  startingPoint: boolean;
+}> = ({ croakList, loadSurround, startingPoint }) => {
 
   const [croaks, setCroaks] = useState<CroakType[]>(croakList);
 
@@ -430,7 +522,7 @@ const Croaks: React.FC<{
       {croaks.map((croak, index) => {
         return (
           <Croak
-            loadSurround={index === 0 ? () => loadSurround() : null}
+            loadSurround={index === 0 ? loadSurround : null}
             key={`croak-${croak.croak_id}`}
             croak={croak}
             deleteCroak={(croak_id: number) => setCroaks(getSplicedCroak(croaks, croak_id))}
@@ -479,152 +571,156 @@ const searchCroaks: SearchCroaks = (text) => async (offsetCursor, reverse) => {
  * ここではロード対象のcroakGroupの登録のみ。
  * 実際にロードするのは非同期で次のprocessで行う
  */
-type NewCroakGroup = {
-  changed: boolean;
-  croakGroups: CroakGroupType[];
-};
-type LoadCroaks = (offsetCursor: number) => Promise<void>
-type GetNewCroakGroup = (loadCroaks: LoadCroaks, croakGroupIndex: number, croakGroups: CroakGroupType[], firstCursor: number, lastCursor: number) => NewCroakGroup;
+type LoadCroaks = (newGroup: CroakGroupType) => Promise<void>
+type GetNewCroakGroup = (loadCroaks: LoadCroaks, croakGroupIndex: number, croakGroups: CroakGroupType[], firstCursor: number, lastCursor: number) => CroakGroupType[];
 const getNewCroakGroup: GetNewCroakGroup = (loadCroaks, croakGroupIndex, croakGroups, firstCursor, lastCursor) => {
 
   let newCroakGroups = [...croakGroups];
-  let croakGroupChanged = false;
 
   if (croakGroupIndex === (croakGroups.length - 1)) {
-    newCroakGroups.push({
+    const newGroup = {
       offsetCursor: lastCursor,
       reverse: false,
       startingPoint: false,
       type: 'loading',
-    });
-    setTimeout(async () => loadCroaks(lastCursor));
-
-    croakGroupChanged = true;
+    } as const;
+    newCroakGroups.push(newGroup);
+    setTimeout(async () => loadCroaks(newGroup));
 
   } else if (croakGroupIndex < (croakGroups.length - 3)) {
     const spliceStart = croakGroupIndex + 2;
     const spliceQuantity = (croakGroups.length - (1 + spliceStart));
     newCroakGroups.splice(spliceStart, spliceQuantity);
-
-    croakGroupChanged = true;
   }
 
   if (croakGroupIndex === 0) {
-    newCroakGroups.unshift({
+    const newGroup = {
       offsetCursor: firstCursor,
       reverse: true,
       startingPoint: false,
       type: 'loading',
-    });
-    setTimeout(async () => loadCroaks(firstCursor));
-
-    croakGroupChanged = true;
+    } as const;
+    newCroakGroups.unshift(newGroup);
+    setTimeout(async () => loadCroaks(newGroup));
 
   } else if (croakGroupIndex > 2) {
     newCroakGroups.splice(0, croakGroupIndex - 2);
-    croakGroupChanged = true;
   }
 
-  return {
-    changed: croakGroupChanged,
-    croakGroups: newCroakGroups,
-  };
+  return newCroakGroups;
 };
 
-// TODO
-// 起点 starting point か origin のflagを入れる
-// 起点がないと、最初にスクロールをあわせるところがわからないので
-//
+type EqualGroup = (left: CroakGroupType, right: CroakGroupType) => boolean;
+const equalGroup: EqualGroup = (left, right) => {
+  return left.offsetCursor === right.offsetCursor
+    && left.reverse === right.reverse
+    && left.startingPoint === right.startingPoint;
+};
+
+type SetLoadedCroakGroup = (newGroup: CroakGroupType) => (oldGroups: CroakGroupType[]) => CroakGroupType[];
+const setLoadedCroakGroup: SetLoadedCroakGroup = (newGroup) => (oldGroups) => {
+
+  const croakGroupIndex = oldGroups.findIndex((croakGroup) => equalGroup(croakGroup, newGroup));
+  if (croakGroupIndex === -1) {
+    return oldGroups;
+  }
+
+  const croakGroup = oldGroups.at(croakGroupIndex) as CroakGroupType;
+  if (croakGroup.type !== 'loading') {
+    return oldGroups;
+  }
+
+  return oldGroups.toSpliced(croakGroupIndex, 1, newGroup);
+}
+
+type SetSurroundCroakGroup = (loadCroaks: LoadCroaks, newGroup: CroakGroupType) => (oldGroups: CroakGroupType[]) => CroakGroupType[];
+const setSurroundCroakGroup: SetSurroundCroakGroup = (loadCroaks, baseGroup) => (oldGroups) => {
+
+  const croakGroupIndex = oldGroups.findIndex((croakGroup) => equalGroup(croakGroup, baseGroup));
+  if (croakGroupIndex === -1) {
+    return oldGroups;
+  }
+
+  const croakGroup = oldGroups.at(croakGroupIndex) as CroakGroupType;
+  if (croakGroup.type !== 'loaded' || croakGroup.croaks.length === 0) {
+    return oldGroups;
+  }
+
+  // croakGroup.croaks.length === 0で既に弾いているので必ずある
+  const firstCroak = croakGroup.croaks.at(0) as CroakType;
+  const firstCursor = firstCroak.croak_id;
+  const lastCroak = croakGroup.croaks.at(croakGroup.croaks.length - 1) as CroakType;
+  const lastCursor = lastCroak.croak_id;
+
+  return getNewCroakGroup(loadCroaks, croakGroupIndex, oldGroups, firstCursor, lastCursor);
+};
+
 const CroakList: React.FC<{
-  croaker: Croaker,
   getCroaks: GetCroaks,
-}> = ({ croaker, getCroaks }) => {
+}> = ({ getCroaks }) => {
 
   const [croakGroups, setCroakGroups] = useState<CroakGroupType[]>([]);
 
-  const loadCroaks = async (offsetCursor: number) => {
+  const loadCroaks = useCallback(async (loadingGroup: CroakGroupType) => {
 
-    const croakGroupIndex = croakGroups.findIndex((croakGroup) => croakGroup.offsetCursor === offsetCursor);
-    if (croakGroupIndex === -1) {
-      return;
-    }
-    const croakGroup = croakGroups.at(croakGroupIndex) as CroakGroupType;
-    if (croakGroup.type !== 'loading') {
-      return;
-    }
-
-    const result = await getCroaks(croakGroup.offsetCursor, croakGroup.reverse);
+    const result = await getCroaks(loadingGroup.offsetCursor, loadingGroup.reverse);
 
     if (isFileFail(result)) {
-      setCroakGroups(croakGroups.toSpliced(croakGroupIndex, 1, {
-        ...croakGroup,
+      setCroakGroups(setLoadedCroakGroup({
+        ...loadingGroup,
         type: 'error',
         errorMessage: result.message,
       }));
+
     } else {
-      setCroakGroups(croakGroups.toSpliced(croakGroupIndex, 1, {
-        ...croakGroup,
+      setCroakGroups(setLoadedCroakGroup({
+        ...loadingGroup,
         type: 'loaded',
         croaks: result.croaks, // TODO 直接resultがcroaksであるように修正する
       }));
     }
-  };
+  }, [getCroaks, setCroakGroups]);
 
-  const loadSurround = (offsetCursor: number | null) => () => {
-
-    const croakGroupIndex = croakGroups.findIndex((croakGroup) => croakGroup.offsetCursor === offsetCursor);
-    if (croakGroupIndex === -1) {
-      return;
-    }
-
-    const croakGroup = croakGroups.at(croakGroupIndex) as CroakGroupType;
-    if (croakGroup.type !== 'loaded' || croakGroup.croaks.length === 0) {
-      return;
-    }
-
-    // croakGroup.croaks.length === 0で既に弾いているので必ずある
-    const firstCroak = croakGroup.croaks.at(0) as CroakType;
-    const firstCursor = firstCroak.croak_id;
-    const lastCroak = croakGroup.croaks.at(croakGroup.croaks.length - 1) as CroakType;
-    const lastCursor = lastCroak.croak_id;
-
-    const {
-      changed: croakGroupChanged,
-      croakGroups: newCroakGroups,
-    } = getNewCroakGroup(loadCroaks, croakGroupIndex, croakGroups, firstCursor, lastCursor);
-
-    if (croakGroupChanged) {
-      setCroakGroups(newCroakGroups);
-    }
-  };
+  const loadSurround = (baseGroup: CroakGroupType) => () => {
+    setCroakGroups(setSurroundCroakGroup(loadCroaks, baseGroup));
+  }
 
   useEffect(() => {
     if (croakGroups.length === 0) {
-      setCroakGroups([{
+      const startingGroup = {
         offsetCursor: null,
         reverse: false,
         startingPoint: true,
         type: 'loading',
-      }]);
-    }
-  }, [croakGroups, setCroakGroups]);
+      } as const;
+      setCroakGroups([startingGroup]);
 
-  // TODO keyがおかしい
+      setTimeout(() => loadCroaks(startingGroup));
+    }
+  }, [croakGroups, setCroakGroups, loadCroaks]);
+
   return (
     <>
       {croakGroups.map((croakGroup) => {
+        const key = `croak-group-${croakGroup.offsetCursor || 'none'}-${croakGroup.reverse}`;
         if (croakGroup.type == 'loading') {
-          return (<p key={`croak-group-${croakGroup.offsetCursor || 'none'}`}>loading</p>);
+          return (<p key={key} >loading</p>);
 
         } else if (croakGroup.type == 'loaded') {
           return (
-            <>
-              {croakGroup.croaks.length > 0 && <Croaks croakList={croakGroup.croaks} loadSurround={loadSurround(croakGroup.offsetCursor)} />}
-            </>
+            <React.Fragment key={key}>
+              {croakGroup.croaks.length > 0 && (
+                <Croaks
+                  croakList={croakGroup.croaks}
+                  loadSurround={loadSurround(croakGroup)}
+                  startingPoint={croakGroup.startingPoint}
+                />
+              )}
+            </React.Fragment>
           );
         } else {
           return (
-            <p key={`croak-group-${croakGroup.offsetCursor || 'none'}`}>{`Error! ${croakGroup.errorMessage}`}</p>
+            <p key={key}>{`Error! ${croakGroup.errorMessage}`}</p>
           );
         }
       })}
@@ -632,24 +728,64 @@ const CroakList: React.FC<{
   );
 };
 
-export default function Page() {
-  const mock = (text: string) => console.log(text);
+const UnPostableCroakList: React.FC<{
+  getCroaks: GetCroaks;
+}> = ({ getCroaks }) => {
+  const { configuration, croaker } = useMaster();
   return (
     <>
       <div className="w-full mt-5 flex flex-nowrap flex-col-reverse justify-start items-center">
-        {posts.map(post => (
-          <Croak
-            loadSurround={null}
-            key={`croak-${post.croak_id}`}
-            croak={post}
-            deleteCroak={(croak_id: number) => console.log('delete', croak_id)}
-          />
-        ))}
+        <CroakList getCroaks={getCroaks} />
       </div>
-      <Footer
-        postText={mock}
-        postFile={mock}
-      />
     </>
   );
+};
+
+const PostableCroakList: React.FC<{
+  thread: number | null;
+  getCroaks: GetCroaks;
+}> = ({ thread, getCroaks }) => {
+  const { configuration, croaker } = useMaster();
+  return (
+    <>
+      <div className="w-full mt-5 flex flex-nowrap flex-col-reverse justify-start items-center">
+        <CroakList getCroaks={getCroaks} />
+        {croaker.type === 'anonymous' && (
+          <footer className="fixed bottom-0 left-0 w-screen min-h-12 flex flex-nowrap justify-center items-center bg-white border-t">
+            <div className="flex flex-nowrap justify-between items-center w-full max-w-5xl h-12">
+              <div className="grow shrink m-2">
+                <p>You need Login and Register your Information</p>
+              </div>
+              <div className="grow-0 shrink-0 m-2">
+                <Link href={"/auth/signin"} className={buttonVariants({ variant: "procedure" })}>
+                  <p>Login</p>
+                </Link>
+              </div>
+            </div>
+          </footer>
+        )}
+        {(croaker.type === 'logined' || (croaker.type === 'registered' && !croaker.value.form_agreement)) && (
+          <footer className="fixed bottom-0 left-0 w-screen min-h-12 flex flex-nowrap justify-center items-center bg-white border-t">
+            <div className="flex flex-nowrap justify-between items-center w-full max-w-5xl h-12">
+              <div className="grow shrink m-2">
+                <p>You need Register your Information and Agree Form</p>
+              </div>
+              <div className="grow-0 shrink-0 m-2">
+                <Link href={"/setting/edit"} className={buttonVariants({ variant: "procedure" })}>
+                  <p>Register</p>
+                </Link>
+              </div>
+            </div>
+          </footer>
+        )}
+        {(croaker.type === 'registered' && croaker.value.form_agreement) && (
+          <InputableList croaker={croaker.value} thread={thread} />
+        )}
+      </div>
+    </>
+  );
+};
+
+export default function Page() {
+  return <PostableCroakList thread={null} getCroaks={getTopCroaks()} />;
 }
