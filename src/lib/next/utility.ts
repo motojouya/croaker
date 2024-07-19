@@ -60,3 +60,22 @@ export const getIdentifier: GetIdentifier = (session) => {
     return { type: "anonymous" };
   }
 };
+
+// for useState setter
+export const replaceArray = <T>(equals: (left: T, right: T) => boolean) => (newOne: T) => (oldArray: T[]) => {
+  const index = oldArray.findIndex((oldOne) => equals(oldOne, newOne));
+  if (index === -1) {
+    return oldArray;
+  } else {
+    return oldArray.toSpliced(index, 1, newOne);
+  }
+};
+
+export const removeArray = <T>(equals: (left: T, right: T) => boolean) => (newOne: T) => (oldArray: T[]) => {
+  const index = oldArray.findIndex((oldOne) => equals(oldOne, newOne));
+  if (index === -1) {
+    return oldArray;
+  } else {
+    return oldArray.toSpliced(index, 1);
+  }
+};
