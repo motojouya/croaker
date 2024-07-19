@@ -265,6 +265,8 @@ const CroakInput: React.FC<{
     }
   }
 
+  // TODO input file装飾
+  // https://qiita.com/shuheix/items/f618e9d6cdd063e10b72
   return (
     <div className="flex flex-nowrap justify-between items-center w-full max-w-5xl">
       <div className="grow-0 shrink-0 my-1 mr-0 ml-1">
@@ -508,7 +510,9 @@ const useInfinityScroll: UseInfinityScroll = (loadSurround) => {
   return ref;
 };
 
+// TODO load eventをbindしてるやつだけでいいので、表示されたらurlのhashを書き換えておく。page backの際に表示の再現のため
 // TODO startingPointを使って最初のものはカーソル移動する
+// https://dev.classmethod.jp/articles/react-scroll-into-view-on-load/
 const Croaks: React.FC<{
   croakList: CroakType[],
   loadSurround: LoadSurround,
@@ -652,6 +656,7 @@ const setSurroundCroakGroup: SetSurroundCroakGroup = (loadCroaks, baseGroup) => 
   const lastCroak = croakGroup.croaks.at(croakGroup.croaks.length - 1) as CroakType;
   const lastCursor = lastCroak.croak_id;
 
+  // TODO 関数として分かれているが、同じにしちゃう。関数が長くなるが、短くする工夫はもっと別の方法のほうがよさそう
   return getNewCroakGroup(loadCroaks, croakGroupIndex, oldGroups, firstCursor, lastCursor);
 };
 
@@ -661,6 +666,8 @@ const CroakList: React.FC<{
 
   const [croakGroups, setCroakGroups] = useState<CroakGroupType[]>([]);
 
+  // TODO 基本的に外にだして、setCroakGroupsを引数に与えて上げる感じに変更する。
+  // setterにわたす関数用のutilityをlib/next/utilityに入れてあるので、それを使う
   const loadCroaks = useCallback(async (loadingGroup: CroakGroupType) => {
 
     const result = await getCroaks(loadingGroup.offsetCursor, loadingGroup.reverse);
