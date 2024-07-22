@@ -9,11 +9,6 @@ import { FileRecord } from "@/database/type/croak";
 import { getDatabase } from "@/database/base";
 import { resolveFileUrl, Croak } from "@/domain/croak/croak";
 
-export type CroakList = {
-  croaks: Croak[];
-  has_next: boolean;
-};
-
 export const DISPLAY_LIMIT = 20;
 
 type SetFileUrl = (storage: Storage, croaksFromTable: CroakFromDB[]) => Promise<Croak[] | FileFail>;
@@ -46,30 +41,11 @@ const setFileUrl: SetFileUrl = async (storage, croaksFromTable) => {
   return croaks;
 };
 
-type GetCroakList = (croaks: Croak[]) => CroakList;
-const getCroakList: GetCroakList = (croaks) => {
-  if (croaks.length > DISPLAY_LIMIT) {
-    const limited = croaks.toSpliced(DISPLAY_LIMIT - 1, 1);
-    return {
-      croaks: limited,
-      has_next: true,
-    };
-  } else {
-    return {
-      croaks,
-      has_next: false,
-    };
-  }
-};
-
-type GetCroaks = (storage: Storage, query: () => Promise<CroakFromDB[]>) => Promise<CroakList | FileFail>;
+type GetCroaks = (storage: Storage, query: () => Promise<CroakFromDB[]>) => Promise<Croak[] | FileFail>;
 const getCroaks: GetCroaks = async (storage, query) => {
   const result = await query();
   if (!result || result.length === 0) {
-    return {
-      croaks: [],
-      has_next: false,
-    };
+    return [];
   }
 
   const croaks = await setFileUrl(storage, result);
@@ -77,10 +53,10 @@ const getCroaks: GetCroaks = async (storage, query) => {
     return croaks;
   }
 
-  return getCroakList(croaks);
+  return croaks;
 };
 
-export type FunctionResult = CroakList | FileFail;
+export type FunctionResult = Croak[] | FileFail;
 
 /*
  * top
@@ -98,7 +74,7 @@ export const getTopCroaks: GetTopCroak =
   ({ storage, db }) =>
   (identifier) =>
   (reverse = false, offsetCursor = 0) =>
-    getCroaks(storage, () => db.top(reverse, offsetCursor, DISPLAY_LIMIT + 1));
+    getCroaks(storage, () => db.top(reverse, offsetCursor, DISPLAY_LIMIT));
 
 setContext(getTopCroaks, getTopCroakContext);
 
@@ -118,7 +94,7 @@ export const getThreadCroaks: GetThreadCroaks =
   ({ storage, db }) =>
   (identifier) =>
   (threadId, reverse = false, offsetCursor = 0) =>
-    getCroaks(storage, () => db.thread(threadId, reverse, offsetCursor, DISPLAY_LIMIT + 1));
+    getCroaks(storage, () => db.thread(threadId, reverse, offsetCursor, DISPLAY_LIMIT));
 
 setContext(getThreadCroaks, getThreadCroaksContext);
 
@@ -138,6 +114,6 @@ export const searchCroaks: SearchCroaks =
   ({ storage, db }) =>
   (identifier) =>
   (text, reverse = false, offsetCursor = 0) =>
-    getCroaks(storage, () => db.search(text, reverse, offsetCursor, DISPLAY_LIMIT + 1));
+    getCroaks(storage, () => db.search(text, reverse, offsetCursor, DISPLAY_LIMIT));
 
 setContext(searchCroaks, searchCroaksContext);
