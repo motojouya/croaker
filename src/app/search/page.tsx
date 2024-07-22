@@ -4,7 +4,8 @@ import { useSearchParams } from "next/navigation";
 import type { ResponseType } from "@/app/api/croak/search/route";
 import { doFetch } from "@/lib/next/utility";
 import { useMaster } from "@/app/SessionProvider";
-import { GetCroaks, UnPostableCroakList } from '@/components/parts/croaks'
+import { GetCroaks } from '@/components/parts/croaks/loadingCroakList'
+import { FooterLessCroakList } from '@/components/parts/croaks'
 
 type SearchCroaks = (text: string) => GetCroaks;
 const searchCroaks: SearchCroaks = (text) => async (offsetCursor, reverse) => {
@@ -14,10 +15,8 @@ const searchCroaks: SearchCroaks = (text) => async (offsetCursor, reverse) => {
 
 export default function Page() {
 
-  const { croaker } = useMaster();
-
   const searchParams = useSearchParams();
   const searchParamText = searchParams.get("text") || "";
 
-  return <UnPostableCroakList croaker={croaker} getCroaks={searchCroaks(searchParamText)} />;
+  return <FooterLessCroakList getCroaks={searchCroaks(searchParamText)} />;
 }

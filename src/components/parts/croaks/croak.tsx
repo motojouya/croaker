@@ -16,7 +16,7 @@ const intersectionObserverOptions ={
   root: null, // ルート要素 (viewport) を使用
   rootMargin: '0px',
   threshold: 0, // 要素が少しでもビューポートに表示された瞬間からコールバックが呼び出される
-}
+};
 
 type UseInfinityScroll = (loadSurround: () => void) => RefObject<HTMLDivElement>;
 const useInfinityScroll: UseInfinityScroll = (loadSurround) => {
@@ -45,7 +45,9 @@ const useInfinityScroll: UseInfinityScroll = (loadSurround) => {
   return ref;
 };
 
-const deleteCroakFetch = async (croak_id: number, callback: () => void) => {
+type DeleteCroakFetch = (croak_id: number, callback: () => void) => Promise<void>;
+const deleteCroakFetch: DeleteCroakFetch = async (croak_id, callback) => {
+
   if (!confirm("本当に削除して大丈夫ですか？")) {
     return;
   }

@@ -1,9 +1,11 @@
 'use client'
 
 import type { ResponseType } from "@/app/api/croak/[croak_id]/route";
+import { useParams } from 'next/navigation'
 import { doFetch } from "@/lib/next/utility";
 import { useMaster } from "@/app/SessionProvider";
-import { GetCroaks, PostableCroakList } from '@/components/parts/croaks'
+import { GetCroaks } from '@/components/parts/croaks/loadingCroakList'
+import { CroakList } from '@/components/parts/croaks'
 
 type GetThreadCroaks = (thread: number) => GetCroaks;
 const getThreadCroaks: GetThreadCroaks = (thread) => async (offsetCursor, reverse) => {
@@ -11,13 +13,15 @@ const getThreadCroaks: GetThreadCroaks = (thread) => async (offsetCursor, revers
   return res as ResponseType;
 };
 
-type PageArgs = {
-  params: {
-    croak_id: number
-  }
-};
+export default function Page() {
 
-export default function Page(args: PageArgs) {
+  const { croak_id } = useParams<{ croak_id: string }>();
   const { croaker } = useMaster();
-  return <PostableCroakList croaker={croaker} thread={null} getCroaks={getThreadCroaks(args.params.croak_id)} />;
+
+  const croakIdNumber = Number(croak_id);
+  if (!Number.isSafeInteger(croakIdNumber) || croakIdNumber < 1) {
+    return new Error(`threadは1以上の整数です ${croak_id}`);
+  }
+
+  return <CroakList croaker={croaker} thread={croakIdNumber} getCroaks={getThreadCroaks(croakIdNumber)} />;
 }

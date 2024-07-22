@@ -11,13 +11,16 @@ import { isImageCommandFail, isImageInformationFail } from "@/lib/io/image";
 import { v4 as uuid } from 'uuid'
 import { ClientCroaker } from "@/domain/authorization/base";
 import { replaceArray, removeArray } from '@/lib/next/utility';
-import { PostingText, PostingFile, InputCroak, GetCroaks, CroakList, InputCroaks } from '@/components/parts/croaks/croakList'
+import { GetCroaks, LoadingCroaks } from '@/components/parts/croaks/loadingCroakList'
+import { PostingText, PostingFile, InputCroak, InputCroaks } from '@/components/parts/croaks/inputCroakList'
 import { CroakInputFooter, RegisterFooter } from '@/components/parts/croaks/footer'
+import type { Croaker } from "@/database/query/croaker/croaker";
 
 type EqualInputCroak = (left: InputCroak, right: InputCroak) => boolean;
 const equalInputCroak: EqualInputCroak = (left, right) => left.key === right.key;
 
-const postText = async (thread: number | null, setNewInput: (input: InputCroak) => void, newInput: PostingText) => {
+type PostText = (thread: number | null, setNewInput: (input: InputCroak) => void, newInput: PostingText) => Promise<void>;
+const postText: PostText = async (thread, setNewInput, newInput) => {
 
   const res = await doFetch(`/api/croak/${thread || 'top'}/text`, { method: "POST", body: JSON.stringify({ contents: newInput.contents }) });
   const result = res as ResponseTypeTopText;
@@ -38,7 +41,8 @@ const postText = async (thread: number | null, setNewInput: (input: InputCroak) 
   }
 };
 
-const postFile = async (thread: number | null, setNewInput: (input: InputCroak) => void, newInput: PostingFile) => {
+type PostFile = (thread: number | null, setNewInput: (input: InputCroak) => void, newInput: PostingFile) => Promise<void>;
+  const postFile: PostFile = async (thread, setNewInput, newInput) => {
 
   const file = newInput.file;
   const formData = new FormData();
@@ -70,26 +74,10 @@ const postFile = async (thread: number | null, setNewInput: (input: InputCroak) 
   }
 };
 
-export const UnPostableCroakList: React.FC<{
-  getCroaks: GetCroaks;
-  croaker: ClientCroaker;
-}> = ({ croaker, getCroaks }) => {
-  return (
-    <>
-      <div className="w-full mt-5 flex flex-nowrap flex-col-reverse justify-start items-center">
-        <CroakList getCroaks={getCroaks} />
-      </div>
-    </>
-  );
-};
-
-const loginDescription = "You need Login and Register your Information";
-const registerDescription = "You need Register your Information and Agree Form";
-
 export const PostableCroakList: React.FC<{
   thread: number | null;
   getCroaks: GetCroaks;
-  croaker: ClientCroaker;
+  croaker: Croaker;
 }> = ({ croaker, thread, getCroaks }) => {
 
   const [inputCroaks, setInputCroaks] = useState<InputCroak[]>([]);
@@ -125,24 +113,70 @@ export const PostableCroakList: React.FC<{
   return (
     <>
       <div className="w-full mt-5 flex flex-nowrap flex-col-reverse justify-start items-center">
-        {(croaker.type === 'registered' && croaker.value.form_agreement) && (
-          <InputCroaks
-            croaker={croaker.value}
-            croaks={inputCroaks}
-            cancelCroak={cancelCroak}
-          />
-        )}
-        <CroakList getCroaks={getCroaks} />
+        <InputCroaks
+          croaker={croaker}
+          croaks={inputCroaks}
+          cancelCroak={cancelCroak}
+        />
+        <LoadingCroaks getCroaks={getCroaks} />
       </div>
-      {croaker.type === 'anonymous' && (
-        <RegisterFooter linkUrl={"/auth/signin"} linkName={"Login"} description={loginDescription} />
-      )}
-      {(croaker.type === 'logined' || (croaker.type === 'registered' && !croaker.value.form_agreement)) && (
-        <RegisterFooter linkUrl={"/setting/edit"} linkName={"Register"} description={registerDescription} />
-      )}
-      {(croaker.type === 'registered' && croaker.value.form_agreement) && (
-        <CroakInputFooter postText={setText} postFile={setFile}/>
-      )}
+      <CroakInputFooter postText={setText} postFile={setFile}/>
     </>
   );
+};
+
+export const FooterLessCroakList: React.FC<{ getCroaks: GetCroaks }> = ({ getCroaks }) => (
+  <>
+    <div className="w-full mt-5 flex flex-nowrap flex-col-reverse justify-start items-center">
+      <LoadingCroaks getCroaks={getCroaks} />
+    </div>
+  </>
+);
+
+export const MessageCroakList: React.FC<{
+  getCroaks: GetCroaks;
+  linkUrl: string;
+  linkName: string;
+  description: string;
+}> = ({ linkUrl, linkName, description, getCroaks }) => (
+  <>
+    <div className="w-full mt-5 flex flex-nowrap flex-col-reverse justify-start items-center">
+      <LoadingCroaks getCroaks={getCroaks} />
+    </div>
+    <RegisterFooter linkUrl={linkUrl} linkName={linkName} description={description} />
+  </>
+);
+
+export const CroakList: React.FC<{
+  thread: number | null;
+  getCroaks: GetCroaks;
+  croaker: ClientCroaker;
+}> = ({ croaker, thread, getCroaks }) => {
+  if (croaker.type === 'anonymous') {
+    return (
+      <MessageCroakList
+        linkUrl={"/auth/signin"}
+        linkName={"Login"}
+        description={"You need Login and Register your Information"}
+        getCroaks={getCroaks}
+      />
+    );
+  } else if (croaker.type === 'logined' || (croaker.type === 'registered' && !croaker.value.form_agreement)) {
+    return (
+      <MessageCroakList
+        linkUrl={"/setting/edit"}
+        linkName={"Register"}
+        description={"You need Register your Information and Agree Form"}
+        getCroaks={getCroaks}
+      />
+    );
+  } else {
+    return (
+      <PostableCroakList
+        croaker={croaker.value}
+        thread={thread}
+        getCroaks={getCroaks}
+      />
+    );
+  }
 };

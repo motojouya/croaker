@@ -24,12 +24,9 @@ export const RegisterFooter: React.FC<{
   </footer>
 );
 
-type PostText = (text: string) => void;
-type PostFile = (file: File) => void;
-
 export const CroakInputFooter: React.FC<{
-  postText: PostText,
-  postFile: PostFile,
+  postText: (text: string) => void,
+  postFile: (file: File) => void,
 }> = ({ postText, postFile }) => {
 
   const [croakText, setCroakText] = useState('');
