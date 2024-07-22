@@ -4,7 +4,22 @@ import { Croak as CroakType } from "@/domain/croak/croak";
 import type { ResponseType } from "@/app/api/croak/top/route";
 import { isFileFail } from "@/lib/io/fileStorage";
 import { replaceArray, removeArray } from '@/lib/next/utility';
-import { Croak } from '@/components/parts/croaks/croak'
+import type { Croaker } from "@/database/query/croaker/croaker";
+import { Croak, InputTextCroak, InputFileCroak } from '@/components/parts/croaks/croak'
+
+// TODO test data
+const posts = Array(20).fill(0).map((v, index) => ({
+  croak_id: index,
+  croaker_id: 'own6r',
+  contents: 'test' + index,
+  thread: null,
+  posted_date: new Date(),
+  deleted_date: null,
+  has_thread: false,
+  croaker_name: 'name',
+  links: [],
+  files: [],
+}));
 
 type EqualCroak = (left: CroakType, right: CroakType) => boolean;
 const equalCroak: EqualCroak = (left, right) => left.croak_id === right.croak_id;
@@ -12,10 +27,9 @@ const equalCroak: EqualCroak = (left, right) => left.croak_id === right.croak_id
 // TODO load eventをbindしてるやつだけでいいので、表示されたらurlのhashを書き換えておく。page backの際に表示の再現のため
 // TODO startingPointを使って最初のものはカーソル移動する
 // https://dev.classmethod.jp/articles/react-scroll-into-view-on-load/
-type LoadSurround = () => void;
 const Croaks: React.FC<{
   croakList: CroakType[],
-  loadSurround: LoadSurround,
+  loadSurround: () => void,
   startingPoint: boolean;
 }> = ({ croakList, loadSurround, startingPoint }) => {
 
@@ -65,8 +79,8 @@ const equalGroup: EqualGroup = (left, right) => {
  * 実際にロードするのは非同期で次のprocessで行う
  */
 type LoadCroaks = (newGroup: CroakGroupType) => Promise<void>
-type SetSurroundCroakGroup = (loadCroaks: LoadCroaks, newGroup: CroakGroupType) => (oldGroups: CroakGroupType[]) => CroakGroupType[];
-const setSurroundCroakGroup: SetSurroundCroakGroup = (loadCroaks, baseGroup) => (oldGroups) => {
+type SetSurroundCroakGroup = (loadCroaks: LoadCroaks) => (newGroup: CroakGroupType) => (oldGroups: CroakGroupType[]) => CroakGroupType[];
+const setSurroundCroakGroup: SetSurroundCroakGroup = (loadCroaks) => (baseGroup) => (oldGroups) => {
 
   const croakGroupIndex = oldGroups.findIndex((croakGroup) => equalGroup(croakGroup, baseGroup));
   if (croakGroupIndex === -1) {
@@ -119,8 +133,8 @@ const setSurroundCroakGroup: SetSurroundCroakGroup = (loadCroaks, baseGroup) => 
   return newCroakGroups;
 };
 
-type SetLoadedCroakGroup = (croakGroup: CroakGroupType) => void;
-const loadCroaks = (getCroaks: GetCroaks, setLoadedCroakGroup: SetLoadedCroakGroup) => async (loadingGroup: CroakGroupType) => {
+type GetLoadCroaks = (getCroaks: GetCroaks, setLoadedCroakGroup: (croakGroup: CroakGroupType) => void) => (loadingGroup: CroakGroupType) => Promise<void>;
+const getLoadCroaks: GetLoadCroaks = (getCroaks, setLoadedCroakGroup) => async (loadingGroup) => {
 
   const result = await getCroaks(loadingGroup.offsetCursor, loadingGroup.reverse);
 
@@ -140,7 +154,6 @@ const loadCroaks = (getCroaks: GetCroaks, setLoadedCroakGroup: SetLoadedCroakGro
   }
 };
 
-
 export const CroakList: React.FC<{
   getCroaks: GetCroaks,
 }> = ({ getCroaks }) => {
@@ -152,7 +165,8 @@ export const CroakList: React.FC<{
   }, []);
 
   const loadSurround = (baseGroup: CroakGroupType) => () => {
-    setCroakGroups(setSurroundCroakGroup(loadCroaks(getCroaks, setLoadedCroakGroup), baseGroup));
+    const loadCroaks = getLoadCroaks(getCroaks, setLoadedCroakGroup);
+    setCroakGroups(setSurroundCroakGroup(loadCroaks)(baseGroup));
   }
 
   useEffect(() => {
@@ -164,7 +178,7 @@ export const CroakList: React.FC<{
         type: 'loading',
       } as const;
       setCroakGroups([startingGroup]);
-      loadCroaks(getCroaks, setLoadedCroakGroup)(startingGroup); // TODO need setTime?
+      getLoadCroaks(getCroaks, setLoadedCroakGroup)(startingGroup); // TODO need setTime?
     }
   }, [croakGroups, getCroaks, setLoadedCroakGroup]);
 
@@ -173,6 +187,8 @@ export const CroakList: React.FC<{
       {croakGroups.map((croakGroup) => {
         const key = `croak-group-${croakGroup.offsetCursor || 'none'}-${croakGroup.reverse}`;
         if (croakGroup.type == 'loading') {
+          // TODO htmlタグを扱いたくない。
+          // loadingについてもcroak単体側で管理するほうがよさそう
           return (<p key={key} >loading</p>);
 
         } else if (croakGroup.type == 'loaded') {
@@ -188,8 +204,110 @@ export const CroakList: React.FC<{
             </React.Fragment>
           );
         } else {
+          // TODO htmlタグを扱いたくない。
+          // errorについてもcroak単体側で管理するほうがよさそう
           return (
             <p key={key}>{`Error! ${croakGroup.errorMessage}`}</p>
+          );
+        }
+      })}
+      <Croaks
+        croakList={posts}
+        loadSurround={() => { console.log('TODO for test! loadSurround.') }}
+        startingPoint={true}
+      />
+    </>
+  );
+};
+
+export type PostingText = {
+  key: string;
+  type: 'text';
+  contents: string;
+};
+export type PostingFile =  {
+  key: string;
+  type: 'file';
+  file: File;
+};
+export type ErrorText = {
+  key: string;
+  type: 'text_error';
+  contents: string;
+  errorMessage: string;
+};
+export type ErrorFile = {
+  key: string;
+  type: 'file_error';
+  file: File;
+  errorMessage: string;
+};
+export type PostedCroak = {
+  key: string;
+  type: 'posted';
+  croak: CroakType;
+};
+
+export type InputCroak = PostingText | PostingFile | ErrorText | ErrorFile | PostedCroak;
+
+// TODO 入力したらスクロールしてあげないといけない。
+// loadingのときで、しかも先頭だけでいいはず
+export const InputCroaks: React.FC<{
+  croaker: Croaker;
+  croaks: InputCroak[];
+  cancelCroak: (inputCroak: InputCroak) => () => void;
+}> = ({ croaker, croaks, cancelCroak }) => {
+  return (
+    <>
+      {croaks.map((inputCroak) => {
+        if (inputCroak.type === 'text') {
+          return (
+            <InputTextCroak
+              key={inputCroak.key}
+              croaker={croaker}
+              contents={inputCroak.contents}
+              message={'loading...'}
+              deleteCroak={null}
+            />
+          );
+        } else if (inputCroak.type === 'file') {
+          return (
+            <InputFileCroak
+              key={inputCroak.key}
+              croaker={croaker}
+              file={inputCroak.file}
+              message={'loading...'}
+              deleteCroak={null}
+            />
+          );
+        } else if (inputCroak.type === 'text_error') {
+          return (
+            <InputTextCroak
+              key={inputCroak.key}
+              croaker={croaker}
+              contents={inputCroak.contents}
+              message={`Error! ${inputCroak.errorMessage}`}
+              deleteCroak={cancelCroak(inputCroak)}
+            />
+          );
+        } else if (inputCroak.type === 'file_error') {
+          return (
+            <InputFileCroak
+              key={inputCroak.key}
+              croaker={croaker}
+              file={inputCroak.file}
+              message={`Error! ${inputCroak.errorMessage}`}
+              deleteCroak={cancelCroak(inputCroak)}
+            />
+          );
+        } else {
+          return (
+            <Croak
+              key={inputCroak.key}
+              croak={inputCroak.croak}
+              deleteCroak={cancelCroak(inputCroak)}
+              loadSurround={null}
+            />
           );
         }
       })}

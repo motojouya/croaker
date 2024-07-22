@@ -10,6 +10,7 @@ import { ResponseType } from '@/app/api/croak/[croak_id]/delete/route';
 import { isRecordNotFound } from "@/database/fail";
 import { isAuthorityFail } from "@/domain/authorization/base";
 import { doFetch } from "@/lib/next/utility";
+import type { Croaker } from "@/database/query/croaker/croaker";
 
 const intersectionObserverOptions ={
   root: null, // ルート要素 (viewport) を使用
@@ -60,6 +61,7 @@ const deleteCroakFetch = async (croak_id: number, callback: () => void) => {
   callback();
 };
 
+// TODO 先頭にscrollしないといけないのでそれは書く
 export const Croak: React.FC<{
   croak: CroakType;
   deleteCroak: () => void,
@@ -131,3 +133,67 @@ export const Croak: React.FC<{
     </div>
   );
 });
+
+// TODO 先頭にscrollしないといけないのでそれは書く
+export const InputFileCroak: React.FC<{
+  croaker: Croaker;
+  file: File;
+  message: string;
+  deleteCroak: (() => void) | null,
+}> = ({ croaker, file, message, deleteCroak }) => {
+
+  const [fileSrc, setFileSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => setFileSrc(reader.result as string);
+  });
+
+  return (
+    <div>
+      <div>
+        <div>{`${croaker.croaker_name}@${croaker.croaker_id}`}</div>
+        <div>{message}</div>
+        <div>
+          {deleteCroak && (
+            <Button type="button" variant="link" size="icon" onClick={deleteCroak}>
+              <p>Delete</p>
+            </Button>
+          )}
+        </div>
+      </div>
+      <div>
+        {fileSrc && (
+          <Image src={fileSrc} alt={file.name} />
+        )}
+      </div>
+    </div>
+  );
+};
+
+// TODO 先頭にscrollしないといけないのでそれは書く
+export const InputTextCroak: React.FC<{
+  croaker: Croaker;
+  contents: string;
+  message: string;
+  deleteCroak: (() => void) | null,
+}> = ({ croaker, contents, message, deleteCroak }) => {
+
+  return (
+    <div>
+      <div>
+        <div>{`${croaker.croaker_name}@${croaker.croaker_id}`}</div>
+        <div>{message}</div>
+        <div>
+          {deleteCroak && (
+            <Button type="button" variant="link" size="icon" onClick={deleteCroak}>
+              <p>Delete</p>
+            </Button>
+          )}
+        </div>
+      </div>
+      <div><MultiLineText text={contents} /></div>
+    </div>
+  );
+};
