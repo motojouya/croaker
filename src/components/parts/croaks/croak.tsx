@@ -12,14 +12,16 @@ import { isAuthorityFail } from "@/domain/authorization/base";
 import { doFetch } from "@/lib/next/utility";
 import type { Croaker } from "@/database/query/croaker/croaker";
 
+export const MessageItem: React.FC<{ message: string }> = ({ message }) => (<p>{message}</p>);
+
 const intersectionObserverOptions ={
-  root: null, // ルート要素 (viewport) を使用
+  root: null,
   rootMargin: '0px',
-  threshold: 0, // 要素が少しでもビューポートに表示された瞬間からコールバックが呼び出される
+  threshold: 0,
 };
 
-type UseInfinityScroll = (loadSurround: () => void) => RefObject<HTMLDivElement>;
-const useInfinityScroll: UseInfinityScroll = (loadSurround) => {
+type UseInfinityScroll = (loadSurround: () => void, scrollHere: boolean) => RefObject<HTMLDivElement>;
+const useInfinityScroll: UseInfinityScroll = (loadSurround, scrollHere) => {
 
   const ref = useRef<HTMLDivElement>(null);
 
@@ -42,6 +44,15 @@ const useInfinityScroll: UseInfinityScroll = (loadSurround) => {
     }
   }, [scrollObserver, ref]);
 
+  useEffect(()=>{
+    if (scrollHere && ref && ref.current) {
+      ref.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'end',
+      });
+    }
+  }, [scrollHere, ref])
+
   return ref;
 };
 
@@ -63,12 +74,12 @@ const deleteCroakFetch: DeleteCroakFetch = async (croak_id, callback) => {
   callback();
 };
 
-// TODO 先頭にscrollしないといけないのでそれは書く
 export const Croak: React.FC<{
   croak: CroakType;
   deleteCroak: () => void,
   loadSurround: (() => void) | null,
-}> = (({ croak, deleteCroak, loadSurround }) => {
+  scrollHere: boolean;
+}> = (({ croak, deleteCroak, loadSurround, scrollHere }) => {
 
   const [copied, setCopied] = useState(false);
   const copy = () => {
@@ -76,7 +87,7 @@ export const Croak: React.FC<{
     setCopied(true);
   };
 
-  const ref = useInfinityScroll(loadSurround || (() => { throw new Error('') }));
+  const ref = useInfinityScroll(loadSurround || (() => { throw new Error('') }), scrollHere);
 
   return (
     <div>
@@ -136,15 +147,17 @@ export const Croak: React.FC<{
   );
 });
 
-// TODO 先頭にscrollしないといけないのでそれは書く
 export const InputFileCroak: React.FC<{
   croaker: Croaker;
   file: File;
   message: string;
   deleteCroak: (() => void) | null,
-}> = ({ croaker, file, message, deleteCroak }) => {
+  scrollHere: boolean;
+}> = ({ croaker, file, message, deleteCroak, scrollHere }) => {
 
   const [fileSrc, setFileSrc] = useState<string | null>(null);
+
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const reader = new FileReader();
@@ -152,10 +165,24 @@ export const InputFileCroak: React.FC<{
     reader.onload = () => setFileSrc(reader.result as string);
   });
 
+  useEffect(()=>{
+    if (scrollHere && ref && ref.current) {
+      ref.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'end',
+      });
+    }
+  }, [scrollHere, ref])
+
   return (
     <div>
       <div>
-        <div>{`${croaker.croaker_name}@${croaker.croaker_id}`}</div>
+        {scrollHere && (
+          <div ref={ref}>{`${croaker.croaker_name}@${croaker.croaker_id}`}</div>
+        )}
+        {!scrollHere && (
+          <div>{`${croaker.croaker_name}@${croaker.croaker_id}`}</div>
+        )}
         <div>{message}</div>
         <div>
           {deleteCroak && (
@@ -174,18 +201,34 @@ export const InputFileCroak: React.FC<{
   );
 };
 
-// TODO 先頭にscrollしないといけないのでそれは書く
 export const InputTextCroak: React.FC<{
   croaker: Croaker;
   contents: string;
   message: string;
   deleteCroak: (() => void) | null,
-}> = ({ croaker, contents, message, deleteCroak }) => {
+  scrollHere: boolean;
+}> = ({ croaker, contents, message, deleteCroak, scrollHere }) => {
+
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(()=>{
+    if (scrollHere && ref && ref.current) {
+      ref.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'end',
+      });
+    }
+  }, [scrollHere, ref])
 
   return (
     <div>
       <div>
-        <div>{`${croaker.croaker_name}@${croaker.croaker_id}`}</div>
+        {scrollHere && (
+          <div ref={ref}>{`${croaker.croaker_name}@${croaker.croaker_id}`}</div>
+        )}
+        {!scrollHere && (
+          <div>{`${croaker.croaker_name}@${croaker.croaker_id}`}</div>
+        )}
         <div>{message}</div>
         <div>
           {deleteCroak && (

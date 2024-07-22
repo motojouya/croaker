@@ -5,7 +5,7 @@ import type { ResponseType } from "@/app/api/croak/top/route";
 import { isFileFail } from "@/lib/io/fileStorage";
 import { replaceArray, removeArray } from '@/lib/next/utility';
 import type { Croaker } from "@/database/query/croaker/croaker";
-import { Croak, InputTextCroak, InputFileCroak } from '@/components/parts/croaks/croak'
+import { Croak, InputTextCroak, InputFileCroak, MessageItem } from '@/components/parts/croaks/croak'
 
 // TODO test data
 const posts = Array(20).fill(0).map((v, index) => ({
@@ -44,6 +44,7 @@ const Croaks: React.FC<{
             key={`croak-${croak.croak_id}`}
             croak={croak}
             deleteCroak={() => setCroaks(removeArray(equalCroak)(croak))}
+            scrollHere={startingPoint && index === 0}
           />
         );
       })}
@@ -191,9 +192,7 @@ export const LoadingCroaks: React.FC<{ getCroaks: GetCroaks }> = ({ getCroaks })
       {croakGroups.map((croakGroup) => {
         const key = `croak-group-${croakGroup.offsetCursor || 'none'}-${croakGroup.reverse}`;
         if (croakGroup.type == 'loading') {
-          // TODO htmlタグを扱いたくない。
-          // loadingについてもcroak単体側で管理するほうがよさそう
-          return (<p key={key} >loading</p>);
+          return (<MessageItem key={key} message={'loading'}/>);
 
         } else if (croakGroup.type == 'loaded') {
           return (
@@ -207,12 +206,9 @@ export const LoadingCroaks: React.FC<{ getCroaks: GetCroaks }> = ({ getCroaks })
               )}
             </React.Fragment>
           );
+
         } else {
-          // TODO htmlタグを扱いたくない。
-          // errorについてもcroak単体側で管理するほうがよさそう
-          return (
-            <p key={key}>{`Error! ${croakGroup.errorMessage}`}</p>
-          );
+          return (<MessageItem key={key} message={`Error! ${croakGroup.errorMessage}`}/>);
         }
       })}
       <Croaks

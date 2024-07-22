@@ -37,8 +37,6 @@ export type PostedCroak = {
 
 export type InputCroak = PostingText | PostingFile | ErrorText | ErrorFile | PostedCroak;
 
-// TODO 入力したらスクロールしてあげないといけない。
-// loadingのときで、しかも先頭だけでいいはず
 export const InputCroaks: React.FC<{
   croaker: Croaker;
   croaks: InputCroak[];
@@ -46,7 +44,7 @@ export const InputCroaks: React.FC<{
 }> = ({ croaker, croaks, cancelCroak }) => {
   return (
     <>
-      {croaks.map((inputCroak) => {
+      {croaks.map((inputCroak, index) => {
         if (inputCroak.type === 'text') {
           return (
             <InputTextCroak
@@ -55,6 +53,7 @@ export const InputCroaks: React.FC<{
               contents={inputCroak.contents}
               message={'loading...'}
               deleteCroak={null}
+              scrollHere={index === 0}
             />
           );
         } else if (inputCroak.type === 'file') {
@@ -65,6 +64,7 @@ export const InputCroaks: React.FC<{
               file={inputCroak.file}
               message={'loading...'}
               deleteCroak={null}
+              scrollHere={index === 0}
             />
           );
         } else if (inputCroak.type === 'text_error') {
@@ -75,6 +75,7 @@ export const InputCroaks: React.FC<{
               contents={inputCroak.contents}
               message={`Error! ${inputCroak.errorMessage}`}
               deleteCroak={cancelCroak(inputCroak)}
+              scrollHere={false}
             />
           );
         } else if (inputCroak.type === 'file_error') {
@@ -85,6 +86,7 @@ export const InputCroaks: React.FC<{
               file={inputCroak.file}
               message={`Error! ${inputCroak.errorMessage}`}
               deleteCroak={cancelCroak(inputCroak)}
+              scrollHere={false}
             />
           );
         } else {
@@ -94,6 +96,7 @@ export const InputCroaks: React.FC<{
               croak={inputCroak.croak}
               deleteCroak={cancelCroak(inputCroak)}
               loadSurround={null}
+              scrollHere={false}
             />
           );
         }
