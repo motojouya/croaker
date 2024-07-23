@@ -16,15 +16,21 @@
   - ユーザ編集画面 doing  
   - about done  
 4. 一覧画面  
-  - 一覧  
+  - 一覧 done  
     データは静的に用意する  
-  - フッター（入力窓）  
-  - トップ  
-  - スレ  
-  - 検索  
+  - フッター（入力窓） done  
+  - トップ done  
+  - スレ done  
+  - 検索 done  
+  - 見た目の調整  
 5. ログイン  
   - DBつなぎこみsqlite  
   - next-auth  
+  - 各種認証情報取得
+    - gcs
+    - google auth
+    - github auth
+    - .envファイルへの配置
 6. 動き  
   - 認証認可の画面側の実装とサーバ側の動き確認  
   - GCS設定してファイルアップロード  
@@ -32,9 +38,9 @@
   やりながらやるんだけど、それでも最後に調整はいる  
 
 ## その後
-favicon作らねば  
+favicon作らねば done  
   カエルがニターっと笑ってる感じで黒い感じね  
-twitterの過去ツイ取り込み用scriptの作成  
+twitterの過去ツイ取り込み用scriptの作成 これは面倒なのでやめる。  
   imageのuploadもできるようにしないとか  
   普通にcaseのpostTextCroakとpostFileCroakの流用が必要  
   実行scriptもプロダクトコードとして書いちゃうほうが楽そう。  
