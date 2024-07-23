@@ -137,41 +137,41 @@ const setSurroundCroakGroup: SetSurroundCroakGroup = (loadCroaks) => (baseGroup)
   return newCroakGroups;
 };
 
-type GetLoadCroaks =
-  (getCroaks: GetCroaks, setLoadedCroakGroup: (croakGroup: CroakGroupType) => void) =>
+type ChangeCroakGroup = (groups: CroakGroupType[]) => CroakGroupType[];
+
+type GetLoadCroakGroups =
+  (getCroaks: GetCroaks, setCroakGroups: (setter: ChangeCroakGroup) => void) =>
   (loadingGroup: CroakGroupType) =>
   Promise<void>;
-const getLoadCroaks: GetLoadCroaks = (getCroaks, setLoadedCroakGroup) => async (loadingGroup) => {
+const getLoadCroakGroups: GetLoadCroakGroups = (getCroaks, setCroakGroups) => async (loadingGroup) => {
 
   const result = await getCroaks(loadingGroup.offsetCursor, loadingGroup.reverse);
 
   if (isFileFail(result)) {
-    setLoadedCroakGroup({
+    setCroakGroups(replaceArray(equalGroup)({
       ...loadingGroup,
       type: 'error',
       errorMessage: result.message,
-    });
+    }));
 
   } else {
-    setLoadedCroakGroup({
+    setCroakGroups(replaceArray(equalGroup)({
       ...loadingGroup,
       type: 'loaded',
       croaks: result,
-    });
+    }));
   }
 };
 
-export const LoadingCroaks: React.FC<{ getCroaks: GetCroaks }> = ({ getCroaks }) => {
+type LoadGroups = (baseGroup: CroakGroupType) => () => void;
+type UseCroakGroups = (getCroaks: GetCroaks) => [CroakGroupType[], LoadGroups];
+const useCroakGroups: UseCroakGroups = (getCroaks) => {
 
   const [croakGroups, setCroakGroups] = useState<CroakGroupType[]>([]);
 
-  const setLoadedCroakGroup = useCallback((croakGroup: CroakGroupType) => {
-    setCroakGroups(replaceArray(equalGroup)(croakGroup));
-  }, []);
-
-  const loadSurround = (baseGroup: CroakGroupType) => () => {
-    const loadCroaks = getLoadCroaks(getCroaks, setLoadedCroakGroup);
-    setCroakGroups(setSurroundCroakGroup(loadCroaks)(baseGroup));
+  const loadGroups: LoadGroups = (baseGroup) => () => {
+    const loadCroakGroups = getLoadCroakGroups(getCroaks, setCroakGroups);
+    setCroakGroups(setSurroundCroakGroup(loadCroakGroups)(baseGroup));
   }
 
   useEffect(() => {
@@ -183,10 +183,16 @@ export const LoadingCroaks: React.FC<{ getCroaks: GetCroaks }> = ({ getCroaks })
         type: 'loading',
       } as const;
       setCroakGroups([startingGroup]);
-      getLoadCroaks(getCroaks, setLoadedCroakGroup)(startingGroup); // TODO need setTime?
+      getLoadCroakGroups(getCroaks, setCroakGroups)(startingGroup); // TODO need setTime?
     }
-  }, [croakGroups, getCroaks, setLoadedCroakGroup]);
+  }, [croakGroups, getCroaks, setCroakGroups]);
 
+  return [croakGroups, loadGroups];
+};
+
+export const LoadingCroaks: React.FC<{ getCroaks: GetCroaks }> = ({ getCroaks }) => {
+
+  const [croakGroups, loadGroups] = useCroakGroups(getCroaks);
   return (
     <>
       {croakGroups.map((croakGroup) => {
@@ -200,7 +206,7 @@ export const LoadingCroaks: React.FC<{ getCroaks: GetCroaks }> = ({ getCroaks })
               {croakGroup.croaks.length > 0 && (
                 <Croaks
                   croakList={croakGroup.croaks}
-                  loadSurround={loadSurround(croakGroup)}
+                  loadSurround={loadGroups(croakGroup)}
                   startingPoint={croakGroup.startingPoint}
                 />
               )}

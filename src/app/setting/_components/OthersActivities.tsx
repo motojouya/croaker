@@ -1,11 +1,10 @@
 "use client";
 
+import { useState, useEffect } from 'react'
 import Link from "next/link";
-import useSWR from "swr";
 import { format } from "date-fns";
-
 import type { ResponseType } from "@/app/api/croaker/self/recent_activities/route";
-import { loadFetch } from "@/lib/next/utility";
+import { doFetch } from "@/lib/next/utility";
 import { isAuthorityFail } from "@/domain/authorization/base";
 
 const croakSimples = [
@@ -32,31 +31,32 @@ const croakSimples = [
 ];
 
 export const OthersActivities: React.FC<{}> = () => {
-  const { data, error, isLoading } = useSWR("/api/croaker/self/recent_activities", loadFetch);
-  const result = data as ResponseType;
+
+  const [recentActivities, setRecentActivities] = useState<ResponseType | null>(null);
+  useEffect(() => {
+    (async () => {
+      const res = await doFetch("/api/croaker/self/recent_activities", { method: "GET" });
+      setRecentActivities(res as ResponseType);
+    })();
+  }, [setRecentActivities]);
 
   return (
     <div className="w-full mt-10">
       <div className="m-2 text-xl">
         <p>{"Other's Posts"}</p>
       </div>
-      {isLoading && (
+      {!recentActivities && (
         <div className="w-full m-2 flex flex-nowrap justify-start items-center">
           <p>Now Loading</p>
         </div>
       )}
-      {error && (
+      {recentActivities && isAuthorityFail(recentActivities) && (
         <div className="w-full m-2 flex flex-nowrap justify-start items-center">
-          <p>Fail To Load</p>
-        </div>
-      )}
-      {data && isAuthorityFail(result) && (
-        <div className="w-full m-2 flex flex-nowrap justify-start items-center">
-          <p>{result.message}</p>
+          <p>{recentActivities.message}</p>
         </div>
       )}
       {croakSimples.map((croak, index) => {
-        // TODO data && !isAuthorityFail(result)が条件
+        // TODO recentActivities && !isAuthorityFail(recentActivities)が条件
         const linkCroakId = croak.thread || croak.croak_id;
         return (
           <Link

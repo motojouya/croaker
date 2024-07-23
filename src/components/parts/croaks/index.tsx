@@ -19,30 +19,32 @@ import type { Croaker } from "@/database/query/croaker/croaker";
 type EqualInputCroak = (left: InputCroak, right: InputCroak) => boolean;
 const equalInputCroak: EqualInputCroak = (left, right) => left.key === right.key;
 
-type PostText = (thread: number | null, setNewInput: (input: InputCroak) => void, newInput: PostingText) => Promise<void>;
-const postText: PostText = async (thread, setNewInput, newInput) => {
+type ChangeInputCroaks = (inputCroaks: InputCroak[]) => InputCroak[];
+
+type PostText = (thread: number | null, setInputCroaks: (setter: ChangeInputCroaks) => void, newInput: PostingText) => Promise<void>;
+const postText: PostText = async (thread, setInputCroaks, newInput) => {
 
   const res = await doFetch(`/api/croak/${thread || 'top'}/text`, { method: "POST", body: JSON.stringify({ contents: newInput.contents }) });
   const result = res as ResponseTypeTopText;
 
   if (isAuthorityFail(result) || isFetchAccessFail(result) || isInvalidArguments(result)) {
-    setNewInput({
+    setInputCroaks(replaceArray(equalInputCroak)({
       ...newInput,
       type: 'text_error',
       errorMessage: result.message,
-    });
+    }));
 
   } else {
-    setNewInput({
+    setInputCroaks(replaceArray(equalInputCroak)({
       key: newInput.key,
       type: 'posted',
       croak: result,
-    });
+    }));
   }
 };
 
-type PostFile = (thread: number | null, setNewInput: (input: InputCroak) => void, newInput: PostingFile) => Promise<void>;
-  const postFile: PostFile = async (thread, setNewInput, newInput) => {
+type PostFile = (thread: number | null, setInputCroaks: (setter: ChangeInputCroaks) => void, newInput: PostingFile) => Promise<void>;
+  const postFile: PostFile = async (thread, setInputCroaks, newInput) => {
 
   const file = newInput.file;
   const formData = new FormData();
@@ -59,32 +61,30 @@ type PostFile = (thread: number | null, setNewInput: (input: InputCroak) => void
     isImageCommandFail(result) ||
     isImageInformationFail(result)
   ) {
-    setNewInput({
+    setInputCroaks(replaceArray(equalInputCroak)({
       ...newInput,
       type: 'file_error',
       errorMessage: result.message,
-    });
+    }));
 
   } else {
-    setNewInput({
+    setInputCroaks(replaceArray(equalInputCroak)({
       key: newInput.key,
       type: 'posted',
       croak: result,
-    });
+    }));
   }
 };
 
-export const PostableCroakList: React.FC<{
-  thread: number | null;
-  getCroaks: GetCroaks;
-  croaker: Croaker;
-}> = ({ croaker, thread, getCroaks }) => {
+type UseInputCroaks = (thread: number | null) => [
+  InputCroak[],
+  (text: string) => void,
+  (file: File) => void,
+  (input: InputCroak) => () => void
+];
+const useInputCroaks: UseInputCroaks = (thread) => {
 
   const [inputCroaks, setInputCroaks] = useState<InputCroak[]>([]);
-
-  const setNewInput = (input: InputCroak) => {
-    setInputCroaks(replaceArray(equalInputCroak)(input));
-  };
 
   const setText = (text: string) => {
     const newInput = {
@@ -93,7 +93,7 @@ export const PostableCroakList: React.FC<{
       contents: text,
     } as const;
     setInputCroaks((oldInputs) => ([...oldInputs, newInput]))
-    postText(thread, setNewInput, newInput); // TODO need setTime?
+    postText(thread, setInputCroaks, newInput); // TODO need setTime?
   };
 
   const setFile = (file: File) => {
@@ -103,12 +103,23 @@ export const PostableCroakList: React.FC<{
       file: file,
     } as const;
     setInputCroaks((oldInputs) => ([...oldInputs, newInput]))
-    postFile(thread, setNewInput, newInput); // TODO need setTime?
+    postFile(thread, setInputCroaks, newInput); // TODO need setTime?
   };
 
   const cancelCroak = (inputCroak: InputCroak) => () => {
     setInputCroaks(removeArray(equalInputCroak)(inputCroak));
   };
+
+  return [inputCroaks, setText, setFile, cancelCroak];
+};
+
+export const PostableCroakList: React.FC<{
+  thread: number | null;
+  getCroaks: GetCroaks;
+  croaker: Croaker;
+}> = ({ croaker, thread, getCroaks }) => {
+
+  const [inputCroaks, setText, setFile, cancelCroak] = useInputCroaks(thread);
 
   return (
     <>

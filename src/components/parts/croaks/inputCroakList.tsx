@@ -41,66 +41,64 @@ export const InputCroaks: React.FC<{
   croaker: Croaker;
   croaks: InputCroak[];
   cancelCroak: (inputCroak: InputCroak) => () => void;
-}> = ({ croaker, croaks, cancelCroak }) => {
-  return (
-    <>
-      {croaks.map((inputCroak, index) => {
-        if (inputCroak.type === 'text') {
-          return (
-            <InputTextCroak
-              key={inputCroak.key}
-              croaker={croaker}
-              contents={inputCroak.contents}
-              message={'loading...'}
-              deleteCroak={null}
-              scrollHere={index === 0}
-            />
-          );
-        } else if (inputCroak.type === 'file') {
-          return (
-            <InputFileCroak
-              key={inputCroak.key}
-              croaker={croaker}
-              file={inputCroak.file}
-              message={'loading...'}
-              deleteCroak={null}
-              scrollHere={index === 0}
-            />
-          );
-        } else if (inputCroak.type === 'text_error') {
-          return (
-            <InputTextCroak
-              key={inputCroak.key}
-              croaker={croaker}
-              contents={inputCroak.contents}
-              message={`Error! ${inputCroak.errorMessage}`}
-              deleteCroak={cancelCroak(inputCroak)}
-              scrollHere={false}
-            />
-          );
-        } else if (inputCroak.type === 'file_error') {
-          return (
-            <InputFileCroak
-              key={inputCroak.key}
-              croaker={croaker}
-              file={inputCroak.file}
-              message={`Error! ${inputCroak.errorMessage}`}
-              deleteCroak={cancelCroak(inputCroak)}
-              scrollHere={false}
-            />
-          );
-        } else {
-          return (
-            <Croak
-              key={inputCroak.key}
-              croak={inputCroak.croak}
-              deleteCroak={cancelCroak(inputCroak)}
-              loadSurround={null}
-              scrollHere={false}
-            />
-          );
-        }
-      })}
-    </>
-  );
-};
+}> = ({ croaker, croaks, cancelCroak }) => (
+  <>
+    {croaks.map((inputCroak, index) => {
+      if (inputCroak.type === 'text') {
+        return (
+          <InputTextCroak
+            key={inputCroak.key}
+            croaker={croaker}
+            contents={inputCroak.contents}
+            message={'loading...'}
+            deleteCroak={null}
+            scrollHere={index === 0}
+          />
+        );
+      } else if (inputCroak.type === 'file') {
+        return (
+          <InputFileCroak
+            key={inputCroak.key}
+            croaker={croaker}
+            file={inputCroak.file}
+            message={'loading...'}
+            deleteCroak={null}
+            scrollHere={index === 0}
+          />
+        );
+      } else if (inputCroak.type === 'text_error') {
+        return (
+          <InputTextCroak
+            key={inputCroak.key}
+            croaker={croaker}
+            contents={inputCroak.contents}
+            message={`Error! ${inputCroak.errorMessage}`}
+            deleteCroak={cancelCroak(inputCroak)}
+            scrollHere={false}
+          />
+        );
+      } else if (inputCroak.type === 'file_error') {
+        return (
+          <InputFileCroak
+            key={inputCroak.key}
+            croaker={croaker}
+            file={inputCroak.file}
+            message={`Error! ${inputCroak.errorMessage}`}
+            deleteCroak={cancelCroak(inputCroak)}
+            scrollHere={false}
+          />
+        );
+      } else {
+        return (
+          <Croak
+            key={inputCroak.key}
+            croak={inputCroak.croak}
+            deleteCroak={cancelCroak(inputCroak)}
+            loadSurround={null}
+            scrollHere={false}
+          />
+        );
+      }
+    })}
+  </>
+);

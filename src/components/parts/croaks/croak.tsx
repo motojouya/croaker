@@ -20,40 +20,34 @@ const intersectionObserverOptions ={
   threshold: 0,
 };
 
-type UseInfinityScroll = (loadSurround: () => void, scrollHere: boolean) => RefObject<HTMLDivElement>;
-const useInfinityScroll: UseInfinityScroll = (loadSurround, scrollHere) => {
+type EffectScrollIntersection = (loadSurround: (() => void) | null, ref: RefObject<HTMLDivElement>) => (() => void) | undefined;
+const effectScrollIntersection: EffectScrollIntersection = (loadSurround, ref) => {
 
-  const ref = useRef<HTMLDivElement>(null);
+  const target = ref.current;
+  if (loadSurround && target) {
 
-  const scrollObserver = useCallback(() => {
-    return new IntersectionObserver((entries) => {
+    const observer = new IntersectionObserver((entries) => {
       entries
         .filter((entry) => entry.isIntersecting)
         .forEach((entry) => loadSurround());
     }, intersectionObserverOptions);
-  }, [loadSurround]);
 
-  useEffect(() => {
-    const target = ref.current;
-    if (target) {
-      const observer = scrollObserver();
-      observer.observe(target);
-      return () => {
-        observer.unobserve(target);
-      };
-    }
-  }, [scrollObserver, ref]);
+    observer.observe(target);
 
-  useEffect(()=>{
-    if (scrollHere && ref && ref.current) {
-      ref.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'end',
-      });
-    }
-  }, [scrollHere, ref])
+    return () => {
+      observer.unobserve(target);
+    };
+  }
+};
 
-  return ref;
+type EffectFocusScroll = (scrollHere: boolean, ref: RefObject<HTMLDivElement>) => undefined;
+const effectFocusScroll: EffectFocusScroll = (scrollHere, ref) => {
+  if (scrollHere && ref && ref.current) {
+    ref.current.scrollIntoView({
+      behavior: 'smooth',
+      block: 'end',
+    });
+  }
 };
 
 type DeleteCroakFetch = (croak_id: number, callback: () => void) => Promise<void>;
@@ -87,7 +81,11 @@ export const Croak: React.FC<{
     setCopied(true);
   };
 
-  const ref = useInfinityScroll(loadSurround || (() => { throw new Error('') }), scrollHere);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => effectScrollIntersection(loadSurround, ref), [loadSurround, ref]);
+
+  useEffect(() => effectFocusScroll(scrollHere, ref), [scrollHere, ref])
 
   return (
     <div>
@@ -165,14 +163,7 @@ export const InputFileCroak: React.FC<{
     reader.onload = () => setFileSrc(reader.result as string);
   });
 
-  useEffect(()=>{
-    if (scrollHere && ref && ref.current) {
-      ref.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'end',
-      });
-    }
-  }, [scrollHere, ref])
+  useEffect(() => effectFocusScroll(scrollHere, ref), [scrollHere, ref])
 
   return (
     <div>
@@ -210,15 +201,7 @@ export const InputTextCroak: React.FC<{
 }> = ({ croaker, contents, message, deleteCroak, scrollHere }) => {
 
   const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(()=>{
-    if (scrollHere && ref && ref.current) {
-      ref.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'end',
-      });
-    }
-  }, [scrollHere, ref])
+  useEffect(() => effectFocusScroll(scrollHere, ref), [scrollHere, ref])
 
   return (
     <div>

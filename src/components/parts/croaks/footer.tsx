@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useMultiLineText } from "@/components/parts/MultiLineText";
 import { PaperPlaneIcon, ImageIcon } from "@radix-ui/react-icons";
 
 export const RegisterFooter: React.FC<{
@@ -29,18 +30,11 @@ export const CroakInputFooter: React.FC<{
   postFile: (file: File) => void,
 }> = ({ postText, postFile }) => {
 
-  const [croakText, setCroakText] = useState('');
-  const [rows, setRows] = useState(1);
+  const [croakText, rows, setCroakText, clearCroakText] = useMultiLineText();
 
-  const handleOnChange = (text: string) => {
-    setRows(text.split('\n').length);
-    setCroakText(text);
-  }
-
-  const submit = () => {
+  const submitCroak = () => {
     postText(croakText);
-    setRows(1);
-    setCroakText('');
+    clearCroakText();
   };
 
   const onChangeFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,12 +67,12 @@ export const CroakInputFooter: React.FC<{
             rows={rows}
             placeholder="Post Croak..."
             value={croakText}
-            onChange={(e) => handleOnChange(e.target.value)}
+            onChange={(e) => setCroakText(e.target.value)}
             className="p-1 min-h-fit border-t-0 border-x-0 rounded-none focus-visible:ring-0 bg-transparent"
           />
         </div>
         <div className="grow-0 shrink-0 my-1 mr-1 ml-0">
-          <Button type="button" variant="link" size="icon" onClick={submit}>
+          <Button type="button" variant="link" size="icon" onClick={submitCroak}>
             <PaperPlaneIcon />
           </Button>
         </div>
