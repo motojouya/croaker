@@ -2,7 +2,7 @@ import type { Session } from "next-auth";
 import type { Identifier } from "@/domain/authorization/base";
 
 export type FetchParam = Parameters<typeof fetch>;
-export async function doFetch(url: FetchParam[0], options: FetchParam[1]) {
+export async function doFetch<T>(url: FetchParam[0], options: FetchParam[1]) {
   try {
     const res = await fetch(url, options);
 
@@ -11,7 +11,7 @@ export async function doFetch(url: FetchParam[0], options: FetchParam[1]) {
       throw new Error("server error!");
     }
 
-    return await res.json();
+    return await res.json() as T;
   } catch (e) {
     console.log("network error!");
     throw e;

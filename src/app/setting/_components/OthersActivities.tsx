@@ -34,8 +34,8 @@ export const OthersActivities: React.FC<{}> = () => {
   const [recentActivities, setRecentActivities] = useState<ResponseType | null>(null);
   useEffect(() => {
     (async () => {
-      const res = await doFetch("/api/croaker/self/recent_activities", { method: "GET" });
-      setRecentActivities(res as ResponseType);
+      const result = await doFetch<ResponseType>("/api/croaker/self/recent_activities", { method: "GET" });
+      setRecentActivities(result);
     })();
   }, [setRecentActivities]);
 

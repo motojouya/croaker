@@ -55,8 +55,7 @@ const deleteCroakFetch: DeleteCroakFetch = async (croak_id, callback) => {
     return;
   }
 
-  const res = await doFetch(`/api/croak/${croak_id}/delete`, { method: "POST" });
-  const result = res as ResponseType;
+  const result = await doFetch<ResponseType>(`/api/croak/${croak_id}/delete`, { method: "POST" });
 
   if (isAuthorityFail(result) || isRecordNotFound(result)) {
     alert(result.message);

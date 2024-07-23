@@ -12,8 +12,7 @@ const ban = async (croaker_id: string) => {
     return;
   }
 
-  const res = await doFetch(`/api/croaker/${croaker_id}/ban`, { method: "POST" });
-  const result = res as ResponseType;
+  const result = await doFetch<ResponseType>(`/api/croaker/${croaker_id}/ban`, { method: "POST" });
 
   if (isAuthorityFail(result) || isRecordNotFound(result)) {
     alert(result.message);

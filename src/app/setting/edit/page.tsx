@@ -36,8 +36,7 @@ const createCroaker = async (data: CroakerEditForm, callback: () => void) => {
     form_agreement: data.form_agreement,
   };
 
-  const res = await doFetch(`/api/croaker/self/new`, { method: "POST", body: JSON.stringify(body) });
-  const result = res as ResponseTypeNew;
+  const result = await doFetch<ResponseTypeNew>(`/api/croaker/self/new`, { method: "POST", body: JSON.stringify(body) });
 
   if (isAuthorityFail(result) || isInvalidArguments(result)) {
     alert(result.message);
@@ -58,8 +57,7 @@ const editCroaker = async (data: CroakerEditForm, formAgreementAlready: boolean,
     body.form_agreement = data.form_agreement;
   }
 
-  const res = await doFetch(`/api/croaker/self/edit`, { method: "POST", body: JSON.stringify(body) });
-  const result = res as ResponseTypeEdit;
+  const result = await doFetch<ResponseTypeEdit>(`/api/croaker/self/edit`, { method: "POST", body: JSON.stringify(body) });
 
   if (isAuthorityFail(result) || isRecordNotFound(result) || isInvalidArguments(result)) {
     alert(result.message);

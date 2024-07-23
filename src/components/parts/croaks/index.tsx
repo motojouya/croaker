@@ -27,11 +27,10 @@ type PostText = (
   newInput: PostingText,
 ) => Promise<void>;
 const postText: PostText = async (thread, setInputCroaks, newInput) => {
-  const res = await doFetch(`/api/croak/${thread || "top"}/text`, {
+  const result = await doFetch<ResponseTypeTopText>(`/api/croak/${thread || "top"}/text`, {
     method: "POST",
     body: JSON.stringify({ contents: newInput.contents }),
   });
-  const result = res as ResponseTypeTopText;
 
   if (isAuthorityFail(result) || isFetchAccessFail(result) || isInvalidArguments(result)) {
     setInputCroaks(
@@ -62,8 +61,7 @@ const postFile: PostFile = async (thread, setInputCroaks, newInput) => {
   const formData = new FormData();
   formData.append("file", file, file.name);
 
-  const res = await doFetch(`/api/croak/${thread || "top"}/file`, { method: "POST", body: formData });
-  const result = res as ResponseTypeTopFile;
+  const result = await doFetch<ResponseTypeTopFile>(`/api/croak/${thread || "top"}/file`, { method: "POST", body: formData });
 
   if (
     isAuthorityFail(result) ||

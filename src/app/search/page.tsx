@@ -9,12 +9,8 @@ import { GetCroaks } from "@/components/parts/croaks/loadingCroakList";
 import { FooterLessCroakList } from "@/components/parts/croaks";
 
 type SearchCroaks = (text: string) => GetCroaks;
-const searchCroaks: SearchCroaks = (text) => async (offsetCursor, reverse) => {
-  const res = await doFetch(`/api/croak/search?text=${text}reverse=${reverse}&offset_cursor=${offsetCursor || ""}`, {
-    method: "GET",
-  });
-  return res as ResponseType;
-};
+const searchCroaks: SearchCroaks = (text) => async (offsetCursor, reverse) => 
+  await doFetch<ResponseType>(`/api/croak/search?text=${text}reverse=${reverse}&offset_cursor=${offsetCursor || ""}`, { method: "GET" });
 
 const Search: React.FC<{}> = () => {
   const searchParams = useSearchParams();
