@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import type { ResponseType } from "@/app/api/croaker/self/recent_activities/route";
@@ -31,7 +31,6 @@ const croakSimples = [
 ];
 
 export const OthersActivities: React.FC<{}> = () => {
-
   const [recentActivities, setRecentActivities] = useState<ResponseType | null>(null);
   useEffect(() => {
     (async () => {

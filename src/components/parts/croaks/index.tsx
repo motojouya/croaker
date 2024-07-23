@@ -1,4 +1,4 @@
-import React from 'react'
+import React from "react";
 import { useState } from "react";
 import { isAuthorityFail } from "@/domain/authorization/base";
 import { isFetchAccessFail } from "@/lib/io/linkFail";
@@ -8,12 +8,12 @@ import { isInvalidArguments } from "@/lib/base/validation";
 import { doFetch } from "@/lib/next/utility";
 import type { ResponseType as ResponseTypeTopText } from "@/app/api/croak/top/text/route";
 import type { ResponseType as ResponseTypeTopFile } from "@/app/api/croak/top/file/route";
-import { v4 as uuid } from 'uuid'
+import { v4 as uuid } from "uuid";
 import { ClientCroaker } from "@/domain/authorization/base";
-import { replaceArray, removeArray } from '@/lib/next/utility';
-import { GetCroaks, LoadingCroaks } from '@/components/parts/croaks/loadingCroakList'
-import { PostingText, PostingFile, InputCroak, InputCroaks } from '@/components/parts/croaks/inputCroakList'
-import { CroakInputFooter, RegisterFooter } from '@/components/parts/croaks/footer'
+import { replaceArray, removeArray } from "@/lib/next/utility";
+import { GetCroaks, LoadingCroaks } from "@/components/parts/croaks/loadingCroakList";
+import { PostingText, PostingFile, InputCroak, InputCroaks } from "@/components/parts/croaks/inputCroakList";
+import { CroakInputFooter, RegisterFooter } from "@/components/parts/croaks/footer";
 import type { Croaker } from "@/database/query/croaker/croaker";
 
 type EqualInputCroak = (left: InputCroak, right: InputCroak) => boolean;
@@ -21,36 +21,48 @@ const equalInputCroak: EqualInputCroak = (left, right) => left.key === right.key
 
 type ChangeInputCroaks = (inputCroaks: InputCroak[]) => InputCroak[];
 
-type PostText = (thread: number | null, setInputCroaks: (setter: ChangeInputCroaks) => void, newInput: PostingText) => Promise<void>;
+type PostText = (
+  thread: number | null,
+  setInputCroaks: (setter: ChangeInputCroaks) => void,
+  newInput: PostingText,
+) => Promise<void>;
 const postText: PostText = async (thread, setInputCroaks, newInput) => {
-
-  const res = await doFetch(`/api/croak/${thread || 'top'}/text`, { method: "POST", body: JSON.stringify({ contents: newInput.contents }) });
+  const res = await doFetch(`/api/croak/${thread || "top"}/text`, {
+    method: "POST",
+    body: JSON.stringify({ contents: newInput.contents }),
+  });
   const result = res as ResponseTypeTopText;
 
   if (isAuthorityFail(result) || isFetchAccessFail(result) || isInvalidArguments(result)) {
-    setInputCroaks(replaceArray(equalInputCroak)({
-      ...newInput,
-      type: 'text_error',
-      errorMessage: result.message,
-    }));
-
+    setInputCroaks(
+      replaceArray(equalInputCroak)({
+        ...newInput,
+        type: "text_error",
+        errorMessage: result.message,
+      }),
+    );
   } else {
-    setInputCroaks(replaceArray(equalInputCroak)({
-      key: newInput.key,
-      type: 'posted',
-      croak: result,
-    }));
+    setInputCroaks(
+      replaceArray(equalInputCroak)({
+        key: newInput.key,
+        type: "posted",
+        croak: result,
+      }),
+    );
   }
 };
 
-type PostFile = (thread: number | null, setInputCroaks: (setter: ChangeInputCroaks) => void, newInput: PostingFile) => Promise<void>;
-  const postFile: PostFile = async (thread, setInputCroaks, newInput) => {
-
+type PostFile = (
+  thread: number | null,
+  setInputCroaks: (setter: ChangeInputCroaks) => void,
+  newInput: PostingFile,
+) => Promise<void>;
+const postFile: PostFile = async (thread, setInputCroaks, newInput) => {
   const file = newInput.file;
   const formData = new FormData();
   formData.append("file", file, file.name);
 
-  const res = await doFetch(`/api/croak/${thread || 'top'}/file`, { method: "POST", body: formData });
+  const res = await doFetch(`/api/croak/${thread || "top"}/file`, { method: "POST", body: formData });
   const result = res as ResponseTypeTopFile;
 
   if (
@@ -61,48 +73,47 @@ type PostFile = (thread: number | null, setInputCroaks: (setter: ChangeInputCroa
     isImageCommandFail(result) ||
     isImageInformationFail(result)
   ) {
-    setInputCroaks(replaceArray(equalInputCroak)({
-      ...newInput,
-      type: 'file_error',
-      errorMessage: result.message,
-    }));
-
+    setInputCroaks(
+      replaceArray(equalInputCroak)({
+        ...newInput,
+        type: "file_error",
+        errorMessage: result.message,
+      }),
+    );
   } else {
-    setInputCroaks(replaceArray(equalInputCroak)({
-      key: newInput.key,
-      type: 'posted',
-      croak: result,
-    }));
+    setInputCroaks(
+      replaceArray(equalInputCroak)({
+        key: newInput.key,
+        type: "posted",
+        croak: result,
+      }),
+    );
   }
 };
 
-type UseInputCroaks = (thread: number | null) => [
-  InputCroak[],
-  (text: string) => void,
-  (file: File) => void,
-  (input: InputCroak) => () => void
-];
+type UseInputCroaks = (
+  thread: number | null,
+) => [InputCroak[], (text: string) => void, (file: File) => void, (input: InputCroak) => () => void];
 const useInputCroaks: UseInputCroaks = (thread) => {
-
   const [inputCroaks, setInputCroaks] = useState<InputCroak[]>([]);
 
   const setText = (text: string) => {
     const newInput = {
       key: uuid(),
-      type: 'text',
+      type: "text",
       contents: text,
     } as const;
-    setInputCroaks((oldInputs) => ([...oldInputs, newInput]))
+    setInputCroaks((oldInputs) => [...oldInputs, newInput]);
     postText(thread, setInputCroaks, newInput); // TODO need setTime?
   };
 
   const setFile = (file: File) => {
     const newInput = {
       key: uuid(),
-      type: 'file',
+      type: "file",
       file: file,
     } as const;
-    setInputCroaks((oldInputs) => ([...oldInputs, newInput]))
+    setInputCroaks((oldInputs) => [...oldInputs, newInput]);
     postFile(thread, setInputCroaks, newInput); // TODO need setTime?
   };
 
@@ -118,20 +129,15 @@ export const PostableCroakList: React.FC<{
   getCroaks: GetCroaks;
   croaker: Croaker;
 }> = ({ croaker, thread, getCroaks }) => {
-
   const [inputCroaks, setText, setFile, cancelCroak] = useInputCroaks(thread);
 
   return (
     <>
       <div className="w-full mt-5 flex flex-nowrap flex-col-reverse justify-start items-center">
-        <InputCroaks
-          croaker={croaker}
-          croaks={inputCroaks}
-          cancelCroak={cancelCroak}
-        />
+        <InputCroaks croaker={croaker} croaks={inputCroaks} cancelCroak={cancelCroak} />
         <LoadingCroaks getCroaks={getCroaks} />
       </div>
-      <CroakInputFooter postText={setText} postFile={setFile}/>
+      <CroakInputFooter postText={setText} postFile={setFile} />
     </>
   );
 };
@@ -163,7 +169,7 @@ export const CroakList: React.FC<{
   getCroaks: GetCroaks;
   croaker: ClientCroaker;
 }> = ({ croaker, thread, getCroaks }) => {
-  if (croaker.type === 'anonymous') {
+  if (croaker.type === "anonymous") {
     return (
       <MessageCroakList
         linkUrl={"/auth/signin"}
@@ -172,7 +178,7 @@ export const CroakList: React.FC<{
         getCroaks={getCroaks}
       />
     );
-  } else if (croaker.type === 'logined' || (croaker.type === 'registered' && !croaker.value.form_agreement)) {
+  } else if (croaker.type === "logined" || (croaker.type === "registered" && !croaker.value.form_agreement)) {
     return (
       <MessageCroakList
         linkUrl={"/setting/edit"}
@@ -182,12 +188,6 @@ export const CroakList: React.FC<{
       />
     );
   } else {
-    return (
-      <PostableCroakList
-        croaker={croaker.value}
-        thread={thread}
-        getCroaks={getCroaks}
-      />
-    );
+    return <PostableCroakList croaker={croaker.value} thread={thread} getCroaks={getCroaks} />;
   }
 };

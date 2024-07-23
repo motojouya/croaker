@@ -1,37 +1,37 @@
-import React from 'react'
+import React from "react";
 import { useCallback, useState, useEffect } from "react";
 import { Croak as CroakType } from "@/domain/croak/croak";
 import type { ResponseType } from "@/app/api/croak/top/route";
 import { isFileFail } from "@/lib/io/fileStorageFail";
-import { replaceArray, removeArray } from '@/lib/next/utility';
+import { replaceArray, removeArray } from "@/lib/next/utility";
 import type { Croaker } from "@/database/query/croaker/croaker";
-import { Croak, InputTextCroak, InputFileCroak } from '@/components/parts/croaks/croak'
+import { Croak, InputTextCroak, InputFileCroak } from "@/components/parts/croaks/croak";
 
 export type PostingText = {
   key: string;
-  type: 'text';
+  type: "text";
   contents: string;
 };
-export type PostingFile =  {
+export type PostingFile = {
   key: string;
-  type: 'file';
+  type: "file";
   file: File;
 };
 export type ErrorText = {
   key: string;
-  type: 'text_error';
+  type: "text_error";
   contents: string;
   errorMessage: string;
 };
 export type ErrorFile = {
   key: string;
-  type: 'file_error';
+  type: "file_error";
   file: File;
   errorMessage: string;
 };
 export type PostedCroak = {
   key: string;
-  type: 'posted';
+  type: "posted";
   croak: CroakType;
 };
 
@@ -44,29 +44,29 @@ export const InputCroaks: React.FC<{
 }> = ({ croaker, croaks, cancelCroak }) => (
   <>
     {croaks.map((inputCroak, index) => {
-      if (inputCroak.type === 'text') {
+      if (inputCroak.type === "text") {
         return (
           <InputTextCroak
             key={inputCroak.key}
             croaker={croaker}
             contents={inputCroak.contents}
-            message={'loading...'}
+            message={"loading..."}
             deleteCroak={null}
             scrollHere={index === 0}
           />
         );
-      } else if (inputCroak.type === 'file') {
+      } else if (inputCroak.type === "file") {
         return (
           <InputFileCroak
             key={inputCroak.key}
             croaker={croaker}
             file={inputCroak.file}
-            message={'loading...'}
+            message={"loading..."}
             deleteCroak={null}
             scrollHere={index === 0}
           />
         );
-      } else if (inputCroak.type === 'text_error') {
+      } else if (inputCroak.type === "text_error") {
         return (
           <InputTextCroak
             key={inputCroak.key}
@@ -77,7 +77,7 @@ export const InputCroaks: React.FC<{
             scrollHere={false}
           />
         );
-      } else if (inputCroak.type === 'file_error') {
+      } else if (inputCroak.type === "file_error") {
         return (
           <InputFileCroak
             key={inputCroak.key}

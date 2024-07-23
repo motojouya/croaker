@@ -1,16 +1,18 @@
-'use client'
+"use client";
 
-import { Suspense } from 'react'
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import type { ResponseType } from "@/app/api/croak/search/route";
 import { doFetch } from "@/lib/next/utility";
 import { useMaster } from "@/app/SessionProvider";
-import { GetCroaks } from '@/components/parts/croaks/loadingCroakList'
-import { FooterLessCroakList } from '@/components/parts/croaks'
+import { GetCroaks } from "@/components/parts/croaks/loadingCroakList";
+import { FooterLessCroakList } from "@/components/parts/croaks";
 
 type SearchCroaks = (text: string) => GetCroaks;
 const searchCroaks: SearchCroaks = (text) => async (offsetCursor, reverse) => {
-  const res = await doFetch(`/api/croak/search?text=${text}reverse=${reverse}&offset_cursor=${offsetCursor || ''}`, { method: "GET" });
+  const res = await doFetch(`/api/croak/search?text=${text}reverse=${reverse}&offset_cursor=${offsetCursor || ""}`, {
+    method: "GET",
+  });
   return res as ResponseType;
 };
 
@@ -22,5 +24,9 @@ const Search: React.FC<{}> = () => {
 };
 
 export default function Page() {
-  return (<Suspense><Search /></Suspense>);
+  return (
+    <Suspense>
+      <Search />
+    </Suspense>
+  );
 }

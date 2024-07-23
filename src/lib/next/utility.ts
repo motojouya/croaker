@@ -28,20 +28,26 @@ export const getIdentifier: GetIdentifier = (session) => {
 };
 
 // for useState setter
-export const replaceArray = <T>(equals: (left: T, right: T) => boolean) => (newItem: T) => (oldArray: T[]) => {
-  const index = oldArray.findIndex((oldItem) => equals(oldItem, newItem));
-  if (index === -1) {
-    return oldArray;
-  } else {
-    return oldArray.toSpliced(index, 1, newItem);
-  }
-};
+export const replaceArray =
+  <T>(equals: (left: T, right: T) => boolean) =>
+  (newItem: T) =>
+  (oldArray: T[]) => {
+    const index = oldArray.findIndex((oldItem) => equals(oldItem, newItem));
+    if (index === -1) {
+      return oldArray;
+    } else {
+      return oldArray.toSpliced(index, 1, newItem);
+    }
+  };
 
-export const removeArray = <T>(equals: (left: T, right: T) => boolean) => (removeItem: T) => (oldArray: T[]) => {
-  const index = oldArray.findIndex((oldItem) => equals(oldItem, removeItem));
-  if (index === -1) {
-    return oldArray;
-  } else {
-    return oldArray.toSpliced(index, 1);
-  }
-};
+export const removeArray =
+  <T>(equals: (left: T, right: T) => boolean) =>
+  (removeItem: T) =>
+  (oldArray: T[]) => {
+    const index = oldArray.findIndex((oldItem) => equals(oldItem, removeItem));
+    if (index === -1) {
+      return oldArray;
+    } else {
+      return oldArray.toSpliced(index, 1);
+    }
+  };

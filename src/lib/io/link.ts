@@ -1,5 +1,5 @@
 import { JSDOM } from "jsdom";
-import { FetchAccessFail } from '@/lib/io/linkFail'
+import { FetchAccessFail } from "@/lib/io/linkFail";
 
 export type Ogp = {
   source: string;

@@ -1,6 +1,6 @@
 import { v4 } from "uuid";
 import imageMagick, { Features } from "imagemagick";
-import { ImageInformationFail, ImageCommandFail } from '@/lib/io/imageFail'
+import { ImageInformationFail, ImageCommandFail } from "@/lib/io/imageFail";
 
 type Convert = (filePath: string) => Promise<string | ImageCommandFail | ImageInformationFail>;
 const convert: Convert = async (filePath) => {

@@ -1,20 +1,21 @@
-'use client'
+"use client";
 
 import type { ResponseType } from "@/app/api/croak/[croak_id]/route";
-import { useParams } from 'next/navigation'
+import { useParams } from "next/navigation";
 import { doFetch } from "@/lib/next/utility";
 import { useMaster } from "@/app/SessionProvider";
-import { GetCroaks } from '@/components/parts/croaks/loadingCroakList'
-import { CroakList } from '@/components/parts/croaks'
+import { GetCroaks } from "@/components/parts/croaks/loadingCroakList";
+import { CroakList } from "@/components/parts/croaks";
 
 type GetThreadCroaks = (thread: number) => GetCroaks;
 const getThreadCroaks: GetThreadCroaks = (thread) => async (offsetCursor, reverse) => {
-  const res = await doFetch(`/api/croak/${thread}?reverse=${reverse}&offset_cursor=${offsetCursor || ''}`, { method: "GET" });
+  const res = await doFetch(`/api/croak/${thread}?reverse=${reverse}&offset_cursor=${offsetCursor || ""}`, {
+    method: "GET",
+  });
   return res as ResponseType;
 };
 
 export default function Page() {
-
   const { croak_id } = useParams<{ croak_id: string }>();
   const { croaker } = useMaster();
 

@@ -1,6 +1,6 @@
 import { Storage as GoogleCloudStorage, UploadOptions } from "@google-cloud/storage";
 import { v4 } from "uuid";
-import { FileFail } from '@/lib/io/fileStorageFail'
+import { FileFail } from "@/lib/io/fileStorageFail";
 
 type StorageConfig = {
   storage: GoogleCloudStorage;
