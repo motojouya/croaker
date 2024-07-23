@@ -1,6 +1,6 @@
 import { v4 } from "uuid";
 import imageMagick, { Features } from "imagemagick";
-import { Fail, isFailJSON } from "@/lib/base/fail";
+import { ImageInformationFail, ImageCommandFail } from '@/lib/io/imageFail'
 
 type Convert = (filePath: string) => Promise<string | ImageCommandFail | ImageInformationFail>;
 const convert: Convert = async (filePath) => {
@@ -42,38 +42,6 @@ const convert: Convert = async (filePath) => {
   }
   return resizedFilePath;
 };
-
-export class ImageInformationFail extends Fail {
-  constructor(
-    readonly key: string,
-    readonly value: string,
-    readonly path: string,
-    readonly message: string,
-  ) {
-    super("lib.image.ImageInformationFail");
-  }
-}
-export const isImageInformationFail = isFailJSON(new ImageInformationFail("", "", "", ""));
-
-export class ImageCommandFail extends Fail {
-  constructor(
-    readonly action: string,
-    readonly path: string,
-    readonly exception: Error,
-    readonly message: string,
-  ) {
-    super("lib.image.ImageCommandFail");
-  }
-}
-export const isImageCommandFail = isFailJSON(new ImageCommandFail("", "", new Error(), ""));
-
-// TODO すでに型がありそう
-// type Features = {
-//   format: string; // 'JPEG',
-//   width: number; // 3904,
-//   height: number; // 2622,
-//   depth: number; // 8,
-// };
 
 type GetInformation = (filePath: string) => Promise<Features | ImageCommandFail>;
 const getInformation: GetInformation = async (filePath) => {

@@ -2,7 +2,7 @@ import React from 'react'
 import { useCallback, useState, useEffect } from "react";
 import { Croak as CroakType } from "@/domain/croak/croak";
 import type { ResponseType } from "@/app/api/croak/top/route";
-import { isFileFail } from "@/lib/io/fileStorage";
+import { isFileFail } from "@/lib/io/fileStorageFail";
 import { replaceArray, removeArray } from '@/lib/next/utility';
 import type { Croaker } from "@/database/query/croaker/croaker";
 import { Croak, InputTextCroak, InputFileCroak, MessageItem } from '@/components/parts/croaks/croak'

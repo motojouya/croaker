@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useSearchParams } from "next/navigation";
 import type { ResponseType } from "@/app/api/croak/search/route";
 import { doFetch } from "@/lib/next/utility";
@@ -13,10 +14,13 @@ const searchCroaks: SearchCroaks = (text) => async (offsetCursor, reverse) => {
   return res as ResponseType;
 };
 
-export default function Page() {
-
+const Search: React.FC<{}> = () => {
   const searchParams = useSearchParams();
   const searchParamText = searchParams.get("text") || "";
 
   return <FooterLessCroakList getCroaks={searchCroaks(searchParamText)} />;
+};
+
+export default function Page() {
+  return (<Suspense><Search /></Suspense>);
 }

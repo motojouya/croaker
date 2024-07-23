@@ -1,4 +1,5 @@
-import { Storage, FileFail } from "@/lib/io/fileStorage";
+import { Storage } from "@/lib/io/fileStorage";
+import { FileFail } from "@/lib/io/fileStorageFail";
 import { CroakRecord, LinkRecord, FileRecord } from "@/database/type/croak";
 
 import { InvalidArgumentsFail } from "@/lib/base/validation";

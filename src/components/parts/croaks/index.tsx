@@ -1,13 +1,13 @@
 import React from 'react'
 import { useState } from "react";
 import { isAuthorityFail } from "@/domain/authorization/base";
-import { isFetchAccessFail } from "@/lib/io/link";
+import { isFetchAccessFail } from "@/lib/io/linkFail";
+import { isFileFail } from "@/lib/io/fileStorageFail";
+import { isImageCommandFail, isImageInformationFail } from "@/lib/io/imageFail";
 import { isInvalidArguments } from "@/lib/base/validation";
 import { doFetch } from "@/lib/next/utility";
 import type { ResponseType as ResponseTypeTopText } from "@/app/api/croak/top/text/route";
 import type { ResponseType as ResponseTypeTopFile } from "@/app/api/croak/top/file/route";
-import { isFileFail } from "@/lib/io/fileStorage";
-import { isImageCommandFail, isImageInformationFail } from "@/lib/io/image";
 import { v4 as uuid } from 'uuid'
 import { ClientCroaker } from "@/domain/authorization/base";
 import { replaceArray, removeArray } from '@/lib/next/utility';

@@ -1,6 +1,6 @@
 import { Storage as GoogleCloudStorage, UploadOptions } from "@google-cloud/storage";
 import { v4 } from "uuid";
-import { Fail, isFailJSON } from "@/lib/base/fail";
+import { FileFail } from '@/lib/io/fileStorageFail'
 
 type StorageConfig = {
   storage: GoogleCloudStorage;
@@ -86,15 +86,3 @@ export const getStorage: GetStorage = () => {
     generatePreSignedUrl: generatePreSignedUrl(storage),
   };
 };
-
-export class FileFail extends Fail {
-  constructor(
-    readonly action: string,
-    readonly path: string,
-    readonly exception: Error,
-    readonly message: string,
-  ) {
-    super("lib.fileStorage.FileFail");
-  }
-}
-export const isFileFail = isFailJSON(new FileFail("", "", new Error(), ""));

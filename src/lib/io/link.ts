@@ -1,5 +1,5 @@
 import { JSDOM } from "jsdom";
-import { Fail, isFailJSON } from "@/lib/base/fail";
+import { FetchAccessFail } from '@/lib/io/linkFail'
 
 export type Ogp = {
   source: string;
@@ -82,16 +82,6 @@ const fetchOgp: FetchOgp = async (link) => {
     return new FetchAccessFail(link, `${link}へのアクセスに失敗しました`);
   }
 };
-
-export class FetchAccessFail extends Fail {
-  constructor(
-    readonly link: string,
-    readonly message: string,
-  ) {
-    super("lib.io.linl.FetchAccessFail");
-  }
-}
-export const isFetchAccessFail = isFailJSON(new FetchAccessFail("", ""));
 
 export type Fetcher = {
   fetchOgp: FetchOgp;

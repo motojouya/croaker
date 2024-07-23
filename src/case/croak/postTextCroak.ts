@@ -4,7 +4,8 @@ import { createTextCroak, ReturnCroak } from "@/database/query/command/createTex
 import { InvalidArgumentsFail } from "@/lib/base/validation";
 import { ContextFullFunction, setContext } from "@/lib/base/context";
 import { getLinks } from "@/domain/croak/croak";
-import { getFetcher, Ogp, Fetcher, FetchAccessFail } from "@/lib/io/link";
+import { getFetcher, Ogp, Fetcher } from "@/lib/io/link";
+import { FetchAccessFail } from "@/lib/io/linkFail";
 import { getLocal, Local } from "@/lib/io/local";
 import { Identifier, AuthorityFail, authorizeCroaker } from "@/domain/authorization/base";
 import { getCroakerUser } from "@/database/query/croaker/getCroakerUser";
