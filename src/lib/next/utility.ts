@@ -11,7 +11,7 @@ export async function doFetch<T>(url: FetchParam[0], options: FetchParam[1]) {
       throw new Error("server error!");
     }
 
-    return await res.json() as T;
+    return (await res.json()) as T;
   } catch (e) {
     console.log("network error!");
     throw e;

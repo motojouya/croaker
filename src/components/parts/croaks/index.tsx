@@ -61,7 +61,10 @@ const postFile: PostFile = async (thread, setInputCroaks, newInput) => {
   const formData = new FormData();
   formData.append("file", file, file.name);
 
-  const result = await doFetch<ResponseTypeTopFile>(`/api/croak/${thread || "top"}/file`, { method: "POST", body: formData });
+  const result = await doFetch<ResponseTypeTopFile>(`/api/croak/${thread || "top"}/file`, {
+    method: "POST",
+    body: formData,
+  });
 
   if (
     isAuthorityFail(result) ||

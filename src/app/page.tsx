@@ -7,8 +7,10 @@ import { GetCroaks } from "@/components/parts/croaks/loadingCroakList";
 import { CroakList } from "@/components/parts/croaks";
 
 type GetTopCroaks = () => GetCroaks;
-const getTopCroaks: GetTopCroaks = () => async (offsetCursor, reverse) => 
-  await doFetch<ResponseType>(`/api/croak/top?reverse=${reverse}&offset_cursor=${offsetCursor || ""}`, { method: "GET" });
+const getTopCroaks: GetTopCroaks = () => async (offsetCursor, reverse) =>
+  await doFetch<ResponseType>(`/api/croak/top?reverse=${reverse}&offset_cursor=${offsetCursor || ""}`, {
+    method: "GET",
+  });
 
 export default function Page() {
   // TODO hashを取得して、hashの位置を初期状態にする

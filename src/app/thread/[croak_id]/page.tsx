@@ -8,7 +8,7 @@ import { GetCroaks } from "@/components/parts/croaks/loadingCroakList";
 import { CroakList } from "@/components/parts/croaks";
 
 type GetThreadCroaks = (thread: number) => GetCroaks;
-const getThreadCroaks: GetThreadCroaks = (thread) => async (offsetCursor, reverse) => 
+const getThreadCroaks: GetThreadCroaks = (thread) => async (offsetCursor, reverse) =>
   await doFetch<ResponseType>(`/api/croak/${thread}?reverse=${reverse}&offset_cursor=${offsetCursor || ""}`, {
     method: "GET",
   });
