@@ -1,5 +1,5 @@
 import React from "react";
-import { lineCount } from '@/domain/text'
+import { lineCount } from "@/domain/text";
 
 export const MultiLineText: React.FC<{
   text: string;

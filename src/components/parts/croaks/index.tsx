@@ -125,10 +125,7 @@ const useInputCroaks: UseInputCroaks = (thread) => {
   return [inputCroaks, setText, setFile, cancelCroak];
 };
 
-const Spacing: React.FC<{}> = () => (
-  <div className="w-full max-w-5xl h-12">
-  </div>
-);
+const Spacing: React.FC<{}> = () => <div className="w-full max-w-5xl h-12"></div>;
 
 export const PostableCroakList: React.FC<{
   thread: number | null;

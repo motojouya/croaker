@@ -76,11 +76,7 @@ const DivRef: React.FC<{
       </div>
     );
   } else {
-    return (
-      <div className="w-full max-w-5xl">
-        {children}
-      </div>
-    );
+    return <div className="w-full max-w-5xl">{children}</div>;
   }
 };
 
@@ -122,7 +118,7 @@ export const Croak: React.FC<{
             onClick={copy}
             className="text-xs h-4 font-normal underline decoration-blue-500"
           >
-            <p>{copied ? 'Copied' : 'CopyURL'}</p>
+            <p>{copied ? "Copied" : "CopyURL"}</p>
           </Button>
         </div>
         <div className="grow-0 shrink-0 mr-1 w-10 text-center">
