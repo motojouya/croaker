@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import Link from "next/link";
 import { useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -30,6 +30,13 @@ export const CroakInputFooter: React.FC<{
   postFile: (file: File) => void;
 }> = ({ postText, postFile }) => {
   const [croakText, rows, setCroakText, clearCroakText] = useMultiLineText();
+  const ref = useRef<HTMLInputElement>(null);
+
+  const onClickButton = () => {
+    if (ref.current) {
+      ref.current.click();
+    }
+  };
 
   const submitCroak = () => {
     postText(croakText);
@@ -39,20 +46,25 @@ export const CroakInputFooter: React.FC<{
   const onChangeFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files[0]) {
-      if (confirm(`${files[0]}をUploadしますか？`)) {
+      if (confirm(`${files[0].name}をUploadしますか？`)) {
         postFile(files[0]);
       }
     }
   };
 
-  // TODO input file装飾
-  // https://qiita.com/shuheix/items/f618e9d6cdd063e10b72
   return (
     <footer className="fixed bottom-0 left-0 w-screen min-h-12 flex flex-nowrap justify-center items-center bg-white border-t">
       <div className="flex flex-nowrap justify-between items-center w-full max-w-5xl">
         <div className="grow-0 shrink-0 my-1 mr-0 ml-1">
-          <input name="file" type="file" accept="image/*" onChange={onChangeFile} />
-          <Button type="button" variant="link" size="icon" onClick={() => console.log("TODO file!")}>
+          <input
+            ref={ref}
+            name="file"
+            type="file"
+            accept="image/*"
+            onChange={onChangeFile}
+            hidden
+          />
+          <Button type="button" variant="link" size="icon" onClick={onClickButton}>
             <ImageIcon />
           </Button>
         </div>

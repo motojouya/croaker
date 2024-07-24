@@ -22,6 +22,18 @@ const posts = Array(20)
     links: [],
     files: [],
   }));
+posts.splice(1, 1, {
+  croak_id: 1,
+  croaker_id: "own6r",
+  contents: "test1\ntest0test0test0test0test0test0test0test0test0111111111test01\nテストなんですねん",
+  thread: null,
+  posted_date: new Date(),
+  deleted_date: null,
+  has_thread: false,
+  croaker_name: "test_name",
+  links: [],
+  files: [],
+});
 
 type EqualCroak = (left: CroakType, right: CroakType) => boolean;
 const equalCroak: EqualCroak = (left, right) => left.croak_id === right.croak_id;

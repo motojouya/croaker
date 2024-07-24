@@ -65,6 +65,25 @@ const deleteCroakFetch: DeleteCroakFetch = async (croak_id, callback) => {
   callback();
 };
 
+const DivRef: React.FC<{
+  divRef: RefObject<HTMLDivElement> | null;
+  children: React.ReactNode;
+}> = ({ divRef, children }) => {
+  if (divRef) {
+    return (
+      <div ref={divRef} className="w-full max-w-5xl">
+        {children}
+      </div>
+    );
+  } else {
+    return (
+      <div className="w-full max-w-5xl">
+        {children}
+      </div>
+    );
+  }
+};
+
 export const Croak: React.FC<{
   croak: CroakType;
   deleteCroak: () => void;
@@ -84,57 +103,73 @@ export const Croak: React.FC<{
   useEffect(() => effectFocusScroll(scrollHere, ref), [scrollHere, ref]);
 
   return (
-    <div>
-      <div>
-        {loadSurround && <div ref={ref}>{`${croak.croaker_name}@${croak.croaker_id}`}</div>}
-        {!loadSurround && <div>{`${croak.croaker_name}@${croak.croaker_id}`}</div>}
-        <div>{format(croak.posted_date, "yyyy/MM/dd HH:mm")}</div>
-        <div>
+    <DivRef divRef={loadSurround ? ref : null}>
+      <div className="w-full max-w-5xl flex flex-nowrap justify-start items-center h-4 text-xs mx-1">
+        <div className="grow shrink flex flex-nowrap justify-start items-center mr-1">
+          <div>{`${croak.croaker_name}@${croak.croaker_id}`}</div>
+          <div className="ml-1">{format(croak.posted_date, "yyyy/MM/dd HH:mm")}</div>
+        </div>
+        <div className="grow-0 shrink-0 mr-1 w-10 text-center underline">
           <Link href={`/thread/${croak.croak_id}`}>
             <p>Thread</p>
           </Link>
         </div>
-        <div>
-          <Button type="button" variant="link" size="icon" onClick={copy}>
-            {copied && <p>Copied!</p>}
-            {!copied && <p>Copy URL</p>}
+        <div className="grow-0 shrink-0 mr-1 w-14 text-center">
+          <Button
+            type="button"
+            variant="link"
+            size="icon"
+            onClick={copy}
+            className="text-xs h-4 font-normal underline decoration-blue-500"
+          >
+            {copied && <p>Copied</p>}
+            {!copied && <p>CopyURL</p>}
           </Button>
         </div>
-        <div>
+        <div className="grow-0 shrink-0 mr-1 w-10 text-center">
           <Button
             type="button"
             variant="link"
             size="icon"
             onClick={() => deleteCroakFetch(croak.croak_id, deleteCroak)}
+            className="text-xs h-4 font-normal underline decoration-red-500"
           >
             <p>Delete</p>
           </Button>
         </div>
       </div>
-      <div>
-        <MultiLineText text={croak.contents || ""} />
+      <div className="w-full max-w-5xl mx-1 mb-3">
+        {croak.contents && (
+          <div className="max-w-fit text-wrap">
+            <MultiLineText text={croak.contents || ""} />
+          </div>
+        )}
+        {croak.files.length > 0 && (
+          <div>
+            {croak.files.map((file, index) => {
+              if (file.content_type.startsWith("image")) {
+                return <Image key={`croak-${croak.croak_id}-file-${index}`} src={file.url} alt={file.name} />;
+              } else {
+                return file.name;
+              }
+            })}
+          </div>
+        )}
+        {croak.links.length > 0 && (
+          <div>
+            {croak.links.map((link, index) => (
+              <React.Fragment key={`croak-${croak.croak_id}-link-${index}`}>
+                <Link href={link.url || ""}>
+                  <p>{link.title || ""}</p>
+                  {link.image && <Image src={link.image} alt={link.title || ""} />}
+                  <MultiLineText text={link.description || ""} />
+                </Link>
+              </React.Fragment>
+            ))}
+          </div>
+        )}
       </div>
-      <div>
-        {croak.files.map((file, index) => {
-          if (file.content_type.startsWith("image")) {
-            return <Image key={`croak-${croak.croak_id}-file-${index}`} src={file.url} alt={file.name} />;
-          } else {
-            return file.name;
-          }
-        })}
-      </div>
-      <div>
-        {croak.links.map((link, index) => (
-          <React.Fragment key={`croak-${croak.croak_id}-link-${index}`}>
-            <Link href={link.url || ""}>
-              <p>{link.title || ""}</p>
-              {link.image && <Image src={link.image} alt={link.title || ""} />}
-              <MultiLineText text={link.description || ""} />
-            </Link>
-          </React.Fragment>
-        ))}
-      </div>
-    </div>
+    </DivRef>
   );
 };
 
