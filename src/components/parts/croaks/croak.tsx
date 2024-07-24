@@ -106,7 +106,7 @@ export const Croak: React.FC<{
     <DivRef divRef={loadSurround ? ref : null}>
       <div className="w-full max-w-5xl flex flex-nowrap justify-start items-center h-4 text-xs mx-1">
         <div className="grow shrink flex flex-nowrap justify-start items-center mr-1">
-          <div>{`${croak.croaker_name}@${croak.croaker_id}`}</div>
+          <div className="font-bold">{`${croak.croaker_name}@${croak.croaker_id}`}</div>
           <div className="ml-1">{format(croak.posted_date, "yyyy/MM/dd HH:mm")}</div>
         </div>
         <div className="grow-0 shrink-0 mr-1 w-10 text-center underline">
@@ -122,8 +122,7 @@ export const Croak: React.FC<{
             onClick={copy}
             className="text-xs h-4 font-normal underline decoration-blue-500"
           >
-            {copied && <p>Copied</p>}
-            {!copied && <p>CopyURL</p>}
+            <p>{copied ? 'Copied' : 'CopyURL'}</p>
           </Button>
         </div>
         <div className="grow-0 shrink-0 mr-1 w-10 text-center">
@@ -140,7 +139,7 @@ export const Croak: React.FC<{
       </div>
       <div className="w-full max-w-5xl mx-1 mb-3">
         {croak.contents && (
-          <div className="max-w-fit text-wrap">
+          <div className="max-w-fit break-words">
             <MultiLineText text={croak.contents || ""} />
           </div>
         )}
@@ -193,21 +192,29 @@ export const InputFileCroak: React.FC<{
   useEffect(() => effectFocusScroll(scrollHere, ref), [scrollHere, ref]);
 
   return (
-    <div>
-      <div>
-        {scrollHere && <div ref={ref}>{`${croaker.croaker_name}@${croaker.croaker_id}`}</div>}
-        {!scrollHere && <div>{`${croaker.croaker_name}@${croaker.croaker_id}`}</div>}
-        <div>{message}</div>
-        <div>
-          {deleteCroak && (
-            <Button type="button" variant="link" size="icon" onClick={deleteCroak}>
+    <DivRef divRef={scrollHere ? ref : null}>
+      <div className="w-full max-w-5xl flex flex-nowrap justify-start items-center h-4 text-xs mx-1">
+        <div className="grow shrink flex flex-nowrap justify-start items-center mr-1">
+          <div className="font-bold">{`${croaker.croaker_name}@${croaker.croaker_id}`}</div>
+        </div>
+        {deleteCroak && (
+          <div className="grow-0 shrink-0 mr-1 w-10 text-center">
+            <Button
+              type="button"
+              variant="link"
+              size="icon"
+              onClick={deleteCroak}
+              className="text-xs h-4 font-normal underline decoration-red-500"
+            >
               <p>Delete</p>
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
-      <div>{fileSrc && <Image src={fileSrc} alt={file.name} />}</div>
-    </div>
+      <div className="w-full max-w-5xl mx-1 mb-3">
+        <div>{fileSrc && <Image src={fileSrc} alt={file.name} />}</div>
+      </div>
+    </DivRef>
   );
 };
 
@@ -222,22 +229,30 @@ export const InputTextCroak: React.FC<{
   useEffect(() => effectFocusScroll(scrollHere, ref), [scrollHere, ref]);
 
   return (
-    <div>
-      <div>
-        {scrollHere && <div ref={ref}>{`${croaker.croaker_name}@${croaker.croaker_id}`}</div>}
-        {!scrollHere && <div>{`${croaker.croaker_name}@${croaker.croaker_id}`}</div>}
-        <div>{message}</div>
-        <div>
-          {deleteCroak && (
-            <Button type="button" variant="link" size="icon" onClick={deleteCroak}>
+    <DivRef divRef={scrollHere ? ref : null}>
+      <div className="w-full max-w-5xl flex flex-nowrap justify-start items-center h-4 text-xs mx-1">
+        <div className="grow shrink flex flex-nowrap justify-start items-center mr-1">
+          <div className="font-bold">{`${croaker.croaker_name}@${croaker.croaker_id}`}</div>
+        </div>
+        {deleteCroak && (
+          <div className="grow-0 shrink-0 mr-1 w-10 text-center">
+            <Button
+              type="button"
+              variant="link"
+              size="icon"
+              onClick={deleteCroak}
+              className="text-xs h-4 font-normal underline decoration-red-500"
+            >
               <p>Delete</p>
             </Button>
-          )}
+          </div>
+        )}
+      </div>
+      <div className="w-full max-w-5xl mx-1 mb-3">
+        <div className="max-w-fit break-words">
+          <MultiLineText text={contents || ""} />
         </div>
       </div>
-      <div>
-        <MultiLineText text={contents} />
-      </div>
-    </div>
+    </DivRef>
   );
 };

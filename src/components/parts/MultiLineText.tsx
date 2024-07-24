@@ -1,4 +1,5 @@
 import React from "react";
+import { lineCount } from '@/domain/text'
 
 export const MultiLineText: React.FC<{
   text: string;
@@ -19,7 +20,7 @@ export const useMultiLineText: UseMultiLineText = () => {
   const [rows, setRows] = React.useState(1);
 
   const set = (text: string) => {
-    setRows(text.split("\n").length);
+    setRows(lineCount(text.split("\n")) || 1);
     setText(text);
   };
 

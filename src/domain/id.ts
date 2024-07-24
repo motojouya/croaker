@@ -27,7 +27,7 @@ const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 export type GetCroakerId = (random: Random) => string;
 export const getCroakerId: GetCroakerId = (random) => {
-  const head = ALPHABET[Math.floor(random())];
+  const head = ALPHABET[Math.floor(random() * ALPHABET.length)];
 
   const middle = Array.from(Array(3))
     .map(() => {
@@ -36,7 +36,7 @@ export const getCroakerId: GetCroakerId = (random) => {
     })
     .join("");
 
-  const tail = ALPHABET[Math.floor(random())];
+  const tail = ALPHABET[Math.floor(random() * ALPHABET.length)];
 
   return head + middle + tail;
 };

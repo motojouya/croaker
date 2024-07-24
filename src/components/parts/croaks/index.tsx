@@ -104,7 +104,7 @@ const useInputCroaks: UseInputCroaks = (thread) => {
       type: "text",
       contents: text,
     } as const;
-    setInputCroaks((oldInputs) => [...oldInputs, newInput]);
+    setInputCroaks((oldInputs) => [newInput, ...oldInputs]);
     postText(thread, setInputCroaks, newInput); // TODO need setTime?
   };
 
@@ -114,7 +114,7 @@ const useInputCroaks: UseInputCroaks = (thread) => {
       type: "file",
       file: file,
     } as const;
-    setInputCroaks((oldInputs) => [...oldInputs, newInput]);
+    setInputCroaks((oldInputs) => [newInput, ...oldInputs]);
     postFile(thread, setInputCroaks, newInput); // TODO need setTime?
   };
 
@@ -124,6 +124,11 @@ const useInputCroaks: UseInputCroaks = (thread) => {
 
   return [inputCroaks, setText, setFile, cancelCroak];
 };
+
+const Spacing: React.FC<{}> = () => (
+  <div className="w-full max-w-5xl h-12">
+  </div>
+);
 
 export const PostableCroakList: React.FC<{
   thread: number | null;
@@ -135,8 +140,10 @@ export const PostableCroakList: React.FC<{
   return (
     <>
       <div className="w-full mt-5 flex flex-nowrap flex-col-reverse justify-start items-center max-w-5xl">
+        <Spacing />
         <InputCroaks croaker={croaker} croaks={inputCroaks} cancelCroak={cancelCroak} />
         <LoadingCroaks getCroaks={getCroaks} />
+        <Spacing />
       </div>
       <CroakInputFooter postText={setText} postFile={setFile} />
     </>
@@ -147,6 +154,7 @@ export const FooterLessCroakList: React.FC<{ getCroaks: GetCroaks }> = ({ getCro
   <>
     <div className="w-full mt-5 flex flex-nowrap flex-col-reverse justify-start items-center max-w-5xl">
       <LoadingCroaks getCroaks={getCroaks} />
+      <Spacing />
     </div>
   </>
 );
@@ -159,7 +167,9 @@ export const MessageCroakList: React.FC<{
 }> = ({ linkUrl, linkName, description, getCroaks }) => (
   <>
     <div className="w-full mt-5 flex flex-nowrap flex-col-reverse justify-start items-center max-w-5xl">
+      <Spacing />
       <LoadingCroaks getCroaks={getCroaks} />
+      <Spacing />
     </div>
     <RegisterFooter linkUrl={linkUrl} linkName={linkName} description={description} />
   </>

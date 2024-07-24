@@ -1,6 +1,17 @@
 export type TrimText = (text: string) => string[];
 export const trimText: TrimText = (text) => text.split("\n").map((line) => line.trimEnd());
 
+export type LineCount = (lines: string[]) => number;
+export const lineCount: LineCount = (lines) => {
+  if (lines.length === 0) {
+    return 0;
+  }
+
+  const lineCount = lines.map((line) => Math.ceil([...line].length / 60)).reduce((a, i) => a + i, 0);
+
+  return lineCount + lines.length - 1;
+};
+
 export type CharCount = (lines: string[]) => number;
 export const charCount: CharCount = (lines) => {
   if (lines.length === 0) {
