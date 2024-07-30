@@ -23,7 +23,7 @@ const createStorage: CreateStorage = () => {
   // });
   let config = undefined;
   if (process.env.NODE_ENV !== "production") {
-    config = { apiEndpoint: "http://localhost:4443" };
+    config = { apiEndpoint: "http://gcs:4443" };
   }
 
   const googleCloudStorage = new GoogleCloudStorage(config);

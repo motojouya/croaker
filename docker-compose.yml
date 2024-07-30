@@ -3,10 +3,10 @@ version: '3.1'
 services:
   gcs:
     image: fsouza/fake-gcs-server
-    ports:
-      - 4443:4443
+    # ports:
+    #   - 4443:4443
     volumes:
-      - ./storage/gcs:/data/croaker
+      - "./storage/gcs:/data/croaker"
     command: -scheme http -public-host ${URL:-localhost}:4443
   app:
     build:
@@ -35,3 +35,5 @@ services:
       GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET}"
     ports:
       - "3000:3000"
+    depends_on:
+      - gcs
