@@ -12,15 +12,21 @@ let storage: StorageConfig;
 
 type CreateStorage = () => StorageConfig;
 const createStorage: CreateStorage = () => {
-  const googleCloudStorage = new GoogleCloudStorage({
-    projectId: process.env.GOOGLE_CLOUD_PROJECT,
-    keyFilename: process.env.GOOGLE_CLOUD_KEY,
-    credentials: {
-      // TODO
-      client_email: "",
-      private_key: "",
-    },
-  });
+  // const googleCloudStorage = new GoogleCloudStorage({
+  //   projectId: process.env.GOOGLE_CLOUD_PROJECT,
+  //   keyFilename: process.env.GOOGLE_CLOUD_KEY,
+  //   credentials: {
+  //     // TODO
+  //     client_email: "",
+  //     private_key: "",
+  //   },
+  // });
+  let config = undefined;
+  if (process.env.NODE_ENV !== "production") {
+    config = { apiEndpoint: "http://localhost:4443" };
+  }
+
+  const googleCloudStorage = new GoogleCloudStorage(config);
   return {
     storage: googleCloudStorage,
     bucketName: process.env.STORAGE_BUCKET || "",

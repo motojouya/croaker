@@ -22,3 +22,9 @@ https://cloud.google.com/storage/docs/uploading-objects?hl=ja#storage-upload-obj
 https://developers.google.com/speed/docs/insights/OptimizeImages?hl=ja  
 https://github.com/rsms/node-imagemagick  
 
+https://zenn.dev/yussak/articles/39715e18daad49  
+https://zenn.dev/hayato94087/articles/91179fbbe1cad4  
+https://qiita.com/NOGU626/items/1af991b1757988b6cee6  
+https://y-ohgi.blog/entry/2023/01/26/GCS_%E3%82%92%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%AB%E3%81%AEdocker-compose%E3%81%A7%E3%82%A8%E3%83%9F%E3%83%A5%E3%83%AC%E3%83%BC%E3%83%88%E3%81%99%E3%82%8B  
+https://blog.cateiru.com/entry/2022/07/14/180000  
+
