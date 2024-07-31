@@ -29,7 +29,7 @@ export function parseKeyValue<S extends z.SomeZodObject, E extends Fail>(
 
     data = {
       ...data,
-      key: val,
+      [key]: val,
     };
   }
 

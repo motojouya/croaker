@@ -83,7 +83,7 @@ export type Storage = {
 
 export type GetStorage = () => Storage;
 export const getStorage: GetStorage = () => {
-  if (storage) {
+  if (!storage) {
     storage = createStorage();
   }
 

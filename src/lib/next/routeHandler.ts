@@ -93,7 +93,7 @@ export function getQueryHandler<P extends z.SomeZodObject, Q extends z.SomeZodOb
     }
 
     const searchParams = req.nextUrl.searchParams;
-    const queryArgs = parseKeyValue(querySchema, searchParams.get);
+    const queryArgs = parseKeyValue(querySchema, (key) => searchParams.get(key));
     if (queryArgs instanceof ZodSchemaFail) {
       return NextResponse.json(queryArgs.toJSON());
     }
