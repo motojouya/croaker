@@ -3,7 +3,7 @@ import GitHubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 // import CredentialsProvider from "next-auth/providers/credentials";
 import { KyselyAdapter } from "@auth/kysely-adapter";
-import { getKysely } from "@/database/base";
+import { getKysely } from "@/database/kysely";
 
 declare module "next-auth" {
   interface Session {

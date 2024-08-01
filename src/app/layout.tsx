@@ -55,9 +55,9 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // const session = await auth();
-  // const identifier = getIdentifier(session);
-  // const master = await bindContext(getMaster)(identifier)();
+  const session = await auth();
+  const identifier = getIdentifier(session);
+  const master = await bindContext(getMaster)(identifier)();
 
   return (
     <html lang="en" suppressHydrationWarning>

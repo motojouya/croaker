@@ -16,7 +16,7 @@ export default function Page() {
     <>
       {croaker.type === "anonymous" && (
         <div className="w-full mt-5 flex flex-nowrap justify-center items-center">
-          <Link href={"/auth/signin"} className={buttonVariants({ variant: "procedure" })}>
+          <Link href={"/api/auth/signin"} className={buttonVariants({ variant: "procedure" })}>
             <p>Login</p>
           </Link>
         </div>

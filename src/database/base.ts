@@ -1,24 +1,11 @@
-import Sqlite from "better-sqlite3";
-import { Kysely, SqliteDialect, Transaction, sql, expressionBuilder } from "kysely";
+import { Kysely } from "kysely";
 import { Database } from "@/database/type";
-import { KyselyAuth } from "@auth/kysely-adapter";
 import { Fail } from "@/lib/base/fail";
+import { getKysely } from "@/database/kysely";
 
 export type GetQuery = Record<string, (db: Kysely<Database>) => unknown>;
 
 let db: Kysely<Database>;
-
-export type GetKysely = () => Kysely<Database>;
-export const getKysely: GetKysely = () => {
-  if (!db) {
-    db = new KyselyAuth<Database>({
-      dialect: new SqliteDialect({
-        database: new Sqlite(process.env.SQLITE_FILE),
-      }),
-    });
-  }
-  return db;
-};
 
 export type Query<Q extends GetQuery> = {
   [K in keyof Q]: Q[K] extends (db: Kysely<Database>) => infer F ? F : never;
@@ -38,7 +25,9 @@ export function getDatabase<Q extends GetQuery, T extends GetQuery>(
   queries: Q | null,
   transactionQueries: T | null,
 ): DB<Q, T> {
-  const db = getKysely();
+  if (!db) {
+    db = getKysely();
+  }
   let dbAccess = {};
 
   if (queries) {

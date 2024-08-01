@@ -180,7 +180,7 @@ export const CroakList: React.FC<{
   if (croaker.type === "anonymous") {
     return (
       <MessageCroakList
-        linkUrl={"/auth/signin"}
+        linkUrl={"/api/auth/signin"}
         linkName={"Login"}
         description={"You need Login and Register your Information"}
         getCroaks={getCroaks}
