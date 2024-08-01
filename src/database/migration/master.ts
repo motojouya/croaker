@@ -10,7 +10,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
     .addColumn("active", "boolean", (col) => col.notNull())
     .addColumn("account_create_available", "boolean", (col) => col.notNull())
     .addColumn("default_role_id", "integer", (col) => col.notNull())
-    .addColumn("about_contents", "text", (col) => col.primaryKey())
+    .addColumn("about_contents", "text", (col) => col.notNull())
     .execute();
 
   await db.schema

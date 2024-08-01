@@ -1,10 +1,12 @@
 import { Kysely, sql } from "kysely";
 import { Database } from "@/database/type";
 
+// printf('{%s-%s-%s-%s-%s}', lower(hex(randomblob(4))), lower(hex(randomblob(2))), lower(hex(randomblob(2))), lower(hex(randomblob(2))), lower(hex(randomblob(6))))
+
 export async function up(db: Kysely<Database>): Promise<void> {
   await db.schema
     .createTable("User")
-    .addColumn("id", "uuid", (col) => col.primaryKey().defaultTo(sql`gen_random_uuid()`))
+    .addColumn("id", "text", (col) => col.primaryKey().defaultTo(sql`(printf('{%s-%s-%s-%s-%s}', lower(hex(randomblob(4))), lower(hex(randomblob(2))), lower(hex(randomblob(2))), lower(hex(randomblob(2))), lower(hex(randomblob(6)))))`))
     .addColumn("name", "text")
     .addColumn("email", "text", (col) => col.unique().notNull())
     .addColumn("emailVerified", "timestamptz")
@@ -13,8 +15,8 @@ export async function up(db: Kysely<Database>): Promise<void> {
 
   await db.schema
     .createTable("Account")
-    .addColumn("id", "uuid", (col) => col.primaryKey().defaultTo(sql`gen_random_uuid()`))
-    .addColumn("userId", "uuid", (col) => col.references("User.id").onDelete("cascade").notNull())
+    .addColumn("id", "text", (col) => col.primaryKey().defaultTo(sql`(printf('{%s-%s-%s-%s-%s}', lower(hex(randomblob(4))), lower(hex(randomblob(2))), lower(hex(randomblob(2))), lower(hex(randomblob(2))), lower(hex(randomblob(6)))))`))
+    .addColumn("userId", "text", (col) => col.references("User.id").onDelete("cascade").notNull())
     .addColumn("type", "text", (col) => col.notNull())
     .addColumn("provider", "text", (col) => col.notNull())
     .addColumn("providerAccountId", "text", (col) => col.notNull())
@@ -29,8 +31,8 @@ export async function up(db: Kysely<Database>): Promise<void> {
 
   await db.schema
     .createTable("Session")
-    .addColumn("id", "uuid", (col) => col.primaryKey().defaultTo(sql`gen_random_uuid()`))
-    .addColumn("userId", "uuid", (col) => col.references("User.id").onDelete("cascade").notNull())
+    .addColumn("id", "text", (col) => col.primaryKey().defaultTo(sql`(printf('{%s-%s-%s-%s-%s}', lower(hex(randomblob(4))), lower(hex(randomblob(2))), lower(hex(randomblob(2))), lower(hex(randomblob(2))), lower(hex(randomblob(6)))))`))
+    .addColumn("userId", "text", (col) => col.references("User.id").onDelete("cascade").notNull())
     .addColumn("sessionToken", "text", (col) => col.notNull().unique())
     .addColumn("expires", "timestamptz", (col) => col.notNull())
     .execute();

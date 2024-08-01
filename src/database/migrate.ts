@@ -2,15 +2,15 @@ import * as path from 'path'
 import { promises as fs } from 'fs'
 import Sqlite from "better-sqlite3";
 import { Kysely, SqliteDialect, Migrator, FileMigrationProvider } from "kysely";
-import { Database } from "@/database/type";
-// import { getKysely } from '@/database/base';
+// import { Database } from "@/database/type";
 // TODO __dirnameはesmで使えないため。tsからcompileする際にどうするかは検討
 // というかbuildしてdeploy時に使うほうがいいのでbuildしてesmかcommonjsになり、その後の動きが大事か
-const __dirname = import.meta.dirname;
+// const __dirname = import.meta.dirname;
 
 async function migrateToLatest() {
-  // const db = getKysely();
-  const db = new Kysely<Database>({
+  // const db = new Kysely<Database>({
+  // FIXME baseのgetKyselyで共通化したいが、余計な依存ファイルが増えるので、別ファイルに出さないといけない
+  const db = new Kysely({
     dialect: new SqliteDialect({
       database: new Sqlite(process.env.SQLITE_FILE),
     }),
@@ -46,4 +46,4 @@ async function migrateToLatest() {
   await db.destroy()
 }
 
-migrateToLatest()
+migrateToLatest();
