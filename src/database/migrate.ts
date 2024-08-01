@@ -1,11 +1,49 @@
 import * as path from 'path'
 import { promises as fs } from 'fs'
 import Sqlite from "better-sqlite3";
-import { Kysely, SqliteDialect, Migrator, FileMigrationProvider } from "kysely";
+import {
+  Kysely,
+  SqliteDialect,
+  Migrator,
+  FileMigrationProvider,
+  KyselyPlugin,
+  OperationNodeTransformer,
+  ValueNode,
+  PluginTransformResultArgs,
+  PluginTransformQueryArgs,
+  RootOperationNode,
+  QueryResult,
+  UnknownRow,
+} from "kysely";
 // import { Database } from "@/database/type";
 // TODO __dirnameはesmで使えないため。tsからcompileする際にどうするかは検討
 // というかbuildしてdeploy時に使うほうがいいのでbuildしてesmかcommonjsになり、その後の動きが大事か
 // const __dirname = import.meta.dirname;
+
+export class SqliteBooleanPlugin implements KyselyPlugin {
+  readonly transformer = new SqliteBooleanTransformer()
+
+  transformQuery(args: PluginTransformQueryArgs): RootOperationNode {
+    console.log('transformQuery');
+    return this.transformer.transformNode(args.node)
+  }
+
+  transformResult(
+    args: PluginTransformResultArgs
+  ): Promise<QueryResult<UnknownRow>> {
+    return Promise.resolve(args.result)
+  }
+}
+
+class SqliteBooleanTransformer extends OperationNodeTransformer {
+  transformValue(node: ValueNode): ValueNode {
+    console.log('transformValue', node);
+    return {
+      ...super.transformValue(node),
+      value: typeof node.value === 'boolean' ? (node.value ? 1 : 0) : node.value
+    }
+  }
+}
 
 async function migrateToLatest() {
   // const db = new Kysely<Database>({
@@ -14,6 +52,7 @@ async function migrateToLatest() {
     dialect: new SqliteDialect({
       database: new Sqlite(process.env.SQLITE_FILE),
     }),
+    plugins: [new SqliteBooleanPlugin()],
   });
 
   const migrator = new Migrator({
