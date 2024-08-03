@@ -10,9 +10,9 @@ export async function up(db: Kysely<Database>): Promise<void> {
     .addColumn("croaker_id", "text", (col) => col.unique())
     .addColumn("name", "text", (col) => col.notNull())
     .addColumn("description", "text")
-    .addColumn("status", "text", (col) => col.notNull()) // active or banned
+    .addColumn("status", "text", (col) => col.notNull().check(sql`(status in ('ACTIVE', 'BANNED'))`))
     .addColumn("role_id", "integer", (col) => col.notNull().references("role.role_id"))
-    .addColumn("form_agreement", "boolean", (col) => col.notNull())
+    .addColumn("form_agreement", "timestamp")
     .addColumn("created_date", "timestamp", (col) => col.defaultTo(sql`(datetime('now', 'localtime'))`).notNull())
     .addColumn("updated_date", "timestamp", (col) => col.defaultTo(sql`(datetime('now', 'localtime'))`).notNull())
     .execute();

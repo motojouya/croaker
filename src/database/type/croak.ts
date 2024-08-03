@@ -1,16 +1,17 @@
 import { GeneratedAlways, Generated, Insertable, Selectable, Updateable } from "kysely";
 
-export const CROAKER_STATUS_ACTIVE = "ACTIVE";
-export const CROAKER_STATUS_BANNED = "BANNED";
+export const CROAKER_STATUS_ACTIVE = "ACTIVE" as const;
+export const CROAKER_STATUS_BANNED = "BANNED" as const;
+export type CroakerStatus = typeof CROAKER_STATUS_ACTIVE | typeof CROAKER_STATUS_BANNED;
 
 export interface CroakerTable {
   user_id: string;
   croaker_id: string;
   name: string;
   description: string;
-  status: string;
+  status: CroakerStatus;
   role_id: number;
-  form_agreement: boolean;
+  form_agreement: Date | null;
   created_date: Generated<Date>;
   updated_date: Generated<Date>;
 }

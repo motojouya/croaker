@@ -30,8 +30,8 @@ export async function up(db: Kysely<Database>): Promise<void> {
   await db.schema
     .createTable("configuration")
     .addColumn("title", "text", (col) => col.notNull()) // Croaker
-    .addColumn("active", "boolean", (col) => col.notNull())
-    .addColumn("account_create_available", "boolean", (col) => col.notNull())
+    .addColumn("active", "integer", (col) => col.notNull().check(sql`(active in (0, 1))`))
+    .addColumn("account_create_available", "integer", (col) => col.notNull().check(sql`(account_create_available in (0, 1))`))
     .addColumn("default_role_id", "integer", (col) => col.notNull())
     .addColumn("about_contents", "text", (col) => col.notNull())
     .execute();
@@ -40,18 +40,18 @@ export async function up(db: Kysely<Database>): Promise<void> {
     .createTable("role")
     .addColumn("role_id", "integer", (col) => col.primaryKey())
     .addColumn("name", "text", (col) => col.notNull()) // owner visitor
-    .addColumn("ban_power", "boolean", (col) => col.notNull())
-    .addColumn("delete_other_post", "boolean", (col) => col.notNull())
-    .addColumn("post", "text", (col) => col.notNull()) // top thread disable
-    .addColumn("post_file", "boolean", (col) => col.notNull())
-    .addColumn("top_post_interval", "integer", (col) => col.notNull())
-    .addColumn("show_other_activities", "boolean", (col) => col.notNull())
+    .addColumn("ban_power", "integer", (col) => col.notNull().check(sql`(active in (0, 1))`))
+    .addColumn("delete_other_post", "integer", (col) => col.notNull().check(sql`(active in (0, 1))`))
+    .addColumn("post", "text", (col) => col.notNull().check(sql`(active in ('TOP', 'THREAD', 'DISABLE'))`))
+    .addColumn("post_file", "integer", (col) => col.notNull().check(sql`(active in (0, 1))`))
+    .addColumn("top_post_interval", "text", (col) => col.notNull())
+    .addColumn("show_other_activities", "integer", (col) => col.notNull().check(sql`(active in (0, 1))`))
     .execute();
 
   await db.insertInto("configuration").values({
     title: 'Croaker',
-    active: true,
-    account_create_available: true,
+    active: 1,
+    account_create_available: 1,
     default_role_id: 2,
     about_contents: aboutContents,
   }).execute();
@@ -59,21 +59,21 @@ export async function up(db: Kysely<Database>): Promise<void> {
   await db.insertInto("role").values([{
     role_id: 1,
     name: 'OWNER',
-    ban_power: true,
-    delete_other_post: true,
+    ban_power: 1,
+    delete_other_post: 1,
     post: 'TOP',
-    post_file: true,
+    post_file: 1,
     top_post_interval: '0',
-    show_other_activities: true,
+    show_other_activities: 1,
   },{
     role_id: 2,
     name: 'VISITOR',
-    ban_power: false,
-    delete_other_post: false,
+    ban_power: 0,
+    delete_other_post: 0,
     post: 'TOP',
-    post_file: false,
+    post_file: 0,
     top_post_interval: '0',
-    show_other_activities: false,
+    show_other_activities: 0,
   }]).execute();
 }
 
