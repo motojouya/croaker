@@ -4,7 +4,7 @@ import { z } from "zod";
 import { auth } from "@/lib/next/nextAuthOptions";
 import { parse, parseKeyValue, ZodSchemaFail, ValueTypeFail } from "@/lib/base/schema";
 import { InvalidArgumentsFail } from "@/lib/base/validation";
-import { Fail } from "@/lib/base/fail";
+import { ErrorJSON, FailJSON, ResultJson, Fail } from "@/lib/base/fail";
 import type { Identifier } from "@/domain/authorization/base";
 import { FileData, getLocalFile } from "@/lib/io/file";
 import { getIdentifier } from "@/lib/next/utility";
@@ -39,6 +39,41 @@ async function handle<R>(session: Session | null, callback: (identifier: Identif
       return new NextResponse(e.message, { status: 500 });
     } else {
       return new NextResponse("something happened!", { status: 500 });
+    }
+  }
+}
+
+const serverActionFailName = 'lib.next.routeHandler.ServerActionFail' as const;
+
+async function handleAction<R>(session: Session | null, callback: (identifier: Identifier) => Promise<R>): Promise<ResultJson<R> | ErrorJSON> {
+  try {
+    const identifier = getIdentifier(session);
+
+    const result = await callback(identifier);
+
+    if (result instanceof Fail) {
+      return result.toJSON() as ResultJson<R>;
+    }
+
+    if (result instanceof Error) {
+      return {
+        name: serverActionFailName,
+        message: result.message,
+      };
+    }
+
+    return result as ResultJson<R>;
+  } catch (e) {
+    if (e instanceof Error) {
+      return {
+        name: serverActionFailName,
+        message: e.message,
+      };
+    } else {
+      return {
+        name: serverActionFailName,
+        message: "something happened!",
+      };
     }
   }
 }
@@ -249,4 +284,59 @@ export function getFormHandler<P extends z.SomeZodObject, F extends z.SomeZodObj
 
     return handle(req.auth, (identifier) => callback(identifier, pathArgs, formArgs, fileData));
   });
+}
+
+// FIXME overloadできる気がする
+export type ServerAction<T> = (formData: FormData) => Promise<ResultJson<T> | ErrorJSON | FailJSON<ZodSchemaFail> | FailJSON<ValueTypeFail>>;
+export function getServerAction<F extends z.SomeZodObject, R>(
+  formSchema: F | null,
+  fileName: string | null,
+  callback: (
+    identifier: Identifier,
+    form: z.infer<F> | null,
+    file: FileData | null,
+  ) => Promise<R>,
+): ServerAction<R> {
+  return async (formData) => {
+
+    let formArgs: z.infer<F> | ZodSchemaFail | ValueTypeFail | null = null;
+    if (formSchema) {
+      formArgs = parseKeyValue(formSchema, (key) => {
+        const val = formData.get(key);
+        if (val instanceof Blob) {
+          return new ValueTypeFail(key, "string", "Blob", `${key}がファイルです`);
+        } else {
+          return val;
+        }
+      });
+      if (formArgs instanceof ZodSchemaFail || formArgs instanceof ValueTypeFail) {
+        return formArgs.toJSON();
+      }
+    }
+
+    let fileData: FileData | null = null;
+    if (fileName) {
+      const file = formData.get(fileName);
+
+      if (!file) {
+        const formFileFail = new ValueTypeFail(
+          fileName,
+          "File",
+          "string or Blob",
+          `${fileName}はファイルではありません`,
+        );
+        return formFileFail.toJSON();
+      } else if (!(file instanceof File)) {
+        const formFileFail = new ValueTypeFail(fileName, "File", "null", `${fileName}はファイルではありません`);
+        return formFileFail.toJSON();
+      }
+
+      const localFile = getLocalFile();
+      fileData = await localFile.saveTempFile(file);
+    }
+
+    const session = await auth();
+
+    return handleAction(session, (identifier) => callback(identifier, formArgs, fileData));
+  };
 }

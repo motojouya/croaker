@@ -1,10 +1,14 @@
 import * as path from 'path'
 import { promises as fs } from 'fs'
-import { Migrator, FileMigrationProvider } from "kysely";
-import { getKysely } from './kysely';
+import { Kysely, SqliteDialect, Migrator, FileMigrationProvider } from "kysely";
+import Sqlite from "better-sqlite3";
 
 async function migrateToLatest() {
-  const db = getKysely();
+  const db = new Kysely({
+    dialect: new SqliteDialect({
+      database: new Sqlite(process.env.SQLITE_FILE),
+    })
+  });
 
   const migrator = new Migrator({
     db,

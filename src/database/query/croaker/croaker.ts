@@ -1,7 +1,13 @@
 import { CroakerRecord } from "@/database/type/croak";
 import { RoleRecord } from "@/database/type/master";
 
-export type Role = Omit<RoleRecord, "role_id">;
+export type Role = Omit<RoleRecord, "role_id" | "ban_power" | "delete_other_post" | "post_file" | "show_other_activities"> & {
+  ban_power: boolean;
+  delete_other_post: boolean;
+  post_file: boolean;
+  show_other_activities: boolean;
+};
+
 export type Croaker = Omit<CroakerRecord, "user_id" | "role_id" | "name"> & {
   croaker_name: string;
   role: Role;
@@ -43,12 +49,12 @@ export const createCroaker: CreateCroaker = (croakers) => {
     ...rest,
     role: {
       name: role_name,
-      ban_power: role_ban_power,
-      delete_other_post: role_delete_other_post,
+      ban_power: !!role_ban_power,
+      delete_other_post: !!role_delete_other_post,
       post: role_post,
-      post_file: role_post_file,
+      post_file: !!role_post_file,
       top_post_interval: role_top_post_interval,
-      show_other_activities: role_show_other_activities,
+      show_other_activities: !!role_show_other_activities,
     },
   };
 };

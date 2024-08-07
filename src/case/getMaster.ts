@@ -1,12 +1,12 @@
 import { getDatabase } from "@/database/base";
-import { ConfigurationRecord } from "@/database/type/master";
+import { Configuration } from "@/database/query/master/master";
 import { read } from "@/database/crud";
 import { ContextFullFunction, setContext } from "@/lib/base/context";
 import { ClientCroaker, Identifier } from "@/domain/authorization/base";
 import { getCroakerUser } from "@/database/query/croaker/getCroakerUser";
 
 export type Master = {
-  configuration: ConfigurationRecord;
+  configuration: Configuration;
   croaker: ClientCroaker;
 };
 export type FunctionResult = Master;
@@ -23,11 +23,7 @@ export const getMaster: GetMaster =
   ({ db }) =>
   (identifier) =>
   async () => {
-    const configs = await db.read("configuration", {});
-    if (configs.length !== 1) {
-      throw new Error("configuration should be single record!");
-    }
-    const configuration = configs[0];
+    const configuration = await getConfiguration(db);
 
     if (identifier.type === "anonymous") {
       return {
@@ -54,3 +50,17 @@ export const getMaster: GetMaster =
   };
 
 setContext(getMaster, getMasterContext);
+
+type ReadableDB = { read: ReturnType<typeof read>; };
+type GetConfiguration = (db: ReadableDB) => Promise<Configuration>;
+const getConfiguration: GetConfiguration = async (db) => {
+  const configs = await db.read("configuration", {});
+  if (configs.length !== 1) {
+    throw new Error("configuration should be single record!");
+  }
+  return {
+    ...configs[0],
+    active: !!configs[0].active,
+    account_create_available: !!configs[0].account_create_available,
+  };
+};
