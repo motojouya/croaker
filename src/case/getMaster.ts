@@ -51,7 +51,7 @@ export const getMaster: GetMaster =
 
 setContext(getMaster, getMasterContext);
 
-type ReadableDB = { read: ReturnType<typeof read>; };
+type ReadableDB = { read: ReturnType<typeof read> };
 type GetConfiguration = (db: ReadableDB) => Promise<Configuration>;
 const getConfiguration: GetConfiguration = async (db) => {
   const configs = await db.read("configuration", {});

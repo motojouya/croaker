@@ -1,7 +1,10 @@
 import { CroakerRecord } from "@/database/type/croak";
 import { RoleRecord } from "@/database/type/master";
 
-export type Role = Omit<RoleRecord, "role_id" | "ban_power" | "delete_other_post" | "post_file" | "show_other_activities"> & {
+export type Role = Omit<
+  RoleRecord,
+  "role_id" | "ban_power" | "delete_other_post" | "post_file" | "show_other_activities"
+> & {
   ban_power: boolean;
   delete_other_post: boolean;
   post_file: boolean;

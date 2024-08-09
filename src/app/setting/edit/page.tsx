@@ -15,7 +15,7 @@ import { useMaster } from "@/app/SessionProvider";
 import { isRecordNotFound } from "@/database/fail";
 import { isAuthorityFail } from "@/domain/authorization/base";
 import { isInvalidArguments } from "@/lib/base/validation";
-import { createCroakerAction, editCroakerAction } from '@/app/setting/edit/_components/actions'
+import { createCroakerAction, editCroakerAction } from "@/app/setting/edit/_components/actions";
 
 const croakerEditFormSchema = z.object({
   name: z.string().refine((val) => Boolean(val.trim().length), "Name Required"),
@@ -25,7 +25,6 @@ const croakerEditFormSchema = z.object({
 type CroakerEditForm = z.infer<typeof croakerEditFormSchema>;
 
 const createCroaker = async (data: CroakerEditForm, callback: () => void) => {
-
   const result = await createCroakerAction({
     croaker_editable_input: {
       name: data.name,

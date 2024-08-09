@@ -1,4 +1,4 @@
-"use server"
+"use server";
 
 import { bindContext } from "@/lib/base/context";
 import { z } from "zod";
@@ -14,10 +14,10 @@ const croakerSchema = z.object({
   form_agreement: z.boolean().nullable(),
 });
 
-export const createCroakerAction = getServerAction(croakerSchema, '/setting/edit', null, (identifier, b) =>
+export const createCroakerAction = getServerAction(croakerSchema, "/setting/edit", null, (identifier, b) =>
   bindContext(createCroaker)(identifier)(b.croaker_editable_input, b.form_agreement || undefined),
 );
 
-export const editCroakerAction = getServerAction(croakerSchema, '/setting/edit', null, (identifier, b) =>
+export const editCroakerAction = getServerAction(croakerSchema, "/setting/edit", null, (identifier, b) =>
   bindContext(editCroaker)(identifier)(b.croaker_editable_input, b.form_agreement || undefined),
 );

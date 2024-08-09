@@ -1,4 +1,4 @@
-"use server"
+"use server";
 
 import { banCroaker } from "@/case/croaker/banCroaker";
 import { bindContext } from "@/lib/base/context";
@@ -13,5 +13,5 @@ export const banCroakerAction = getServerAction(
   argsSchema,
   ({ croaker_id }) => `/croaker/${croaker_id}`,
   null,
-  (identifier, p) => bindContext(banCroaker)(identifier)(p.croaker_id)
+  (identifier, p) => bindContext(banCroaker)(identifier)(p.croaker_id),
 );

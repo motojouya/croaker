@@ -1,5 +1,5 @@
 import { GeneratedAlways, Insertable, Selectable, Updateable } from "kysely";
-import { BooleanNumber } from '@/database/type/columnType'
+import { BooleanNumber } from "@/database/type/columnType";
 
 export const POST_AUTHORITY_TOP = "TOP" as const;
 export const POST_AUTHORITY_THREAD = "THREAD" as const;

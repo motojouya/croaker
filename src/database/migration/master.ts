@@ -31,7 +31,9 @@ export async function up(db: Kysely<Database>): Promise<void> {
     .createTable("configuration")
     .addColumn("title", "text", (col) => col.notNull()) // Croaker
     .addColumn("active", "integer", (col) => col.notNull().check(sql`(active in (0, 1))`))
-    .addColumn("account_create_available", "integer", (col) => col.notNull().check(sql`(account_create_available in (0, 1))`))
+    .addColumn("account_create_available", "integer", (col) =>
+      col.notNull().check(sql`(account_create_available in (0, 1))`),
+    )
     .addColumn("default_role_id", "integer", (col) => col.notNull())
     .addColumn("about_contents", "text", (col) => col.notNull())
     .execute();
@@ -48,33 +50,42 @@ export async function up(db: Kysely<Database>): Promise<void> {
     .addColumn("show_other_activities", "integer", (col) => col.notNull().check(sql`(active in (0, 1))`))
     .execute();
 
-  await db.insertInto("configuration").values({
-    title: 'Croaker',
-    active: 1,
-    account_create_available: 1,
-    default_role_id: 2,
-    about_contents: aboutContents,
-  }).execute();
+  await db
+    .insertInto("configuration")
+    .values({
+      title: "Croaker",
+      active: 1,
+      account_create_available: 1,
+      default_role_id: 2,
+      about_contents: aboutContents,
+    })
+    .execute();
 
-  await db.insertInto("role").values([{
-    role_id: 1,
-    name: 'OWNER',
-    ban_power: 1,
-    delete_other_post: 1,
-    post: 'TOP',
-    post_file: 1,
-    top_post_interval: '0',
-    show_other_activities: 1,
-  },{
-    role_id: 2,
-    name: 'VISITOR',
-    ban_power: 0,
-    delete_other_post: 0,
-    post: 'TOP',
-    post_file: 0,
-    top_post_interval: '0',
-    show_other_activities: 0,
-  }]).execute();
+  await db
+    .insertInto("role")
+    .values([
+      {
+        role_id: 1,
+        name: "OWNER",
+        ban_power: 1,
+        delete_other_post: 1,
+        post: "TOP",
+        post_file: 1,
+        top_post_interval: "0",
+        show_other_activities: 1,
+      },
+      {
+        role_id: 2,
+        name: "VISITOR",
+        ban_power: 0,
+        delete_other_post: 0,
+        post: "TOP",
+        post_file: 0,
+        top_post_interval: "0",
+        show_other_activities: 0,
+      },
+    ])
+    .execute();
 }
 
 export async function down(db: Kysely<Database>): Promise<void> {

@@ -38,7 +38,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
     .addColumn("description", "text")
     .addColumn("site_name", "text")
     .addColumn("created_date", "timestamp", (col) => col.defaultTo(sql`(datetime('now', 'localtime'))`).notNull())
-    .addPrimaryKeyConstraint('primary_key', ['croak_id', 'source'])
+    .addPrimaryKeyConstraint("primary_key", ["croak_id", "source"])
     .execute();
 
   await db.schema
@@ -50,7 +50,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
     .addColumn("name", "text", (col) => col.notNull())
     .addColumn("content_type", "text", (col) => col.notNull()) // content_type
     .addColumn("created_date", "timestamp", (col) => col.defaultTo(sql`(datetime('now', 'localtime'))`).notNull())
-    .addPrimaryKeyConstraint('primary_key', ['croak_id', 'file_id'])
+    .addPrimaryKeyConstraint("primary_key", ["croak_id", "file_id"])
     .execute();
 
   await db.schema.createIndex("croak_thread_index").on("Croak").column("thread").column("croak_id").execute();

@@ -8,6 +8,6 @@ export const getKysely: GetKysely = () => {
   return new KyselyAuth<Database>({
     dialect: new SqliteDialect({
       database: new Sqlite(process.env.SQLITE_FILE),
-    })
+    }),
   });
 };

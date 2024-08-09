@@ -13,7 +13,6 @@ import { getMaster } from "@/case/getMaster";
 import { auth } from "@/lib/next/nextAuthOptions";
 
 export default async function Page() {
-
   const session = await auth();
   const identifier = getIdentifier(session);
   const { configuration, croaker } = await bindContext(getMaster)(identifier)();

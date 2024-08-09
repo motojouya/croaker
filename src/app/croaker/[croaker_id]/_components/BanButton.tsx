@@ -5,7 +5,7 @@ import { ValueNoneIcon } from "@radix-ui/react-icons";
 import { doFetch } from "@/lib/next/utility";
 import { isRecordNotFound } from "@/database/fail";
 import { isAuthorityFail } from "@/domain/authorization/base";
-import { banCroakerAction } from '@/app/croaker/[croaker_id]/_components/action'
+import { banCroakerAction } from "@/app/croaker/[croaker_id]/_components/action";
 
 const ban = async (croaker_id: string) => {
   if (!confirm("本当にBANして大丈夫ですか？")) {

@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation'
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { Session } from "next-auth";
 import { z } from "zod";
@@ -10,13 +10,13 @@ import type { Identifier } from "@/domain/authorization/base";
 import { FileData, getLocalFile } from "@/lib/io/file";
 import { getIdentifier } from "@/lib/next/utility";
 
-const serverActionFailName = 'lib.next.routeHandler.ServerActionFail' as const;
+const serverActionFailName = "lib.next.routeHandler.ServerActionFail" as const;
 
 async function handle<R>(
   session: Session | null,
   pathToRevalidate: string | null,
   redirectPath: string | null,
-  callback: (identifier: Identifier) => Promise<R>
+  callback: (identifier: Identifier) => Promise<R>,
 ): Promise<ResultJson<R> | ErrorJSON> {
   let succeededResult: ResultJson<R>;
 
@@ -63,20 +63,17 @@ async function handle<R>(
 }
 
 // FIXME overloadできる気がする
-export type FormAction<T> = (formData: FormData) => Promise<ResultJson<T> | ErrorJSON | FailJSON<ZodSchemaFail> | FailJSON<ValueTypeFail>>;
+export type FormAction<T> = (
+  formData: FormData,
+) => Promise<ResultJson<T> | ErrorJSON | FailJSON<ZodSchemaFail> | FailJSON<ValueTypeFail>>;
 export function getFormAction<F extends z.SomeZodObject, R>(
   formSchema: F | null,
   fileName: string | null,
   pathToRevalidate: string | null,
   redirectPath: string | null,
-  callback: (
-    identifier: Identifier,
-    form: z.infer<F> | null,
-    file: FileData | null,
-  ) => Promise<R>,
+  callback: (identifier: Identifier, form: z.infer<F> | null, file: FileData | null) => Promise<R>,
 ): FormAction<R> {
   return async (formData) => {
-
     let formArgs: z.infer<F> | ZodSchemaFail | ValueTypeFail | null = null;
     if (formSchema) {
       formArgs = parseKeyValue(formSchema, (key) => {
@@ -113,7 +110,9 @@ export function getFormAction<F extends z.SomeZodObject, R>(
       fileData = await localFile.saveTempFile(file);
     }
 
-    return handle(await auth(), pathToRevalidate, redirectPath, (identifier) => callback(identifier, formArgs, fileData));
+    return handle(await auth(), pathToRevalidate, redirectPath, (identifier) =>
+      callback(identifier, formArgs, fileData),
+    );
   };
 }
 
@@ -122,7 +121,7 @@ function resolveRevalidatePath<T>(pathToRevalidate: RevalidatePathResolver<T> | 
     return null;
   }
 
-  if (typeof pathToRevalidate === 'string') {
+  if (typeof pathToRevalidate === "string") {
     return pathToRevalidate;
   }
 
@@ -130,7 +129,9 @@ function resolveRevalidatePath<T>(pathToRevalidate: RevalidatePathResolver<T> | 
 }
 
 export type RevalidatePathResolver<A> = (args: A) => string;
-export type ServerAction<A extends z.SomeZodObject, R> = (args: z.infer<A>) => Promise<ResultJson<R> | ErrorJSON | FailJSON<ZodSchemaFail>>;
+export type ServerAction<A extends z.SomeZodObject, R> = (
+  args: z.infer<A>,
+) => Promise<ResultJson<R> | ErrorJSON | FailJSON<ZodSchemaFail>>;
 export function getServerAction<A extends z.SomeZodObject, R>(
   argsSchema: A,
   pathToRevalidate: RevalidatePathResolver<z.infer<A>> | string | null,
@@ -138,17 +139,13 @@ export function getServerAction<A extends z.SomeZodObject, R>(
   callback: (identifier: Identifier, args: z.infer<A>) => Promise<R>,
 ): ServerAction<A, R> {
   return async (args) => {
-
     const parsedArgs = parse(argsSchema, args);
     if (parsedArgs instanceof ZodSchemaFail) {
       return parsedArgs.toJSON();
     }
 
-    return handle(
-      await auth(),
-      resolveRevalidatePath(pathToRevalidate, parsedArgs),
-      redirectPath,
-      (identifier) => callback(identifier, parsedArgs)
+    return handle(await auth(), resolveRevalidatePath(pathToRevalidate, parsedArgs), redirectPath, (identifier) =>
+      callback(identifier, parsedArgs),
     );
   };
 }

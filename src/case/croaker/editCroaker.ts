@@ -48,7 +48,7 @@ export const editCroaker: EditCroaker =
         "croaker",
         { croaker_id: croaker.croaker_id },
         // @ts-ignore
-        updateCroaker
+        updateCroaker,
       );
       if (croakerResult.length !== 1) {
         throw new Error("update croaker should be only one!");
