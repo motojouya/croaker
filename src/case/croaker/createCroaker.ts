@@ -1,6 +1,6 @@
 import { getDatabase } from "@/database/base";
 import { CroakerRecord, CROAKER_STATUS_ACTIVE } from "@/database/type/croak";
-import { read, create } from "@/database/crud";
+import { read, create, getSqlNow } from "@/database/crud";
 import { getCroakerUser } from "@/database/query/croaker/getCroakerUser";
 import { ContextFullFunction, setContext } from "@/lib/base/context";
 import { Local, getLocal } from "@/lib/io/local";
@@ -12,7 +12,7 @@ import { CroakerEditableInput, trimCroakerEditableInput } from "@/domain/croaker
 export type FunctionResult = Omit<CroakerRecord, "user_id"> | InvalidArgumentsFail | AuthorityFail;
 
 const createCroakerContext = {
-  db: () => getDatabase(null, { read, create, getCroakerUser }),
+  db: () => getDatabase(null, { read, create, getCroakerUser, getSqlNow }),
   local: getLocal,
   f: () => ({ getCroakerIdRandom }),
 } as const;
@@ -48,7 +48,8 @@ export const createCroaker: CreateCroaker =
           description: trimmedInput.description,
           status: CROAKER_STATUS_ACTIVE,
           role_id: defaultRoleId,
-          form_agreement: !!formAgreement,
+          // @ts-ignore
+          form_agreement: !!formAgreement ? null : trx.getSqlNow(),
         },
       ]);
       if (croakers.length !== 1) {

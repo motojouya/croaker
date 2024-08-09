@@ -1,4 +1,4 @@
-import { CROAKER_STATUS_BANNED } from "@/database/type/master";
+import { CROAKER_STATUS_BANNED } from "@/database/type/croak";
 import { AuthorizeValidation, AuthorityFail } from "@/domain/authorization/base";
 
 export type Banned = {

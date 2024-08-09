@@ -12,7 +12,7 @@ import { CroakerEditableInput, trimCroakerEditableInput } from "@/domain/croaker
 export type FunctionResult = Omit<CroakerRecord, "user_id"> | AuthorityFail | InvalidArgumentsFail | RecordNotFoundFail;
 
 const editCroakerContext = {
-  db: () => getDatabase(null, { getCroakerUser, read, update }),
+  db: () => getDatabase(null, { getCroakerUser, read, update, getSqlNow }),
 } as const;
 
 export type EditCroaker = ContextFullFunction<
@@ -34,16 +34,21 @@ export const editCroaker: EditCroaker =
         return croaker;
       }
 
+      const updateCroaker = {
+        name: trimmedInput.name,
+        description: trimmedInput.description,
+        // @ts-ignore
+        updated_date: trx.getSqlNow(),
+      };
+      if (!!croaker.form_agreement || !!formAgreement) {
+        // @ts-ignore
+        updateCroaker.form_agreement = trx.getSqlNow();
+      }
       const croakerResult = await trx.update(
         "croaker",
         { croaker_id: croaker.croaker_id },
-        {
-          name: trimmedInput.name,
-          description: trimmedInput.description,
-          form_agreement: croaker.form_agreement || !!formAgreement,
-          // @ts-ignore
-          updated_date: getSqlNow(),
-        },
+        // @ts-ignore
+        updateCroaker
       );
       if (croakerResult.length !== 1) {
         throw new Error("update croaker should be only one!");
