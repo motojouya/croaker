@@ -1,8 +1,5 @@
 "use client";
 
-import type { ResponseType as ResponseTypeNew } from "@/app/api/croaker/self/new/route";
-import type { ResponseType as ResponseTypeEdit } from "@/app/api/croaker/self/edit/route";
-
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -14,11 +11,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 
 import { AboutCroaker } from "@/components/parts/AboutCroaker";
-import { doFetch } from "@/lib/next/utility";
 import { useMaster } from "@/app/SessionProvider";
 import { isRecordNotFound } from "@/database/fail";
 import { isAuthorityFail } from "@/domain/authorization/base";
 import { isInvalidArguments } from "@/lib/base/validation";
+import { createCroakerAction, editCroakerAction } from '@/app/setting/edit/_components/actions'
 
 const croakerEditFormSchema = z.object({
   name: z.string().refine((val) => Boolean(val.trim().length), "Name Required"),
@@ -28,17 +25,13 @@ const croakerEditFormSchema = z.object({
 type CroakerEditForm = z.infer<typeof croakerEditFormSchema>;
 
 const createCroaker = async (data: CroakerEditForm, callback: () => void) => {
-  const body = {
+
+  const result = await createCroakerAction({
     croaker_editable_input: {
       name: data.name,
       description: data.description,
     },
     form_agreement: data.form_agreement,
-  };
-
-  const result = await doFetch<ResponseTypeNew>(`/api/croaker/self/new`, {
-    method: "POST",
-    body: JSON.stringify(body),
   });
 
   if (isAuthorityFail(result) || isInvalidArguments(result)) {
@@ -50,20 +43,17 @@ const createCroaker = async (data: CroakerEditForm, callback: () => void) => {
 };
 
 const editCroaker = async (data: CroakerEditForm, formAgreementAlready: boolean, callback: () => void) => {
-  const body = {
+  const args = {
     croaker_editable_input: {
       name: data.name,
       description: data.description,
     },
   } as any;
   if (!formAgreementAlready) {
-    body.form_agreement = data.form_agreement;
+    args.form_agreement = data.form_agreement;
   }
 
-  const result = await doFetch<ResponseTypeEdit>(`/api/croaker/self/edit`, {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
+  const result = editCroakerAction(args);
 
   if (isAuthorityFail(result) || isRecordNotFound(result) || isInvalidArguments(result)) {
     alert(result.message);
@@ -86,7 +76,7 @@ export default function Page() {
     defaultValues = {
       name: croaker.value.croaker_name,
       description: croaker.value.description,
-      form_agreement: croaker.value.form_agreement,
+      form_agreement: !!croaker.value.form_agreement,
     };
   }
 
@@ -107,7 +97,7 @@ export default function Page() {
     };
 
     if (croaker.type === "registered") {
-      editCroaker(data, croaker.value.form_agreement, afterCallback);
+      editCroaker(data, !!croaker.value.form_agreement, afterCallback);
     } else {
       createCroaker(data, afterCallback);
     }

@@ -1,17 +1,23 @@
-"use client";
-
 import type { Croaker } from "@/database/query/croaker/croaker";
 import type { CroakSimple } from "@/database/query/croakSimple/croakSimple";
 
 import Link from "next/link";
 import { Profile } from "@/components/parts/Profile";
 
-import { useMaster } from "@/app/SessionProvider";
 import { buttonVariants } from "@/components/ui/button";
 import { OthersActivities } from "@/app/setting/_components/OthersActivities";
 
-export default function Page() {
-  const { configuration, croaker } = useMaster();
+import { bindContext } from "@/lib/base/context";
+import { getIdentifier } from "@/lib/next/utility";
+import { getMaster } from "@/case/getMaster";
+import { auth } from "@/lib/next/nextAuthOptions";
+
+export default async function Page() {
+
+  const session = await auth();
+  const identifier = getIdentifier(session);
+  const { configuration, croaker } = await bindContext(getMaster)(identifier)();
+
   return (
     <>
       {croaker.type === "anonymous" && (
@@ -35,7 +41,7 @@ export default function Page() {
               <p>Edit</p>
             </Link>
           </Profile>
-          {croaker.value.role.show_other_activities && <OthersActivities />}
+          {croaker.value.role.show_other_activities && <OthersActivities identifier={identifier} />}
         </>
       )}
       <div className="w-full mt-10 flex flex-nowrap justify-center items-center">
