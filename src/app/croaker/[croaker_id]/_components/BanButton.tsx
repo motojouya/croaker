@@ -3,23 +3,24 @@
 import { Button } from "@/components/ui/button";
 import { ValueNoneIcon } from "@radix-ui/react-icons";
 import { doFetch } from "@/lib/next/utility";
-import { ResponseType } from "@/app/api/croaker/[croaker_id]/ban/route";
 import { isRecordNotFound } from "@/database/fail";
 import { isAuthorityFail } from "@/domain/authorization/base";
+import { banCroakerAction } from '@/app/croaker/[croaker_id]/_components/action'
 
 const ban = async (croaker_id: string) => {
   if (!confirm("本当にBANして大丈夫ですか？")) {
     return;
   }
 
-  const result = await doFetch<ResponseType>(`/api/croaker/${croaker_id}/ban`, { method: "POST" });
+  const result = banCroakerAction({ croaker_id });
 
   if (isAuthorityFail(result) || isRecordNotFound(result)) {
     alert(result.message);
     return;
   }
 
-  window.location.reload();
+  // revalidateしているので多分不要
+  // window.location.reload();
 };
 
 export const BanButton: React.FC<{
