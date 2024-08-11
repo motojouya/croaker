@@ -2,13 +2,18 @@ import { Kysely } from "kysely";
 import { Database } from "@/database/type";
 import { Fail } from "@/lib/base/fail";
 import { getKysely } from "@/database/kysely";
+import { DatabaseFail } from '@/database/fail'
 
 export type GetQuery = Record<string, (db: Kysely<Database>) => unknown>;
 
 let db: Kysely<Database>;
 
 export type Query<Q extends GetQuery> = {
-  [K in keyof Q]: Q[K] extends (db: Kysely<Database>) => infer F ? F : never;
+  [K in keyof Q]: Q[K] extends (db: Kysely<Database>) => infer F
+    ? F extends (...args: [...(infer A)]) => Promise<infer R>
+      ? (...args: [...A]) => Promise<R | DatabaseFail>
+      : F
+    : never;
 };
 
 export type Transact<T extends GetQuery> = <R>(callback: (trx: Query<T>) => Promise<R>) => Promise<R>;
@@ -31,7 +36,7 @@ export function getDatabase<Q extends GetQuery, T extends GetQuery>(
   let dbAccess = {};
 
   if (queries) {
-    dbAccess = getQuery(db, queries, dbAccess);
+    dbAccess = getQueries(db, queries, dbAccess);
   }
 
   if (transactionQueries) {
@@ -48,7 +53,7 @@ function getTransact<T extends GetQuery>(db: Kysely<Database>, queries: T): Tran
   return async function <R>(callback: (trx: Query<T>) => Promise<R>): Promise<R> {
     try {
       return db.transaction().execute((trx) => {
-        const transactedQueries = getQuery(trx, queries, {});
+        const transactedQueries = getQueries(trx, queries, {});
 
         const result = callback(transactedQueries);
 
@@ -70,7 +75,7 @@ function getTransact<T extends GetQuery>(db: Kysely<Database>, queries: T): Tran
   };
 }
 
-function getQuery<T extends GetQuery>(db: Kysely<Database>, queries: T, acc: object): Query<T> {
+function getQueries<T extends GetQuery>(db: Kysely<Database>, queries: T, acc: object): Query<T> {
   return Object.entries(queries).reduce((acc, [key, val]) => {
     if (typeof val !== "function") {
       throw new Error("programmer should set context function!");
@@ -82,7 +87,30 @@ function getQuery<T extends GetQuery>(db: Kysely<Database>, queries: T, acc: obj
 
     return {
       ...acc,
-      [key]: val(db),
+      [key]: tryCatchQuery(db, val),
     };
   }, acc) as Query<T>; // FIXME as!
+}
+
+// TODO エラーの型としてDatabaseFailが入ってくるので、どう表現すべき？
+function tryCatchQuery(db: Kysely<Database>, getQuery: (db: Kysely<Database>) => unknown) {
+
+  const query = getQuery(db);
+
+  if (typeof query !== 'function') {
+    return query;
+  }
+
+  // @ts-ignore
+  return async (...args) => {
+    try {
+      return await query(...args);
+    } catch(e) {
+      if (e instanceof Error) {
+        return new DatabaseFail(e, 'something happened on database');
+      } else {
+        return new DatabaseFail(new Error(), 'something happened. but not on database');
+      }
+    }
+  };
 }

@@ -225,13 +225,14 @@ export const LoadingCroaks: React.FC<{ getCroaks: GetCroaks }> = ({ getCroaks })
           return <MessageItem key={key} message={`Error! ${croakGroup.errorMessage}`} />;
         }
       })}
-      <Croaks
-        croakList={posts}
-        loadSurround={() => {
-          console.log("TODO for test! loadSurround.");
-        }}
-        startingPoint={true}
-      />
     </>
   );
 };
+
+//    <Croaks
+//      croakList={posts}
+//      loadSurround={() => {
+//        console.log("TODO for test! loadSurround.");
+//      }}
+//      startingPoint={true}
+//    />
