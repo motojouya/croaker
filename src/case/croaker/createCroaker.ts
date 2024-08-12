@@ -6,7 +6,6 @@ import { ContextFullFunction, setContext } from "@/lib/base/context";
 import { Local, getLocal } from "@/lib/io/local";
 import { Identifier, AuthorityFail, justLoginUser } from "@/domain/authorization/base";
 import { InvalidArgumentsFail } from "@/lib/base/validation";
-import { DatabaseFail } from "@/database/fail";
 import { getCroakerId as getCroakerIdRandom } from "@/domain/id";
 import { CroakerEditableInput, trimCroakerEditableInput } from "@/domain/croaker/croaker";
 

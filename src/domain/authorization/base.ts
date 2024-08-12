@@ -8,7 +8,6 @@ import { PostCroak } from "@/domain/authorization/validation/postCroak";
 import { PostFile } from "@/domain/authorization/validation/postFile";
 import { ShowOtherActivities } from "@/domain/authorization/validation/showOtherActivities";
 import { DeleteOtherPost } from "@/domain/authorization/validation/deleteOtherPost";
-import { DatabaseFail } from "@/database/fail";
 import { InvalidArgumentsFail } from "@/lib/base/validation";
 
 export type IdentifierAnonymous = { type: "anonymous" };
@@ -34,8 +33,8 @@ export type AuthorizeValidation = (croaker: Croaker) => undefined | AuthorityFai
 
 export type JustLoginUser = (
   identifier: Identifier,
-  getCroaker: (userId: string) => Promise<Croaker | null | DatabaseFail>,
-) => Promise<string | AuthorityFail | InvalidArgumentsFail | DatabaseFail>;
+  getCroaker: (userId: string) => Promise<Croaker | null>,
+) => Promise<string | AuthorityFail | InvalidArgumentsFail>;
 
 export const justLoginUser: JustLoginUser = async (identifier, getCroaker) => {
   if (identifier.type === "anonymous") {
@@ -45,11 +44,7 @@ export const justLoginUser: JustLoginUser = async (identifier, getCroaker) => {
 
   const croaker = await getCroaker(userId);
   if (croaker) {
-    if (croaker instanceof DatabaseFail) {
-      return croaker;
-    } else {
-      return new InvalidArgumentsFail("croaker", croaker.croaker_id, "すでに登録済みです");
-    }
+    return new InvalidArgumentsFail("croaker", croaker.croaker_id, "すでに登録済みです");
   }
 
   return userId;

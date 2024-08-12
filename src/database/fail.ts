@@ -33,13 +33,3 @@ export class MutationFail extends Fail {
   }
 }
 export const isMutationFail = isFailJSON(new MutationFail("", "", {}, ""));
-
-export class DatabaseFail extends Fail {
-  constructor(
-    readonly cause: Error,
-    readonly message: string,
-  ) {
-    super("lib.db.DatabaseFail");
-  }
-}
-export const isDatabaseFail = isFailJSON(new DatabaseFail(new Error('demo') ""));
