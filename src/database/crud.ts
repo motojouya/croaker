@@ -10,10 +10,11 @@ import {
   ReferenceExpression,
   OperandValueExpressionOrList,
   FilterObject,
+  sql,
 } from "kysely";
 import { Database } from "@/database/type";
 
-export const getSqlNow = (db: Kysely<Database>) => () => db.fn("datetime", ["now", "localtime"]);
+export const getSqlNow = (db: Kysely<Database>) => () => db.fn("datetime", [sql`'now'`, sql`'localtime'`]);
 
 export function create(db: Kysely<Database>) {
   return async function <T extends keyof Database & string>(

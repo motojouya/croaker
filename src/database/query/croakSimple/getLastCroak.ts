@@ -13,7 +13,7 @@ export const getLastCroak: GetLastCroak = (db) => async (croakerId) => {
       "k.thread as thread",
       "k.posted_date as posted_date",
       "k.deleted_date as deleted_date",
-      eb.val(false).as("has_thread"),
+      eb.val(0).as("has_thread"),
       "ker.croaker_id as croaker_id",
       "ker.name as croaker_name",
     ])
@@ -27,5 +27,8 @@ export const getLastCroak: GetLastCroak = (db) => async (croakerId) => {
     return null;
   }
 
-  return result[0];
+  return {
+    ...result[0],
+    has_thread: !!result[0],
+  };
 };
