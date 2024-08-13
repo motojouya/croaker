@@ -22,6 +22,10 @@ export type ReturnCroak = CroakRecord & {
 export type CreateTextCroak = (db: Kysely<Database>) => (croak: ArgCroak, links: ArgLink[]) => Promise<ReturnCroak>;
 export const createTextCroak: CreateTextCroak = (db) => async (croak, links) => {
   const croakRecord = await db.insertInto("croak").values(croak).returningAll().executeTakeFirstOrThrow();
+  console.log(croakRecord);
+  if (links.length === 0) {
+    return { ...croakRecord, links: [] };
+  }
 
   const croakIdFilled = links.map((link) => ({
     ...link,

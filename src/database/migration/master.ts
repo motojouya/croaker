@@ -42,12 +42,12 @@ export async function up(db: Kysely<Database>): Promise<void> {
     .createTable("role")
     .addColumn("role_id", "integer", (col) => col.primaryKey())
     .addColumn("name", "text", (col) => col.notNull()) // owner visitor
-    .addColumn("ban_power", "integer", (col) => col.notNull().check(sql`(active in (0, 1))`))
-    .addColumn("delete_other_post", "integer", (col) => col.notNull().check(sql`(active in (0, 1))`))
-    .addColumn("post", "text", (col) => col.notNull().check(sql`(active in ('TOP', 'THREAD', 'DISABLE'))`))
-    .addColumn("post_file", "integer", (col) => col.notNull().check(sql`(active in (0, 1))`))
+    .addColumn("ban_power", "integer", (col) => col.notNull().check(sql`(ban_power in (0, 1))`))
+    .addColumn("delete_other_post", "integer", (col) => col.notNull().check(sql`(delete_other_post in (0, 1))`))
+    .addColumn("post", "text", (col) => col.notNull().check(sql`(post in ('TOP', 'THREAD', 'DISABLE'))`))
+    .addColumn("post_file", "integer", (col) => col.notNull().check(sql`(post_file in (0, 1))`))
     .addColumn("top_post_interval", "text", (col) => col.notNull())
-    .addColumn("show_other_activities", "integer", (col) => col.notNull().check(sql`(active in (0, 1))`))
+    .addColumn("show_other_activities", "integer", (col) => col.notNull().check(sql`(show_other_activities in (0, 1))`))
     .execute();
 
   await db

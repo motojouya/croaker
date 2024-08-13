@@ -19,7 +19,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
 
   await db.schema
     .createTable("croak")
-    .addColumn("croak_id", "serial", (col) => col.primaryKey())
+    .addColumn("croak_id", "integer", (col) => col.autoIncrement().primaryKey())
     .addColumn("croaker_id", "text", (col) => col.notNull().references("croaker.croaker_id"))
     .addColumn("contents", "text")
     .addColumn("thread", "integer") // null when top level
@@ -43,14 +43,13 @@ export async function up(db: Kysely<Database>): Promise<void> {
 
   await db.schema
     .createTable("file")
-    .addColumn("file_id", "serial", (col) => col.notNull())
+    .addColumn("file_id", "integer", (col) => col.autoIncrement().primaryKey())
     .addColumn("croak_id", "text", (col) => col.notNull().references("croak.croak_id"))
     .addColumn("storage_type", "text", (col) => col.notNull()) // gcs
     .addColumn("source", "text", (col) => col.notNull())
     .addColumn("name", "text", (col) => col.notNull())
     .addColumn("content_type", "text", (col) => col.notNull()) // content_type
     .addColumn("created_date", "timestamp", (col) => col.defaultTo(sql`(datetime('now', 'localtime'))`).notNull())
-    .addPrimaryKeyConstraint("primary_key", ["croak_id", "file_id"])
     .execute();
 
   await db.schema.createIndex("croak_thread_index").on("Croak").column("thread").column("croak_id").execute();

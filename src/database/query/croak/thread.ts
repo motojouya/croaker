@@ -26,7 +26,7 @@ const getCroaks: GetCroaks = (db) => async (threadId, reverse, offsetCursor, lim
       "k.posted_date as posted_date",
       "k.deleted_date as deleted_date",
     ])
-    .where("k.deleted_date", "is not", null)
+    .where("k.deleted_date", "is", null)
     .where("ker.status", "=", CROAKER_STATUS_ACTIVE)
     .where("k.thread", "=", threadId)
     .where("k.croak_id", reverse ? ">" : "<", offsetCursor)

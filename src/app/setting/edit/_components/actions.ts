@@ -11,7 +11,7 @@ const croakerSchema = z.object({
     name: z.string(),
     description: z.string(),
   }),
-  form_agreement: z.boolean().nullable(),
+  form_agreement: z.boolean().nullish(),
 });
 
 export const createCroakerAction = getServerAction(croakerSchema, "/setting/edit", null, (identifier, b) =>
