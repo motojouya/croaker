@@ -5,9 +5,9 @@ import { Database } from "@/database/type";
 
 export type RecentActivities = (db: Kysely<Database>) => (croakerId: string, days: number) => Promise<CroakSimple[]>;
 export const recentActivities: RecentActivities = (db) => async (croakerId, days) => {
-  const daysAgo = db.fn("strftime", [db.fn("datetime", ["now", "localtime", `-${days} days`])]);
+  const daysAgo = db.fn("strftime", [db.fn("datetime", [sql`'now'`, sql`'localtime'`, sql`'-${days} days'`])]);
 
-  return await db
+  const result = await db
     .selectFrom("croak as k")
     .innerJoin("croaker as ker", "k.croaker_id", "ker.croaker_id")
     .innerJoin(
@@ -27,7 +27,7 @@ export const recentActivities: RecentActivities = (db) => async (croakerId, days
       "k.thread as thread",
       "k.posted_date as posted_date",
       "k.deleted_date as deleted_date",
-      eb.val(false).as("has_thread"),
+      eb.val(0).as("has_thread"),
       "ker.croaker_id as croaker_id",
       "ker.name as croaker_name",
     ])
@@ -37,4 +37,6 @@ export const recentActivities: RecentActivities = (db) => async (croakerId, days
     .where("ker.croaker_id", "<>", croakerId)
     .orderBy(["k.croak_id desc"])
     .execute();
+
+  return result.map(r => ({ ...r, has_thread: !!r.has_thread }));
 };

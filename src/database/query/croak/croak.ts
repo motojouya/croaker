@@ -11,7 +11,10 @@ export type Croak = Omit<CroakRecord, "user_id"> & {
   files: File[];
 };
 
-export type CroakSimple = Omit<Croak, "links" | "files">;
+export type CroakSimple = Omit<CroakRecord, "user_id"> & {
+  has_thread: number;
+  croaker_name: string;
+};
 
 type GetLinks = (db: Kysely<Database>) => (croakIds: number[]) => Promise<Link[]>;
 const getLinks: GetLinks = (db) => async (croakIds) => {
@@ -26,6 +29,9 @@ const getFiles: GetFiles = (db) => async (croakIds) => {
 export type ComplementCroak = (db: Kysely<Database>, getCroaks: () => Promise<CroakSimple[]>) => Promise<Croak[]>;
 export const complementCroak: ComplementCroak = async (db, getCroaks) => {
   const croaks = await getCroaks();
+  if (croaks.length === 0) {
+    return [];
+  }
 
   const croakIds = croaks.map((croak) => croak.croak_id);
 
@@ -37,6 +43,7 @@ export const complementCroak: ComplementCroak = async (db, getCroaks) => {
 
   return croaks.map((croak) => ({
     ...croak,
+    has_thread: !!croak.has_thread,
     links: croakIdLinkDic[croak.croak_id] || [],
     files: croakIdFileDic[croak.croak_id] || [],
   }));

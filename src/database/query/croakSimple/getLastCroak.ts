@@ -29,6 +29,6 @@ export const getLastCroak: GetLastCroak = (db) => async (croakerId) => {
 
   return {
     ...result[0],
-    has_thread: !!result[0],
+    has_thread: !!result[0].has_thread,
   };
 };

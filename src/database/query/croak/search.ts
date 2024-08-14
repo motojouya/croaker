@@ -33,7 +33,7 @@ const getCroaks: GetCroaks = (db) => async (search, reverse, offsetCursor, limit
       "k.croak_id as croak_id",
       "k.contents as contents",
       "k.thread as thread",
-      eb.case().when("thread.thread_id", "is", null).then(false).else(true).end().as("has_thread"),
+      eb.case().when("thread.thread_id", "is", null).then(0).else(1).end().as("has_thread"),
       "ker.croaker_id as croaker_id",
       "ker.name as croaker_name",
       "k.posted_date as posted_date",
@@ -42,9 +42,9 @@ const getCroaks: GetCroaks = (db) => async (search, reverse, offsetCursor, limit
     .where("k.deleted_date", "is", null)
     .where("ker.status", "=", CROAKER_STATUS_ACTIVE)
     .where("k.thread", "is", null)
-    .where("k.croak_id", reverse ? ">" : "<", offsetCursor)
+    .where("k.croak_id", reverse ? "<" : ">", offsetCursor)
     .where((eb) => eb.or([eb("k.contents", "like", `%${search}%`), eb("thread.exist_count", ">", 0)]))
-    .orderBy("k.croak_id", reverse ? "asc" : "desc")
+    .orderBy("k.croak_id", reverse ? "desc" : "asc")
     .limit(limit)
     .execute();
 };

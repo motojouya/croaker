@@ -15,13 +15,3 @@ const querySchema = z.object({
 export const GET = getQueryHandler(null, querySchema, (identifier, p, q) =>
   bindContext(searchCroaks)(identifier)(q.text, q.reverse || undefined, q.offset_cursor || undefined),
 );
-
-// import { FetchType, executeFetch } from '@/lib/next/routeHandler';
-//
-// export type FetchAPI = (text: string, reverse: boolean, offsetCursor?: number) => Promise<ResponseType>;
-// export const fetchAPI: FetchAPI = async (text, reverse, offsetCursor) => {
-//   const result = await executeFetch(() => {
-//     return fetch(`/api/croak/search?text=${text}&reverse=${reverse}&offset_cursor=${offsetCursor}`);
-//   });
-//   return result as ResponseType;
-// };

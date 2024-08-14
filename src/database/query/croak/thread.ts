@@ -20,7 +20,7 @@ const getCroaks: GetCroaks = (db) => async (threadId, reverse, offsetCursor, lim
       "k.croak_id as croak_id",
       "k.contents as contents",
       "k.thread as thread",
-      eb.val(false).as("has_thread"),
+      eb.val(0).as("has_thread"),
       "ker.croaker_id as croaker_id",
       "ker.name as croaker_name",
       "k.posted_date as posted_date",
@@ -28,9 +28,12 @@ const getCroaks: GetCroaks = (db) => async (threadId, reverse, offsetCursor, lim
     ])
     .where("k.deleted_date", "is", null)
     .where("ker.status", "=", CROAKER_STATUS_ACTIVE)
-    .where("k.thread", "=", threadId)
-    .where("k.croak_id", reverse ? ">" : "<", offsetCursor)
-    .orderBy("k.croak_id", reverse ? "asc" : "desc")
+    .where((eb) => eb.or([
+      eb("k.thread", "=", threadId),
+      eb("k.croak_id", "=", threadId),
+    ]))
+    .where("k.croak_id", reverse ? "<" : ">", offsetCursor)
+    .orderBy("k.croak_id", reverse ? "desc" : "asc")
     .limit(limit)
     .execute();
 };
