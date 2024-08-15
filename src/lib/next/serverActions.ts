@@ -10,7 +10,7 @@ import type { Identifier } from "@/domain/authorization/base";
 import { FileData, getLocalFile } from "@/lib/io/file";
 import { getIdentifier } from "@/lib/next/utility";
 
-const serverActionFailName = "lib.next.routeHandler.ServerActionFail" as const;
+const serverActionFailName = "lib.next.serverActions.ServerActionFail" as const;
 
 async function handle<R>(
   session: Session | null,
@@ -144,7 +144,13 @@ export function getServerAction<A extends z.SomeZodObject, R>(
       return parsedArgs.toJSON();
     }
 
-    return handle(await auth(), resolveRevalidatePath(pathToRevalidate, parsedArgs), redirectPath, (identifier) =>
+    // FIXME なぞ pathToRevalidateはsync functionのはずだが、asyncになってる
+    let path = resolveRevalidatePath(pathToRevalidate, parsedArgs);
+    if (path as any instanceof Promise) {
+      path = await path;
+    }
+
+    return handle(await auth(), path, redirectPath, (identifier) =>
       callback(identifier, parsedArgs),
     );
   };

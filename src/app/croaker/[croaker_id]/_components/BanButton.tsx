@@ -12,7 +12,7 @@ const ban = async (croaker_id: string) => {
     return;
   }
 
-  const result = banCroakerAction({ croaker_id });
+  const result = await banCroakerAction({ croaker_id });
 
   if (isAuthorityFail(result) || isRecordNotFound(result)) {
     alert(result.message);

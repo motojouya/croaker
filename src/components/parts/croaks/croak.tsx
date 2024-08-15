@@ -102,7 +102,9 @@ export const Croak: React.FC<{
     <DivRef divRef={loadSurround ? ref : null}>
       <div className="w-full max-w-5xl flex flex-nowrap justify-start items-center h-4 text-xs mx-1">
         <div className="grow shrink flex flex-nowrap justify-start items-center mr-1">
-          <div className="font-bold">{`${croak.croaker_name}@${croak.croaker_id}`}</div>
+          <Link href={`/croaker/${croak.croaker_id}`}>
+            <div className="font-bold">{`${croak.croaker_name}@${croak.croaker_id}`}</div>
+          </Link>
           <div className="ml-1">{format(croak.posted_date, "yyyy/MM/dd HH:mm")}</div>
         </div>
         <div className="grow-0 shrink-0 mr-1 w-10 text-center underline">

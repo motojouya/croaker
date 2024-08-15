@@ -5,35 +5,16 @@ import { auth } from "@/lib/next/nextAuthOptions";
 import { Profile } from "@/components/parts/Profile";
 import { BanButton } from "@/app/croaker/[croaker_id]/_components/BanButton";
 
-const croaker = {
-  croaker_id: "vis1t",
-  croaker_name: "test_visiter",
-  description:
-    "I am test visiter. I am test visiter. I am test visiter. I am test visiter.\nI am test visiter. I am test visiter.",
-  status: "ACTIVE",
-  form_agreement: new Date(),
-  created_date: new Date(),
-  updated_date: new Date(),
-  role: {
-    name: "VISITER",
-    ban_power: false,
-    delete_other_post: false,
-    post: "TOP",
-    post_file: false,
-    top_post_interval: "",
-    show_other_activities: false,
-  },
-} as const;
-
 type ParamsType = {
   params: {
     croaker_id: string;
   };
 };
-export default function Page({ params }: ParamsType) {
-  // const session = await auth();
-  // const identifier = getIdentifier(session);
-  // const croaker = await bindContext(getCroaker)(identifier)(params.croaker_id);
+
+export default async function Page({ params }: ParamsType) {
+  const session = await auth();
+  const identifier = getIdentifier(session);
+  const croaker = await bindContext(getCroaker)(identifier)(params.croaker_id);
 
   return (
     <Profile croaker={croaker}>

@@ -14,7 +14,7 @@ export type Croaker = Omit<CroakerRecord, "user_id">;
 export type FunctionResult = Croaker | AuthorityFail | RecordNotFoundFail;
 
 const banCroakerContext = {
-  db: () => getDatabase({ getCroakerUser }, { read, update }),
+  db: () => getDatabase({ getCroakerUser }, { read, update, getSqlNow }),
 } as const;
 
 export type BanCroaker = ContextFullFunction<
@@ -46,7 +46,7 @@ export const banCroaker: BanCroaker =
       }
 
       // @ts-ignore
-      await trx.update("croak", { croaker_id: croakerId }, { deleted_date: getSqlNow() });
+      await trx.update("croak", { croaker_id: croakerId }, { deleted_date: trx.getSqlNow() });
 
       const { user_id, ...rest } = croakerUpdated[0];
       return rest;

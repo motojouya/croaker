@@ -8,7 +8,9 @@ export type ResponseType = ResultJson<FunctionResult>;
 
 const querySchema = z.object({
   text: z.string(),
-  reverse: z.coerce.boolean().nullable(),
+  reverse: z.string().trim().toLowerCase()
+    .transform((str) => JSON.parse(str))
+    .pipe(z.boolean().nullable()),
   offset_cursor: z.coerce.number().nullable(),
 });
 

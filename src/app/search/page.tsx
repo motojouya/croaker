@@ -10,7 +10,7 @@ import { FooterLessCroakList } from "@/components/parts/croaks";
 
 type SearchCroaks = (text: string) => GetCroaks;
 const searchCroaks: SearchCroaks = (text) => async (offsetCursor, reverse) =>
-  await doFetch<ResponseType>(`/api/croak/search?text=${text}reverse=${reverse}&offset_cursor=${offsetCursor || ""}`, {
+  await doFetch<ResponseType>(`/api/croak/search?text=${text}&reverse=${reverse}&offset_cursor=${offsetCursor || ""}`, {
     method: "GET",
   });
 
