@@ -5,7 +5,7 @@ import { Database } from "@/database/type";
 
 export type RecentActivities = (db: Kysely<Database>) => (croakerId: string, days: number) => Promise<CroakSimple[]>;
 export const recentActivities: RecentActivities = (db) => async (croakerId, days) => {
-  const daysAgo = db.fn("strftime", [db.fn("datetime", [sql`'now'`, sql`'localtime'`, sql`'-${days} days'`])]);
+  const daysAgo = db.fn("strftime", [db.fn("datetime", [sql.value('now'), sql.value('localtime'), sql.value(`-${days} days`)])]);
 
   const result = await db
     .selectFrom("croak as k")
