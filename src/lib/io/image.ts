@@ -9,8 +9,12 @@ const convert: Convert = async (filePath) => {
     return imageInfo;
   }
 
-  const validContentType = imageInfo.format === "jpg" || imageInfo.format === "png" || imageInfo.format === "gif";
-  if (!imageInfo.format || !validContentType) {
+  if (!imageInfo.format) {
+    return new ImageInformationFail("format", String(imageInfo.format), filePath, "image形式はjpeg,png,gifのみです");
+  }
+
+  const format = imageInfo.format.toUpperCase();
+  if (format !== "JPG" && format !== "PNG" && format !== "GIF") {
     return new ImageInformationFail("format", String(imageInfo.format), filePath, "image形式はjpeg,png,gifのみです");
   }
 
@@ -20,8 +24,8 @@ const convert: Convert = async (filePath) => {
 
   const width = imageInfo.width > 1000 ? 1000 : imageInfo.width;
 
-  if (imageInfo.format === "jpg") {
-    const resizedJpegPath = `temp/${v4()}.jpeg`;
+  if (format === "JPG") {
+    const resizedJpegPath = `storage/temp/${v4()}.jpeg`;
     const error = await resizeJpeg(filePath, resizedJpegPath, width);
     if (error) {
       return error;
@@ -30,13 +34,13 @@ const convert: Convert = async (filePath) => {
   }
 
   let resizedFilePath: string;
-  if (imageInfo.format === "png") {
-    resizedFilePath = `temp/${v4()}.png`;
+  if (format === "PNG") {
+    resizedFilePath = `storage/temp/${v4()}.png`;
   } else {
-    resizedFilePath = `temp/${v4()}.gif`;
+    resizedFilePath = `storage/temp/${v4()}.gif`;
   }
 
-  const error = await resizeImage(filePath, resizedFilePath, width, imageInfo.format);
+  const error = await resizeImage(filePath, resizedFilePath, width, format);
   if (error) {
     return error;
   }

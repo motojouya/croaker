@@ -8,7 +8,7 @@ o croaker/banCroaker.ts
 o croaker/createCroaker.ts
 o croaker/editCroaker.ts
 o croaker/getCroaker.ts
-  croaker/getRecentActivities.ts
+o croaker/getRecentActivities.ts
 o getMaster.ts
   メイン画面
   みため調整margin使ってるのまずいかも
