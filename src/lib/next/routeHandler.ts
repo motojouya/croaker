@@ -24,7 +24,6 @@ async function handle<R>(session: Session | null, callback: (identifier: Identif
     const identifier = getIdentifier(session);
 
     const result = await callback(identifier);
-    console.log('result', result);
 
     if (result instanceof Fail) {
       return NextResponse.json(result.toJSON());
@@ -36,7 +35,7 @@ async function handle<R>(session: Session | null, callback: (identifier: Identif
 
     return NextResponse.json(result);
   } catch (e) {
-    console.log('e', e);
+    console.log('route handler handle e', e);
     if (e instanceof Error) {
       return new NextResponse(e.message, { status: 500 });
     } else {

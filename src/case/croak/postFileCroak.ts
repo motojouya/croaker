@@ -54,7 +54,6 @@ export const postFile: PostFile =
     if (croaker instanceof AuthorityFail) {
       return croaker;
     }
-    console.log('postFile')
 
     const uploadedSource = await uploadImage(file, storage, imageFile);
     if (
@@ -64,7 +63,6 @@ export const postFile: PostFile =
     ) {
       return uploadedSource;
     }
-    console.log('uploadedSource')
 
     const croakData = {
       croaker_id: croaker.croaker_id,
@@ -79,7 +77,6 @@ export const postFile: PostFile =
     };
 
     const croakResult = await db.transact((trx) => trx.createFileCroak(croakData, fileData));
-    console.log('croakResult')
 
     const { files, ...rest } = croakResult;
     const croak = {
@@ -89,7 +86,6 @@ export const postFile: PostFile =
       links: [],
     };
 
-    console.log('before finish')
     return await resolveFileUrl(storage, croak, files);
   };
 
@@ -129,20 +125,15 @@ type uploadImage = (
   imageFile: ImageFile,
 ) => Promise<string | ImageCommandFail | ImageInformationFail | FileFail>;
 const uploadImage: uploadImage = async (file, storage, imageFile) => {
-  console.log('uploadImage start');
   const uploadFilePath = await imageFile.convert(file.path);
   if (uploadFilePath instanceof ImageCommandFail || uploadFilePath instanceof ImageInformationFail) {
-    console.log('uploadImage ImageCommandFail or ImageInformationFail', uploadFilePath);
     return uploadFilePath;
   }
-  console.log('uploadImage uploadFilePath', uploadFilePath);
 
   const uploadedSource = await storage.uploadFile(uploadFilePath, file.extension);
   if (uploadedSource instanceof FileFail) {
-    console.log('uploadImage FileFail', uploadedSource);
     return uploadedSource;
   }
-  console.log('uploadImage uploadedSource', uploadedSource);
 
   return uploadedSource;
 };

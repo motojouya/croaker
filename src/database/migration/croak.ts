@@ -44,7 +44,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
   await db.schema
     .createTable("file")
     .addColumn("file_id", "integer", (col) => col.autoIncrement().primaryKey())
-    .addColumn("croak_id", "text", (col) => col.notNull().references("croak.croak_id"))
+    .addColumn("croak_id", "integer", (col) => col.notNull().references("croak.croak_id"))
     .addColumn("storage_type", "text", (col) => col.notNull()) // gcs
     .addColumn("source", "text", (col) => col.notNull())
     .addColumn("name", "text", (col) => col.notNull())

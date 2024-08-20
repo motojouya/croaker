@@ -25,7 +25,6 @@ const createStorage: CreateStorage = () => {
   if (process.env.NODE_ENV !== "production") {
     config = { apiEndpoint: "http://gcs:4443", projectId: 'test' };
   }
-  console.log('gcs config', config);
 
   const googleCloudStorage = new GoogleCloudStorage(config);
   return {

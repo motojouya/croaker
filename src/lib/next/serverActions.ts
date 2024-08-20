@@ -38,6 +38,7 @@ async function handle<R>(
 
     succeededResult = result as ResultJson<R>;
   } catch (e) {
+    console.log('server action handle e', e);
     if (e instanceof Error) {
       return {
         name: serverActionFailName,
