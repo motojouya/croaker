@@ -3,11 +3,12 @@ version: '3.1'
 services:
   gcs:
     image: fsouza/fake-gcs-server
-    # ports:
-    #   - 4443:4443
+    ports:
+      - 4443:4443
     volumes:
       - "./storage/gcs:/data/croaker"
-    command: -scheme http -public-host ${URL:-localhost}:4443
+    # command: -scheme http -public-host ${URL:-localhost}:4443 -port 4443
+    command: -scheme http -public-host 0.0.0.0:4443 -port 4443
   app:
     build:
       context: "."
