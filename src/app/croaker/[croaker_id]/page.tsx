@@ -2,6 +2,7 @@ import { bindContext } from "@/lib/base/context";
 import { getIdentifier } from "@/lib/next/utility";
 import { getCroaker } from "@/case/croaker/getCroaker";
 import { auth } from "@/lib/next/nextAuthOptions";
+import { Main } from "@/components/parts/main";
 import { Profile } from "@/components/parts/Profile";
 import { BanButton } from "@/app/croaker/[croaker_id]/_components/BanButton";
 
@@ -16,9 +17,16 @@ export default async function Page({ params }: ParamsType) {
   const identifier = getIdentifier(session);
   const croaker = await bindContext(getCroaker)(identifier)(params.croaker_id);
 
+  // TODO
+  if (!croaker) {
+    return <div>ユーザが見つかりません</div>;
+  }
+
   return (
-    <Profile croaker={croaker}>
-      <BanButton croaker_id={params.croaker_id} />
-    </Profile>
+    <Main>
+      <Profile croaker={croaker}>
+        <BanButton croaker_id={params.croaker_id} />
+      </Profile>
+    </Main>
   );
 }

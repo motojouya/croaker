@@ -6,6 +6,7 @@ import { Profile } from "@/components/parts/Profile";
 
 import { buttonVariants } from "@/components/ui/button";
 import { OthersActivities } from "@/app/setting/_components/OthersActivities";
+import { Main } from "@/components/parts/main";
 
 import { bindContext } from "@/lib/base/context";
 import { getIdentifier } from "@/lib/next/utility";
@@ -18,7 +19,7 @@ export default async function Page() {
   const { configuration, croaker } = await bindContext(getMaster)(identifier)();
 
   return (
-    <>
+    <Main>
       {croaker.type === "anonymous" && (
         <div className="w-full mt-5 flex flex-nowrap justify-center items-center">
           <Link href={"/api/auth/signin"} className={buttonVariants({ variant: "procedure" })}>
@@ -48,6 +49,6 @@ export default async function Page() {
           <p>About Croaker</p>
         </Link>
       </div>
-    </>
+    </Main>
   );
 }

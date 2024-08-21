@@ -34,9 +34,7 @@ export default async function RootLayout({
           <Suspense>
             <Header />
           </Suspense>
-          <main className="w-screen min-h-screen flex flex-nowrap justify-center bg-white">
-            <div className="w-full max-w-5xl mt-12">{children}</div>
-          </main>
+          {children}
         </SessionProvider>
       </body>
     </html>

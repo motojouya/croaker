@@ -15,6 +15,7 @@ import { GetCroaks, LoadingCroaks } from "@/components/parts/croaks/loadingCroak
 import { PostingText, PostingFile, InputCroak, InputCroaks } from "@/components/parts/croaks/inputCroakList";
 import { CroakInputFooter, RegisterFooter } from "@/components/parts/croaks/footer";
 import type { Croaker } from "@/database/query/croaker/croaker";
+import { Main } from "@/components/parts/main";
 
 type EqualInputCroak = (left: InputCroak, right: InputCroak) => boolean;
 const equalInputCroak: EqualInputCroak = (left, right) => left.key === right.key;
@@ -136,24 +137,26 @@ export const PostableCroakList: React.FC<{
 
   return (
     <>
-      <div className="w-full flex flex-nowrap flex-col-reverse justify-start items-center max-w-5xl h-full">
-        <Spacing />
-        <InputCroaks croaker={croaker} croaks={inputCroaks} cancelCroak={cancelCroak} />
-        <LoadingCroaks getCroaks={getCroaks} />
-        <Spacing />
-      </div>
+      <Main>
+        <div className="w-full flex flex-nowrap flex-col-reverse justify-start items-center max-w-5xl h-full">
+          <Spacing />
+          <InputCroaks croaker={croaker} croaks={inputCroaks} cancelCroak={cancelCroak} />
+          <LoadingCroaks getCroaks={getCroaks} />
+          <Spacing />
+        </div>
+      </Main>
       <CroakInputFooter postText={setText} postFile={setFile} />
     </>
   );
 };
 
 export const FooterLessCroakList: React.FC<{ getCroaks: GetCroaks }> = ({ getCroaks }) => (
-  <>
+  <Main>
     <div className="w-full flex flex-nowrap flex-col-reverse justify-start items-center max-w-5xl">
       <LoadingCroaks getCroaks={getCroaks} />
       <Spacing />
     </div>
-  </>
+  </Main>
 );
 
 export const MessageCroakList: React.FC<{
@@ -163,11 +166,13 @@ export const MessageCroakList: React.FC<{
   description: string;
 }> = ({ linkUrl, linkName, description, getCroaks }) => (
   <>
-    <div className="w-full flex flex-nowrap flex-col-reverse justify-start items-center max-w-5xl">
-      <Spacing />
-      <LoadingCroaks getCroaks={getCroaks} />
-      <Spacing />
-    </div>
+    <Main>
+      <div className="w-full flex flex-nowrap flex-col-reverse justify-start items-center max-w-5xl">
+        <Spacing />
+        <LoadingCroaks getCroaks={getCroaks} />
+        <Spacing />
+      </div>
+    </Main>
     <RegisterFooter linkUrl={linkUrl} linkName={linkName} description={description} />
   </>
 );

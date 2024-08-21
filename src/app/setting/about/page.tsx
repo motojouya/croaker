@@ -2,8 +2,9 @@
 
 import { useMaster } from "@/app/SessionProvider";
 import { AboutCroaker } from "@/components/parts/AboutCroaker";
+import { Main } from "@/components/parts/main";
 
 export default function Page() {
   const { configuration, croaker } = useMaster();
-  return <AboutCroaker aboutContents={configuration.about_contents} />;
+  return <Main><AboutCroaker aboutContents={configuration.about_contents} /></Main>;
 }

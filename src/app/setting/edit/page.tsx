@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 
+import { Main } from "@/components/parts/main";
 import { AboutCroaker } from "@/components/parts/AboutCroaker";
 import { useMaster } from "@/app/SessionProvider";
 import { isRecordNotFound } from "@/database/fail";
@@ -103,38 +104,40 @@ export default function Page() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      {croaker.type === "registered" && (
+    <Main>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        {croaker.type === "registered" && (
+          <div className="m-2">
+            <p>{`@${croaker.value.croaker_id}`}</p>
+          </div>
+        )}
         <div className="m-2">
-          <p>{`@${croaker.value.croaker_id}`}</p>
+          <Input type="text" placeholder="Name" {...register("name")} />
+          {errors.name && <span className="text-red-500">{errors.name.message}</span>}
         </div>
-      )}
-      <div className="m-2">
-        <Input type="text" placeholder="Name" {...register("name")} />
-        {errors.name && <span className="text-red-500">{errors.name.message}</span>}
-      </div>
-      <div className="m-2">
-        <Textarea placeholder="Description" {...register("description")} />
-      </div>
-      {(croaker.type !== "registered" || !croaker.value.form_agreement) && (
-        <div className="my-5 mx-2">
-          <p className="text-xl">Please Agree About Croaker Condition</p>
-          <AboutCroaker aboutContents={configuration.about_contents} title={false} />
-          <center className="mt-2">
-            <Checkbox id="about_croaker_agreement" {...register("form_agreement")} />
-            <label htmlFor="about_croaker_agreement" className="ml-2">
-              Agree About Croaker Condition
-            </label>
+        <div className="m-2">
+          <Textarea placeholder="Description" {...register("description")} />
+        </div>
+        {(croaker.type !== "registered" || !croaker.value.form_agreement) && (
+          <div className="my-5 mx-2">
+            <p className="text-xl">Please Agree About Croaker Condition</p>
+            <AboutCroaker aboutContents={configuration.about_contents} title={false} />
+            <center className="mt-2">
+              <Checkbox id="about_croaker_agreement" {...register("form_agreement")} />
+              <label htmlFor="about_croaker_agreement" className="ml-2">
+                Agree About Croaker Condition
+              </label>
+            </center>
+          </div>
+        )}
+        <div className="m-2">
+          <center>
+            <Button type="submit" variant="outline">
+              <p>Submit</p>
+            </Button>
           </center>
         </div>
-      )}
-      <div className="m-2">
-        <center>
-          <Button type="submit" variant="outline">
-            <p>Submit</p>
-          </Button>
-        </center>
-      </div>
-    </form>
+      </form>
+    </Main>
   );
 }
