@@ -35,7 +35,7 @@ async function handle<R>(session: Session | null, callback: (identifier: Identif
 
     return NextResponse.json(result);
   } catch (e) {
-    console.log('route handler handle e', e);
+    console.log("route handler handle e", e);
     if (e instanceof Error) {
       return new NextResponse(e.message, { status: 500 });
     } else {

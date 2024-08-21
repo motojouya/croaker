@@ -7,7 +7,10 @@ import { ResultJson } from "@/lib/base/fail";
 export type ResponseType = ResultJson<FunctionResult>;
 
 const querySchema = z.object({
-  reverse: z.string().trim().toLowerCase()
+  reverse: z
+    .string()
+    .trim()
+    .toLowerCase()
     .transform((str) => JSON.parse(str))
     .pipe(z.boolean().nullable()),
   offset_cursor: z.coerce.number().nullable(),

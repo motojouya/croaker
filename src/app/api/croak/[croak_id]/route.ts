@@ -11,7 +11,10 @@ const pathSchema = z.object({
 });
 
 const querySchema = z.object({
-  reverse: z.string().trim().toLowerCase()
+  reverse: z
+    .string()
+    .trim()
+    .toLowerCase()
     .transform((str) => JSON.parse(str))
     .pipe(z.boolean().nullable()),
   offset_cursor: z.coerce.number().nullable(),

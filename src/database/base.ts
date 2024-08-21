@@ -105,13 +105,13 @@ function getQueries<T extends GetQuery>(db: Kysely<Database>, queries: T, acc: o
 //     : never;
 // };
 // function tryCatchQuery(db: Kysely<Database>, getQuery: (db: Kysely<Database>) => unknown) {
-// 
+//
 //   const query = getQuery(db);
-// 
+//
 //   if (typeof query !== 'function') {
 //     return query;
 //   }
-// 
+//
 //   // @ts-ignore
 //   return async (...args) => {
 //     try {

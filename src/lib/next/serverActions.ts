@@ -38,7 +38,7 @@ async function handle<R>(
 
     succeededResult = result as ResultJson<R>;
   } catch (e) {
-    console.log('server action handle e', e);
+    console.log("server action handle e", e);
     if (e instanceof Error) {
       return {
         name: serverActionFailName,
@@ -147,12 +147,10 @@ export function getServerAction<A extends z.SomeZodObject, R>(
 
     // FIXME なぞ pathToRevalidateはsync functionのはずだが、asyncになってる
     let path = resolveRevalidatePath(pathToRevalidate, parsedArgs);
-    if (path as any instanceof Promise) {
+    if ((path as any) instanceof Promise) {
       path = await path;
     }
 
-    return handle(await auth(), path, redirectPath, (identifier) =>
-      callback(identifier, parsedArgs),
-    );
+    return handle(await auth(), path, redirectPath, (identifier) => callback(identifier, parsedArgs));
   };
 }

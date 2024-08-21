@@ -3,7 +3,9 @@ import { CROAKER_STATUS_ACTIVE, CROAKER_STATUS_BANNED } from "@/database/type/cr
 import { Croak, CroakSimple, complementCroak } from "@/database/query/croak/croak";
 import { Database } from "@/database/type";
 
-export type Top = (db: Kysely<Database>) => (reverse: boolean, offsetCursor: number | null, limit: number) => Promise<Croak[]>;
+export type Top = (
+  db: Kysely<Database>,
+) => (reverse: boolean, offsetCursor: number | null, limit: number) => Promise<Croak[]>;
 export const top: Top = (db) => (reverse, offsetCursor, limit) =>
   complementCroak(db, () => getCroaks(db)(reverse, offsetCursor, limit));
 

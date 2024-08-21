@@ -28,10 +28,7 @@ const getCroaks: GetCroaks = (db) => async (threadId, reverse, offsetCursor, lim
     ])
     .where("k.deleted_date", "is", null)
     .where("ker.status", "=", CROAKER_STATUS_ACTIVE)
-    .where((eb) => eb.or([
-      eb("k.thread", "=", threadId),
-      eb("k.croak_id", "=", threadId),
-    ]))
+    .where((eb) => eb.or([eb("k.thread", "=", threadId), eb("k.croak_id", "=", threadId)]))
     .orderBy("k.croak_id", reverse ? "asc" : "desc")
     .limit(limit);
 

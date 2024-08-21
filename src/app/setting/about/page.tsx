@@ -6,5 +6,9 @@ import { Main } from "@/components/parts/main";
 
 export default function Page() {
   const { configuration, croaker } = useMaster();
-  return <Main><AboutCroaker aboutContents={configuration.about_contents} /></Main>;
+  return (
+    <Main>
+      <AboutCroaker aboutContents={configuration.about_contents} />
+    </Main>
+  );
 }
