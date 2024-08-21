@@ -5,15 +5,15 @@ import { Database } from "@/database/type";
 
 export type Thread = (
   db: Kysely<Database>,
-) => (threadId: number, reverse: boolean, offsetCursor: number, limit: number) => Promise<Croak[]>;
+) => (threadId: number, reverse: boolean, offsetCursor: number | null, limit: number) => Promise<Croak[]>;
 export const thread: Thread = (db) => (threadId, reverse, offsetCursor, limit) =>
   complementCroak(db, () => getCroaks(db)(threadId, reverse, offsetCursor, limit));
 
 type GetCroaks = (
   db: Kysely<Database>,
-) => (threadId: number, reverse: boolean, offsetCursor: number, limit: number) => Promise<CroakSimple[]>;
+) => (threadId: number, reverse: boolean, offsetCursor: number | null, limit: number) => Promise<CroakSimple[]>;
 const getCroaks: GetCroaks = (db) => async (threadId, reverse, offsetCursor, limit) => {
-  return await db
+  let query = db
     .selectFrom("croak as k")
     .innerJoin("croaker as ker", "k.croaker_id", "ker.croaker_id")
     .select((eb) => [
@@ -32,8 +32,12 @@ const getCroaks: GetCroaks = (db) => async (threadId, reverse, offsetCursor, lim
       eb("k.thread", "=", threadId),
       eb("k.croak_id", "=", threadId),
     ]))
-    .where("k.croak_id", reverse ? "<" : ">", offsetCursor)
-    .orderBy("k.croak_id", reverse ? "desc" : "asc")
-    .limit(limit)
-    .execute();
+    .orderBy("k.croak_id", reverse ? "asc" : "desc")
+    .limit(limit);
+
+  if (offsetCursor !== null) {
+    query = query.where("k.croak_id", reverse ? ">" : "<", offsetCursor);
+  }
+
+  return await query.execute();
 };

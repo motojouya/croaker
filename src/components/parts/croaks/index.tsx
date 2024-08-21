@@ -136,7 +136,7 @@ export const PostableCroakList: React.FC<{
 
   return (
     <>
-      <div className="w-full mt-5 flex flex-nowrap flex-col-reverse justify-start items-center max-w-5xl">
+      <div className="w-full flex flex-nowrap flex-col-reverse justify-start items-center max-w-5xl h-full">
         <Spacing />
         <InputCroaks croaker={croaker} croaks={inputCroaks} cancelCroak={cancelCroak} />
         <LoadingCroaks getCroaks={getCroaks} />
@@ -149,7 +149,7 @@ export const PostableCroakList: React.FC<{
 
 export const FooterLessCroakList: React.FC<{ getCroaks: GetCroaks }> = ({ getCroaks }) => (
   <>
-    <div className="w-full mt-5 flex flex-nowrap flex-col-reverse justify-start items-center max-w-5xl">
+    <div className="w-full flex flex-nowrap flex-col-reverse justify-start items-center max-w-5xl">
       <LoadingCroaks getCroaks={getCroaks} />
       <Spacing />
     </div>
@@ -163,7 +163,7 @@ export const MessageCroakList: React.FC<{
   description: string;
 }> = ({ linkUrl, linkName, description, getCroaks }) => (
   <>
-    <div className="w-full mt-5 flex flex-nowrap flex-col-reverse justify-start items-center max-w-5xl">
+    <div className="w-full flex flex-nowrap flex-col-reverse justify-start items-center max-w-5xl">
       <Spacing />
       <LoadingCroaks getCroaks={getCroaks} />
       <Spacing />

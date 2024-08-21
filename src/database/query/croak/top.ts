@@ -3,15 +3,15 @@ import { CROAKER_STATUS_ACTIVE, CROAKER_STATUS_BANNED } from "@/database/type/cr
 import { Croak, CroakSimple, complementCroak } from "@/database/query/croak/croak";
 import { Database } from "@/database/type";
 
-export type Top = (db: Kysely<Database>) => (reverse: boolean, offsetCursor: number, limit: number) => Promise<Croak[]>;
+export type Top = (db: Kysely<Database>) => (reverse: boolean, offsetCursor: number | null, limit: number) => Promise<Croak[]>;
 export const top: Top = (db) => (reverse, offsetCursor, limit) =>
   complementCroak(db, () => getCroaks(db)(reverse, offsetCursor, limit));
 
 type GetCroaks = (
   db: Kysely<Database>,
-) => (reverse: boolean, offsetCursor: number, limit: number) => Promise<CroakSimple[]>;
+) => (reverse: boolean, offsetCursor: number | null, limit: number) => Promise<CroakSimple[]>;
 const getCroaks: GetCroaks = (db) => async (reverse, offsetCursor, limit) => {
-  return await db
+  let query = db
     .selectFrom("croak as k")
     .innerJoin("croaker as ker", "k.croaker_id", "ker.croaker_id")
     .leftJoin(
@@ -37,8 +37,12 @@ const getCroaks: GetCroaks = (db) => async (reverse, offsetCursor, limit) => {
     .where("k.deleted_date", "is", null)
     .where("ker.status", "=", CROAKER_STATUS_ACTIVE)
     .where("k.thread", "is", null)
-    .where("k.croak_id", reverse ? "<" : ">", offsetCursor)
-    .orderBy("k.croak_id", reverse ? "desc" : "asc")
-    .limit(limit)
-    .execute();
+    .orderBy("k.croak_id", reverse ? "asc" : "desc")
+    .limit(limit);
+
+  if (offsetCursor !== null) {
+    query = query.where("k.croak_id", reverse ? ">" : "<", offsetCursor);
+  }
+
+  return await query.execute();
 };

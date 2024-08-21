@@ -74,8 +74,8 @@ export type GetTopCroak = ContextFullFunction<
 export const getTopCroaks: GetTopCroak =
   ({ storage, db }) =>
   (identifier) =>
-  (reverse = false, offsetCursor = 0) =>
-    getCroaks(storage, () => db.top(reverse, offsetCursor, DISPLAY_LIMIT));
+  (reverse = false, offsetCursor) =>
+    getCroaks(storage, () => db.top(reverse, offsetCursor || null, DISPLAY_LIMIT));
 
 setContext(getTopCroaks, getTopCroakContext);
 
@@ -94,8 +94,8 @@ export type GetThreadCroaks = ContextFullFunction<
 export const getThreadCroaks: GetThreadCroaks =
   ({ storage, db }) =>
   (identifier) =>
-  (threadId, reverse = false, offsetCursor = 0) =>
-    getCroaks(storage, () => db.thread(threadId, reverse, offsetCursor, DISPLAY_LIMIT));
+  (threadId, reverse = false, offsetCursor) =>
+    getCroaks(storage, () => db.thread(threadId, reverse, offsetCursor || null, DISPLAY_LIMIT));
 
 setContext(getThreadCroaks, getThreadCroaksContext);
 
@@ -114,7 +114,7 @@ export type SearchCroaks = ContextFullFunction<
 export const searchCroaks: SearchCroaks =
   ({ storage, db }) =>
   (identifier) =>
-  (text, reverse = false, offsetCursor = 0) =>
-    getCroaks(storage, () => db.search(text, reverse, offsetCursor, DISPLAY_LIMIT));
+  (text, reverse = false, offsetCursor) =>
+    getCroaks(storage, () => db.search(text, reverse, offsetCursor || null, DISPLAY_LIMIT));
 
 setContext(searchCroaks, searchCroaksContext);

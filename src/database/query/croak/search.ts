@@ -5,15 +5,15 @@ import { Database } from "@/database/type";
 
 export type Search = (
   db: Kysely<Database>,
-) => (search: string, reverse: boolean, offsetCursor: number, limit: number) => Promise<Croak[]>;
+) => (search: string, reverse: boolean, offsetCursor: number | null, limit: number) => Promise<Croak[]>;
 export const search: Search = (db) => (search, reverse, offsetCursor, limit) =>
   complementCroak(db, () => getCroaks(db)(search, reverse, offsetCursor, limit));
 
 type GetCroaks = (
   db: Kysely<Database>,
-) => (search: string, reverse: boolean, offsetCursor: number, limit: number) => Promise<CroakSimple[]>;
+) => (search: string, reverse: boolean, offsetCursor: number | null, limit: number) => Promise<CroakSimple[]>;
 const getCroaks: GetCroaks = (db) => async (search, reverse, offsetCursor, limit) => {
-  return await db
+  let query = db
     .selectFrom("croak as k")
     .innerJoin("croaker as ker", "k.croaker_id", "ker.croaker_id")
     .leftJoin(
@@ -42,9 +42,13 @@ const getCroaks: GetCroaks = (db) => async (search, reverse, offsetCursor, limit
     .where("k.deleted_date", "is", null)
     .where("ker.status", "=", CROAKER_STATUS_ACTIVE)
     .where("k.thread", "is", null)
-    .where("k.croak_id", reverse ? "<" : ">", offsetCursor)
     .where((eb) => eb.or([eb("k.contents", "like", `%${search}%`), eb("thread.exist_count", ">", 0)]))
-    .orderBy("k.croak_id", reverse ? "desc" : "asc")
-    .limit(limit)
-    .execute();
+    .orderBy("k.croak_id", reverse ? "asc" : "desc")
+    .limit(limit);
+
+  if (offsetCursor !== null) {
+    query = query.where("k.croak_id", reverse ? ">" : "<", offsetCursor);
+  }
+
+  return await query.execute();
 };
