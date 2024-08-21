@@ -43,8 +43,8 @@ type EffectFocusScroll = (scrollHere: boolean, ref: RefObject<HTMLDivElement>) =
 const effectFocusScroll: EffectFocusScroll = (scrollHere, ref) => {
   if (scrollHere && ref && ref.current) {
     ref.current.scrollIntoView({
-      behavior: "smooth",
-      block: "end",
+      behavior: "instant",
+      block: "start",
     });
   }
 };

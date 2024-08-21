@@ -39,7 +39,7 @@ export const Header: React.FC<{}> = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 w-screen h-12 flex flex-nowrap justify-center items-center bg-white border-b">
+    <header className="sticky top-0 left-0 w-screen h-12 flex flex-nowrap justify-center items-center bg-white border-b">
       <div className="flex flex-nowrap justify-between items-center w-full max-w-5xl">
         <div className="grow-0 shrink-0 w-30 h-30 m-2">
           <Link href={"/"}>

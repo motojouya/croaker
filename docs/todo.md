@@ -11,7 +11,7 @@ o croaker/getCroaker.ts
 o croaker/getRecentActivities.ts
 o getMaster.ts
 - みため調整margin使ってるのまずいかも
-  メイン画面
+o メイン画面
 
 ## その後
   本番用docker image作成  

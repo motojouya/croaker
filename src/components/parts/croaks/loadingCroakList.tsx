@@ -7,34 +7,6 @@ import { replaceArray, removeArray } from "@/lib/next/utility";
 import type { Croaker } from "@/database/query/croaker/croaker";
 import { Croak, InputTextCroak, InputFileCroak, MessageItem } from "@/components/parts/croaks/croak";
 
-// TODO test data
-const posts = Array(20)
-  .fill(0)
-  .map((v, index) => ({
-    croak_id: index,
-    croaker_id: "own6r",
-    contents: "test" + index,
-    thread: null,
-    posted_date: new Date(),
-    deleted_date: null,
-    has_thread: false,
-    croaker_name: "name",
-    links: [],
-    files: [],
-  }));
-posts.splice(1, 1, {
-  croak_id: 1,
-  croaker_id: "own6r",
-  contents: "test1\ntest0test0test0test0test0test0test0test0test0111111111test01\nテストなんですねん",
-  thread: null,
-  posted_date: new Date(),
-  deleted_date: null,
-  has_thread: false,
-  croaker_name: "test_name",
-  links: [],
-  files: [],
-});
-
 type EqualCroak = (left: CroakType, right: CroakType) => boolean;
 const equalCroak: EqualCroak = (left, right) => left.croak_id === right.croak_id;
 
@@ -228,11 +200,3 @@ export const LoadingCroaks: React.FC<{ getCroaks: GetCroaks }> = ({ getCroaks })
     </>
   );
 };
-
-//    <Croaks
-//      croakList={posts}
-//      loadSurround={() => {
-//        console.log("TODO for test! loadSurround.");
-//      }}
-//      startingPoint={true}
-//    />
