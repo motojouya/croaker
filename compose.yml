@@ -1,5 +1,3 @@
-version: '3.1'
-
 services:
   gcs:
     image: fsouza/fake-gcs-server
@@ -12,6 +10,7 @@ services:
   app:
     build:
       context: "."
+      target: develop
       args:
         - UID
         - GID
@@ -20,7 +19,7 @@ services:
     tty: true
     volumes:
       - ".:/srv"
-    # command: sh -c "npm run dev"
+    command: sh -c "npm run dev"
     environment:
       TZ: Asia/Tokyo
       NODE_ENV: develop
