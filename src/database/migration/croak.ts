@@ -1,4 +1,5 @@
 import { Kysely, sql } from "kysely";
+// @ts-ignore
 import { Database } from "@/database/type";
 
 // db.fn("datetime", ["now", "localtime"])

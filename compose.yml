@@ -25,8 +25,8 @@ services:
       NODE_ENV: develop
       PORT: 3000
       SQLITE_FILE: croaker.sqlite3
-      STORAGE_BUCKET: 'croaker'
-      STORAGE_DIRECTORY: '/files'
+      STORAGE_BUCKET: "${STORAGE_BUCKET}" # 'croaker'
+      STORAGE_DIRECTORY: "${STORAGE_DIRECTORY}" # '/files'
       NEXTAUTH_SECRET: "${NEXTAUTH_SECRET}"
       NEXTAUTH_URL: "${NEXTAUTH_URL}"
       GITHUB_ID: "${GITHUB_ID}"
