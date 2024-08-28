@@ -45,3 +45,7 @@ https://terashim.com/posts/docker-build-secret/
 
 https://zenn.dev/shiroemons/articles/c12492668ccdc2  
 
+https://zenn.dev/kou_pg_0131/articles/google-cloudrun-litestream  
+https://amuyikam.work/posts/hello-litestream/  
+https://zenn.dev/jj/articles/cloudrun-v2-with-nginx#google-cloud-%E3%81%AE%E8%A8%AD%E5%AE%9A  
+https://zenn.dev/kou_pg_0131/articles/gh-actions-oidc-gcp  
