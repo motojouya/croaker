@@ -47,5 +47,15 @@ https://zenn.dev/shiroemons/articles/c12492668ccdc2
 
 https://zenn.dev/kou_pg_0131/articles/google-cloudrun-litestream  
 https://amuyikam.work/posts/hello-litestream/  
-https://zenn.dev/jj/articles/cloudrun-v2-with-nginx#google-cloud-%E3%81%AE%E8%A8%AD%E5%AE%9A  
+https://zenn.dev/jj/articles/cloudrun-v2-with-nginx#google-cloud-%E3%81%A
+
+domain  
+https://qiita.com/izumiiii/items/4339f14b38f9f3948319  
+https://rmrmrmarmrmrm.hatenablog.com/entry/2021/03/10/080000  
+https://qiita.com/morita-toyscreation/items/debc1a7a2be740d55327  
+https://qiita.com/sasamuku/items/d600faf977510989de8c  
+https://qiita.com/bon10/items/93b9c6ed7222c9988879  
+
+
+E%E8%A8%AD%E5%AE%9A  
 https://zenn.dev/kou_pg_0131/articles/gh-actions-oidc-gcp  
