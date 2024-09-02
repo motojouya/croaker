@@ -13,4 +13,8 @@
 - [ ] litestream
   - [ ] bucketに配置
   - [ ] litestreamへ連携するサイドカーコンテナ設定
+- [ ] domain
+  - [ ] とりあえずデフォルトドメインでdeploy
+  - [ ] 今のドメインのサブドメインをコンソールから結びつけ
+  - [ ] terraform化
 

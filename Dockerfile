@@ -43,6 +43,7 @@ RUN chown croaker:croaker .next
 COPY --from=build --chown=croaker:croaker /srv/.next/standalone ./
 COPY --from=build --chown=croaker:croaker /srv/.next/static ./.next/static
 COPY --from=build --chown=croaker:croaker /srv/public ./public
+COPY --from=build --chown=croaker:croaker /srv/script ./script
 
 USER croaker
 EXPOSE 3000
@@ -62,5 +63,5 @@ ENV GOOGLE_CLIENT_ID ""
 ENV GOOGLE_CLIENT_SECRET ""
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["node", "server.js"]
+CMD ["node", "script/migrate.js", "&&", "node", "server.js"]
 # CMD HOSTNAME="0.0.0.0" node server.js
