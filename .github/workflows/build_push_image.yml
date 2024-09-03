@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      no-cache:
+        description: "Build docker images with no cache"
+        default: false
+        required: false
+        type: boolean
 
 jobs:
   build_push:
@@ -29,7 +36,7 @@ jobs:
           tags: |
             type=raw,value=latest
             type=raw,value=${{ steps.version.outputs.version }}
-            type=sha,prefix=,suffix=,format=short
+            type=sha,format=long
       - uses: docker/build-push-action@v5
         with:
           file: ./Dockerfile
@@ -37,3 +44,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          no-cache: ${{ inputs.no-cache == true }}
