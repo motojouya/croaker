@@ -14,7 +14,7 @@ resource "google_cloud_run_v2_service" "croaker_service" {
     volumes {
       name = "data"
       empty_dir {
-        medium = "MEMORY"
+        medium     = "MEMORY"
         size_limit = "8Mi"
       }
     }
@@ -32,7 +32,7 @@ resource "google_cloud_run_v2_service" "croaker_service" {
         value = ""
         value_source {
           secret_key_ref {
-            secret = google_secret_manager_secret.secret.secret_id
+            secret  = google_secret_manager_secret.secret.secret_id
             version = "1"
           }
         }
@@ -66,8 +66,8 @@ resource "google_cloud_run_v2_service" "croaker_service" {
       # command =  ['/bin/sh', '-c', '/usr/local/bin/litestream restore -if-db-not-exists -if-replica-exists -v -o /var/lib/myapp/db gcs://litestream-example/db && nc -lkp 8081 -e echo "restore completed!"']
     }
     containers {
-      name       = "restore"
-      image      = "litestream/litestream:0.3.13"
+      name  = "restore"
+      image = "litestream/litestream:0.3.13"
 
       volume_mounts {
         name       = "data"
@@ -76,9 +76,9 @@ resource "google_cloud_run_v2_service" "croaker_service" {
 
       startupProbe {
         initial_delay_seconds = 0
-        failure_threshold = 1
-        timeout_seconds = 1
-        period_seconds = 3
+        failure_threshold     = 1
+        timeout_seconds       = 1
+        period_seconds        = 3
         tcp_socket {
           port = 8081
         }
