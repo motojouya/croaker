@@ -47,7 +47,6 @@ jobs:
           workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
       - uses: hashicorp/setup-terraform@v2
-        working-directory: deploy
         with:
           terraform_version: 1.9.5
 
