@@ -25,10 +25,11 @@ jobs:
       - uses: google-github-actions/auth@v1
         id: 'auth'
         with:
+          token_format: access_token
           workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
       # - run: gcloud auth configure-docker "${{vars.registry_location}}-docker.pkg.dev" --quiet
-      - uses: docker/login-action@v1
+      - uses: docker/login-action@v3
         with:
           username: 'oauth2accesstoken'
           password: '${{ steps.auth.outputs.access_token }}'
