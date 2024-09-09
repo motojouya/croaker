@@ -28,25 +28,61 @@ resource "google_cloud_run_v2_service" "croaker_service" {
         container_port = 3000
       }
       env {
-        name  = ""
-        value = ""
+        name  = "NEXTAUTH_SECRET"
         value_source {
           secret_key_ref {
-            secret  = google_secret_manager_secret.secret.secret_id
-            version = "1"
+            secret  = "projects/${var.project_id}/secrets/${var.nextauth_secret_key}"
           }
         }
       }
-      # TODO secretから取る方法がいいよね
-      # STORAGE_BUCKET
-      # STORAGE_DIRECTORY
-      # NEXT_ORIGIN
-      # NEXTAUTH_SECRET
-      # NEXTAUTH_URL
-      # GOOGLE_CLIENT_ID
-      # GOOGLE_CLIENT_SECRET
-      # GITHUB_ID
-      # GITHUB_SECRET
+      env {
+        name  = "GOOGLE_CLIENT_ID"
+        value_source {
+          secret_key_ref {
+            secret  = "projects/${var.project_id}/secrets/${var.google_client_id_key}"
+          }
+        }
+      }
+      env {
+        name  = "GOOGLE_CLIENT_SECRET"
+        value_source {
+          secret_key_ref {
+            secret  = "projects/${var.project_id}/secrets/${var.google_client_secret_key}"
+          }
+        }
+      }
+      env {
+        name  = "GITHUB_ID"
+        value_source {
+          secret_key_ref {
+            secret  = "projects/${var.project_id}/secrets/${var.gh_account_id_key}"
+          }
+        }
+      }
+      env {
+        name  = "GITHUB_SECRET"
+        value_source {
+          secret_key_ref {
+            secret  = "projects/${var.project_id}/secrets/${var.gh_account_secret_key}"
+          }
+        }
+      }
+      env {
+        name  = "STORAGE_BUCKET"
+        value = var.file_bucket_name
+      }
+      env {
+        name  = "STORAGE_DIRECTORY"
+        value = var.file_bucket_path
+      }
+      env {
+        name  = "NEXT_ORIGIN"
+        value = var.next_origin
+      }
+      env {
+        name  = "NEXTAUTH_URL"
+        value = var.nextauth_url
+      }
       volume_mounts {
         name       = "data"
         mount_path = var.database_path
