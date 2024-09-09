@@ -32,7 +32,7 @@ jobs:
       - id: meta
         uses: docker/metadata-action@v5
         with:
-          images: "${{vars.registry_location}}-docker.pkg.dev/${{vars.project_id}}/${{vars.repositry_name}}/${{vars.image_name}}:${{vars.image_tag}}"
+          images: "${{vars.registry_location}}-docker.pkg.dev/${{vars.project_id}}/${{vars.repositry_name}}/${{vars.image_name}}"
           tags: |
             type=raw,value=latest
             type=raw,value=${{ steps.version.outputs.version }}

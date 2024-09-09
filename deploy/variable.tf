@@ -32,4 +32,21 @@ variable "database_path" {
 }
 variable "service_account_runner" {
 }
-# TODO 環境変数はsecretから取るが、このあたりの変数はgithub actionsで直にbindしても問題ないの？
+variable "file_bucket_name" {
+}
+variable "file_bucket_path" {
+}
+variable "next_origin" {
+}
+variable "nextauth_url" {
+}
+variable "nextauth_secret_key" {
+}
+variable "google_client_id_key" {
+}
+variable "google_client_secret_key" {
+}
+variable "gh_account_id_key" {
+}
+variable "gh_account_secret_key" {
+}
