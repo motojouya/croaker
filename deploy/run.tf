@@ -28,42 +28,42 @@ resource "google_cloud_run_v2_service" "croaker_service" {
         container_port = 3000
       }
       env {
-        name  = "NEXTAUTH_SECRET"
+        name = "NEXTAUTH_SECRET"
         value_source {
           secret_key_ref {
-            secret  = "projects/${var.project_id}/secrets/${var.nextauth_secret_key}"
+            secret = "projects/${var.project_id}/secrets/${var.nextauth_secret_key}"
           }
         }
       }
       env {
-        name  = "GOOGLE_CLIENT_ID"
+        name = "GOOGLE_CLIENT_ID"
         value_source {
           secret_key_ref {
-            secret  = "projects/${var.project_id}/secrets/${var.google_client_id_key}"
+            secret = "projects/${var.project_id}/secrets/${var.google_client_id_key}"
           }
         }
       }
       env {
-        name  = "GOOGLE_CLIENT_SECRET"
+        name = "GOOGLE_CLIENT_SECRET"
         value_source {
           secret_key_ref {
-            secret  = "projects/${var.project_id}/secrets/${var.google_client_secret_key}"
+            secret = "projects/${var.project_id}/secrets/${var.google_client_secret_key}"
           }
         }
       }
       env {
-        name  = "GITHUB_ID"
+        name = "GITHUB_ID"
         value_source {
           secret_key_ref {
-            secret  = "projects/${var.project_id}/secrets/${var.gh_account_id_key}"
+            secret = "projects/${var.project_id}/secrets/${var.gh_account_id_key}"
           }
         }
       }
       env {
-        name  = "GITHUB_SECRET"
+        name = "GITHUB_SECRET"
         value_source {
           secret_key_ref {
-            secret  = "projects/${var.project_id}/secrets/${var.gh_account_secret_key}"
+            secret = "projects/${var.project_id}/secrets/${var.gh_account_secret_key}"
           }
         }
       }
