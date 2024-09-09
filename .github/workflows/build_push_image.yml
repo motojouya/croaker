@@ -36,7 +36,7 @@ jobs:
           registry: '${{ vars.registry_location }}-docker.pkg.dev'
       #   id: docker-auth
       - id: version
-        run: echo "version=$(cat package.json | jq -r .version)" >> $GITHUB_ENV
+        run: echo "version=$(cat package.json | jq -r .version)" >> "$GITHUB_OUTPUT"
       - id: meta
         uses: docker/metadata-action@v5
         with:
