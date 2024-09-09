@@ -27,6 +27,7 @@ jobs:
           workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
         # id: 'auth'
+      - run: gcloud auth configure-docker "${{vars.registry_location}}-docker.pkg.dev" --quiet
       - id: version
         run: echo "version=$(cat package.json | jq -r .version)" >> $GITHUB_ENV
       - id: meta
