@@ -38,31 +38,34 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    defaults:
-      run:
-        working-directory: deploy
 
     steps:
 
       - uses: actions/checkout@v3
-        working-directory: .
       - uses: google-github-actions/auth@v1
         with:
           workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
       - uses: hashicorp/setup-terraform@v2
+        working-directory: deploy
         with:
           terraform_version: 1.9.5
 
       - run: terraform fmt -check -recursive
+        working-directory: deploy
       - run: terraform init -backend-config="bucket=$TF_BUCKET_NAME" -backend-config="prefix=$TF_BUCKET_PREFIX"
+        working-directory: deploy
       - run: terraform validate
+        working-directory: deploy
       - run: terraform plan -no-color -lock-timeout=60m
+        working-directory: deploy
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' && inputs.do_apply)
         run: terraform apply -auto-approve -input=false
+        working-directory: deploy
 
       - name: Terraform Destroy
         if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' && !inputs.do_apply)
         run: terraform destroy -auto-approve -input=false
+        working-directory: deploy
