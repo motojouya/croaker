@@ -34,7 +34,8 @@ resource "google_cloud_run_v2_service" "croaker_service" {
         name = "NEXTAUTH_SECRET"
         value_source {
           secret_key_ref {
-            secret = "projects/${var.project_id}/secrets/${var.nextauth_secret_key}"
+            secret  = "projects/${var.project_id}/secrets/${var.nextauth_secret_key}"
+            version = "latest"
           }
         }
       }
@@ -42,7 +43,8 @@ resource "google_cloud_run_v2_service" "croaker_service" {
         name = "GOOGLE_CLIENT_ID"
         value_source {
           secret_key_ref {
-            secret = "projects/${var.project_id}/secrets/${var.google_client_id_key}"
+            secret  = "projects/${var.project_id}/secrets/${var.google_client_id_key}"
+            version = "latest"
           }
         }
       }
@@ -50,7 +52,8 @@ resource "google_cloud_run_v2_service" "croaker_service" {
         name = "GOOGLE_CLIENT_SECRET"
         value_source {
           secret_key_ref {
-            secret = "projects/${var.project_id}/secrets/${var.google_client_secret_key}"
+            secret  = "projects/${var.project_id}/secrets/${var.google_client_secret_key}"
+            version = "latest"
           }
         }
       }
@@ -58,7 +61,8 @@ resource "google_cloud_run_v2_service" "croaker_service" {
         name = "GITHUB_ID"
         value_source {
           secret_key_ref {
-            secret = "projects/${var.project_id}/secrets/${var.gh_account_id_key}"
+            secret  = "projects/${var.project_id}/secrets/${var.gh_account_id_key}"
+            version = "latest"
           }
         }
       }
@@ -66,7 +70,8 @@ resource "google_cloud_run_v2_service" "croaker_service" {
         name = "GITHUB_SECRET"
         value_source {
           secret_key_ref {
-            secret = "projects/${var.project_id}/secrets/${var.gh_account_secret_key}"
+            secret  = "projects/${var.project_id}/secrets/${var.gh_account_secret_key}"
+            version = "latest"
           }
         }
       }
