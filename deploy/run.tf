@@ -122,9 +122,6 @@ resource "google_cloud_run_v2_service" "croaker_service" {
         tcp_socket {
           port = 8081
         }
-        http_get {
-          port = 8080
-        }
       }
       args = ["replicate", var.database_path, "gcs://${var.db_backet_name}/${var.db_backet_path}"]
     }
