@@ -1,7 +1,10 @@
 resource "google_cloud_run_v2_service" "croaker_service" {
-  name     = "croaker"
-  location = "asia-northeast1"
-  ingress  = "INGRESS_TRAFFIC_ALL"
+  provider            = google-beta
+  launch_stage        = "BETA"
+  name                = "croaker"
+  location            = "asia-northeast1"
+  ingress             = "INGRESS_TRAFFIC_ALL"
+  deletion_protection = false
 
   template {
     service_account = var.service_account_runner # "<SERVICE_ACCOUNT_ID>@<PROJECT_ID>.iam.gserviceaccount.com"
@@ -98,7 +101,8 @@ resource "google_cloud_run_v2_service" "croaker_service" {
         mount_path = var.database_path
       }
 
-      command = "restore -if-db-not-exists -if-replica-exists -v -o ${var.database_path} gcs://${var.db_backet_name}/${var.db_backet_path} && nc -lkp 8081 -e echo restored"
+      command = ["restore", "-if-db-not-exists", "-if-replica-exists", "-v", "-o", "${var.database_path}", "gcs://${var.db_backet_name}/${var.db_backet_path}", "&&", "nc", "-lkp", "8081", "-e", "echo", "restored"]
+      # command = "restore -if-db-not-exists -if-replica-exists -v -o ${var.database_path} gcs://${var.db_backet_name}/${var.db_backet_path} && nc -lkp 8081 -e echo restored"
       # command =  ['/bin/sh', '-c', '/usr/local/bin/litestream restore -if-db-not-exists -if-replica-exists -v -o /var/lib/myapp/db gcs://litestream-example/db && nc -lkp 8081 -e echo "restore completed!"']
     }
     containers {
@@ -110,7 +114,7 @@ resource "google_cloud_run_v2_service" "croaker_service" {
         mount_path = var.database_path
       }
 
-      startupProbe {
+      startup_probe {
         initial_delay_seconds = 0
         failure_threshold     = 1
         timeout_seconds       = 1
