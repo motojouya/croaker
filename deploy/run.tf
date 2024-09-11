@@ -91,6 +91,10 @@ resource "google_cloud_run_v2_service" "croaker_service" {
         name  = "NEXTAUTH_URL"
         value = var.nextauth_url
       }
+      env {
+        name  = "SQLITE_FILE"
+        value = "${var.database_path}/${var.database_file}"
+      }
       volume_mounts {
         name       = "data"
         mount_path = var.database_path
@@ -106,9 +110,7 @@ resource "google_cloud_run_v2_service" "croaker_service" {
         mount_path = var.database_path
       }
 
-      command = ["restore", "-if-db-not-exists", "-if-replica-exists", "-v", "-o", "${var.database_path}", "gcs://${var.db_backet_name}/${var.db_backet_path}", "&&", "nc", "-lkp", "8081", "-e", "echo", "restored"]
-      # command = "restore -if-db-not-exists -if-replica-exists -v -o ${var.database_path} gcs://${var.db_backet_name}/${var.db_backet_path} && nc -lkp 8081 -e echo restored"
-      # command =  ['/bin/sh', '-c', '/usr/local/bin/litestream restore -if-db-not-exists -if-replica-exists -v -o /var/lib/myapp/db gcs://litestream-example/db && nc -lkp 8081 -e echo "restore completed!"']
+      args = ["replicate", "${var.database_path}/${var.database_file}", "gcs://${var.db_backet_name}/${var.db_backet_path}/${var.database_file}"]
     }
     containers {
       name  = "restore"
@@ -125,10 +127,13 @@ resource "google_cloud_run_v2_service" "croaker_service" {
         timeout_seconds       = 1
         period_seconds        = 3
         tcp_socket {
-          port = 8081
+          port = 8080
         }
       }
-      args = ["replicate", var.database_path, "gcs://${var.db_backet_name}/${var.db_backet_path}"]
+
+      # command = ["restore", "-if-db-not-exists", "-if-replica-exists", "-v", "-o", "${var.database_path}", "gcs://${var.db_backet_name}/${var.db_backet_path}", "&&", "nc", "-lkp", "8080", "-e", "echo", "restored"]
+      # command = "restore -if-db-not-exists -if-replica-exists -v -o ${var.database_path} gcs://${var.db_backet_name}/${var.db_backet_path} && nc -lkp 8081 -e echo restored"
+      command = ["/bin/sh", "-c", "/usr/local/bin/litestream restore -if-db-not-exists -if-replica-exists -v -o ${var.database_path}/${var.database_file} gcs://${var.db_backet_name}/${var.db_backet_path}/${var.database_file} && nc -lkp 8080 -e echo restored"]
     }
   }
 
