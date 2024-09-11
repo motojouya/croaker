@@ -30,6 +30,8 @@ variable "db_backet_path" {
 # applocation env
 variable "database_path" {
 }
+variable "database_file" {
+}
 variable "service_account_runner" {
 }
 variable "file_bucket_name" {
