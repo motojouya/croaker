@@ -23,6 +23,7 @@ jobs:
           service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
 
       - run: ./dc build
+      - run: ./dc up
       - run: docker compose exec app npm install
 
       - name: Migrate Latest
