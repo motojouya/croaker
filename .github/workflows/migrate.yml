@@ -1,0 +1,46 @@
+name: 'migration'
+
+on:
+  workflow_dispatch:
+    inputs:
+      migrate:
+        description: 'latest? or rollback'
+        required: true
+        type: boolean
+
+jobs:
+  build_push:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v1
+        with:
+          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      # litestream
+      # LITESTREAM_VERSION=v0.3.13
+      # https://github.com/benbjohnson/litestream/releases/download/$LITESTREAM_VERSION/litestream-$LITESTREAM_VERSION-linux-amd64.tar.gz /tmp/litestream.tar.gz
+      # tar -C /usr/local/bin -xzf /tmp/litestream.tar.gz
+      - name: Install Litestream
+        run: |
+          sudo apt install -y wget && \
+          wget https://github.com/benbjohnson/litestream/releases/download/v0.3.13/litestream-v0.3.13-linux-amd64.deb && \
+          sudo dpkg -i litestream-v0.3.13-linux-amd64.deb
+      - run: npm install
+
+      # - run: ./dc build
+      # - run: ./dc up
+      # - run: docker compose exec app npm install
+
+      - name: Migrate Latest
+        if: github.ref == 'refs/heads/main' && inputs.migrate
+        run: ./migrate.sh latest ${{ var.database_path }} ${{ var.database_file }} ${{ var.db_backet_name }} ${{ var.db_backet_path }}
+
+      - name: Migrate Rollback
+        if: github.ref == 'refs/heads/main' && !inputs.migrate
+        run: ./migrate.sh rollback ${{ var.database_path }} ${{ var.database_file }} ${{ var.db_backet_name }} ${{ var.db_backet_path }}

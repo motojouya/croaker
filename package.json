@@ -9,11 +9,7 @@
     "lint": "next lint",
     "shadcn": "npx shadcn-ui@latest add",
     "prettier": "npx prettier --write 'src/**/*.{ts,tsx}'",
-    "prettier_check": "npx prettier --check 'src/**/*.{ts,tsx}'",
-    "build:migrater": "npx tsc src/database/migrate.ts --outDir script -m nodenext",
-    "build:migration": "npx tsc src/database/migration/*.ts --outDir script/migration -m nodenext",
-    "build:migrate": "npm run build:migrater && npm run build:migration",
-    "migrate": "node script/migrate.js"
+    "prettier_check": "npx prettier --check 'src/**/*.{ts,tsx}'"
   },
   "dependencies": {
     "@auth/kysely-adapter": "^1.4.1",
@@ -29,7 +25,7 @@
     "fp-ts": "^2.16.6",
     "imagemagick": "^0.1.3",
     "jsdom": "^24.1.0",
-    "kysely": "^0.27.3",
+    "kysely": "^0.27.4",
     "lucide-react": "^0.379.0",
     "next": "14.2.3",
     "next-auth": "^5.0.0-beta.19",
@@ -51,6 +47,7 @@
     "@types/uuid": "^10.0.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.3",
+    "kysely-ctl": "^0.9.0",
     "postcss": "^8",
     "prettier": "^3.2.5",
     "tailwindcss": "^3.4.1",
