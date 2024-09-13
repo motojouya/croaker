@@ -9,11 +9,7 @@
     "lint": "next lint",
     "shadcn": "npx shadcn-ui@latest add",
     "prettier": "npx prettier --write 'src/**/*.{ts,tsx}'",
-    "prettier_check": "npx prettier --check 'src/**/*.{ts,tsx}'",
-    "build:migrater": "npx tsc src/database/migrate.ts --outDir script -m nodenext",
-    "build:migration": "npx tsc src/database/migration/*.ts --outDir script/migration -m nodenext",
-    "build:migrate": "npm run build:migrater && npm run build:migration",
-    "migrate": "node script/migrate.js"
+    "prettier_check": "npx prettier --check 'src/**/*.{ts,tsx}'"
   },
   "dependencies": {
     "@auth/kysely-adapter": "^1.4.1",

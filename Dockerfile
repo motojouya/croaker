@@ -5,6 +5,12 @@ RUN apt install -y sqlite3 imagemagick
 
 # DEVELOP
 FROM base as develop
+# litestream
+# LITESTREAM_VERSION=v0.3.13
+# https://github.com/benbjohnson/litestream/releases/download/$LITESTREAM_VERSION/litestream-$LITESTREAM_VERSION-linux-amd64.tar.gz /tmp/litestream.tar.gz
+# tar -C /usr/local/bin -xzf /tmp/litestream.tar.gz
+RUN wget https://github.com/benbjohnson/litestream/releases/download/v0.3.13/litestream-v0.3.13-linux-amd64.deb
+RUN sudo dpkg -i litestream-v0.3.13-linux-amd64.deb
 ARG UID
 ARG GID
 ARG USERNAME

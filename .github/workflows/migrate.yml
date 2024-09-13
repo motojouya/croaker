@@ -1,26 +1,12 @@
-name: 'container image build and push'
+name: 'migration'
 
 on:
   workflow_dispatch:
     inputs:
-      do_apply:
+      migrate:
         description: 'latest? or rollback'
         required: true
         type: boolean
-
-          # mainからしか実行できないようにしないと、事故る
-
-LITESTREAM_VERSION=v0.3.13
-
-https://github.com/benbjohnson/litestream/releases/download/$LITESTREAM_VERSION/litestream-$LITESTREAM_VERSION-linux-amd64.tar.gz /tmp/litestream.tar.gz
-tar -C /usr/local/bin -xzf /tmp/litestream.tar.gz
-
-/usr/local/bin/litestream restore -if-db-not-exists -if-replica-exists -o ${var.database_path}/${var.database_file} gcs://${var.db_backet_name}/${var.db_backet_path}/${var.database_file}
-replicate ${var.database_path}/${var.database_file} gcs://${var.db_backet_name}/${var.db_backet_path}/${var.database_file}
-
-npm install
-npx kysely migrate:latest
-npx kysely migrate:rollback
 
 jobs:
   build_push:
@@ -31,37 +17,18 @@ jobs:
     steps:
 
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
       - uses: google-github-actions/auth@v1
-        id: 'auth'
         with:
-          token_format: access_token
           workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
-      # - run: gcloud auth configure-docker "${{vars.registry_location}}-docker.pkg.dev" --quiet
-      - uses: docker/login-action@v3
-        with:
-          username: 'oauth2accesstoken'
-          password: '${{ steps.auth.outputs.access_token }}'
-          registry: '${{ vars.registry_location }}-docker.pkg.dev'
-      #   id: docker-auth
-      - id: version
-        run: echo "version=$(cat package.json | jq -r .version)" >> "$GITHUB_OUTPUT"
-      - id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: "${{vars.registry_location}}-docker.pkg.dev/${{vars.project_id}}/${{vars.repositry_name}}/${{vars.image_name}}"
-          tags: |
-            type=raw,value=latest
-            type=raw,value=${{ steps.version.outputs.version }}
-            type=sha,format=long
-      - uses: docker/build-push-action@v5
-        with:
-          file: ./Dockerfile
-          target: production
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          no-cache: ${{ inputs.no-cache == true }}
+
+      - run: ./dc build
+      - run: docker compose exec app npm install
+
+      - name: Migrate Latest
+        if: github.ref == 'refs/heads/main' && inputs.migrate
+        run: docker compose exec app ./migrate.sh latest ${{ var.database_path }} ${{ var.database_file }} ${{ var.db_backet_name }} ${{ var.db_backet_path }}
+
+      - name: Migrate Rollback
+        if: github.ref == 'refs/heads/main' && !inputs.migrate
+        run: docker compose exec app ./migrate.sh rollback ${{ var.database_path }} ${{ var.database_file }} ${{ var.db_backet_name }} ${{ var.db_backet_path }}
