@@ -15,6 +15,10 @@ fi
 litestream restore -if-db-not-exists -if-replica-exists -o "$DATABASE_FILE" "gcs://$DB_BUCKET_NAME/$DB_BUCKET_PATH/$DATABASE_FILE"
 litestream replicate "$DATABASE_FILE" "gcs://$DB_BUCKET_NAME/$DB_BUCKET_PATH/$DATABASE_FILE" &
 REPLICATE_PID=$!
+echo "working directory"
+pwd
+echo "list directory"
+ls
 
 npx kysely migrate:$MIGRATE_COMMAND
 sleep 10
