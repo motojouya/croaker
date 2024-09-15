@@ -27,7 +27,6 @@ WORKDIR /srv
 COPY --from=deps /srv/node_modules ./node_modules
 COPY . .
 RUN npm run build
-RUN npm run build:migrate
 
 # PRODUCTION
 FROM base AS production
