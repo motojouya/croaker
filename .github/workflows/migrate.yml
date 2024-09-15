@@ -40,7 +40,13 @@ jobs:
       - name: Migrate Latest
         if: github.ref == 'refs/heads/main' && inputs.migrate
         run: ./migrate.sh latest ${{ vars.database_file }} ${{ vars.db_bucket_name }} ${{ vars.db_bucket_path }}
+        environment:
+          name: SQLITE_FILE
+          value: ${{ vars.database_file }}
 
       - name: Migrate Rollback
         if: github.ref == 'refs/heads/main' && !inputs.migrate
         run: ./migrate.sh rollback ${{ vars.database_file }} ${{ vars.db_bucket_name }} ${{ vars.db_bucket_path }}
+        environment:
+          name: SQLITE_FILE
+          value: ${{ vars.database_file }}
