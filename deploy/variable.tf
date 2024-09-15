@@ -22,9 +22,9 @@ variable "image_tag" {
 }
 
 # database storage bucket
-variable "db_backet_name" {
+variable "db_bucket_name" {
 }
-variable "db_backet_path" {
+variable "db_bucket_path" {
 }
 
 # applocation env
