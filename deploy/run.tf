@@ -95,10 +95,6 @@ resource "google_cloud_run_v2_service" "croaker_service" {
         name  = "SQLITE_FILE"
         value = "${var.database_path}/${var.database_file}"
       }
-      env {
-        name  = "PORT"
-        value = "3000"
-      }
       volume_mounts {
         name       = "data"
         mount_path = var.database_path
