@@ -143,25 +143,10 @@ resource "google_cloud_run_v2_service" "croaker_service" {
   }
 }
 
-# TODO 公開のために必要？
-# resource "google_cloud_run_service_iam_policy" "cloud_run_noauth" {
-#   location    = google_cloud_run_v2_service.croaker_service.location
-#   project     = google_cloud_run_v2_service.croaker_service.project
-#   service     = google_cloud_run_v2_service.croaker_service.name
-#   policy_data = data.google_iam_policy.cloud_run_noauth.policy_data
-# }
-# 
-# data "google_iam_role" "run_invoker" {
-#   name = "roles/run.invoker"
-# }
-# 
-# data "google_iam_policy" "cloud_run_noauth" {
-#   binding {
-#     role    = data.google_iam_role.run_invoker.name
-#     members = ["allUsers"]
-#   }
-# }
-# 
-# output "url" {
-#   value = google_cloud_run_v2_service.main.uri
-# }
+resource "google_cloud_run_service_iam_binding" "croaker_service_no_auth" {
+  location = google_cloud_run_v2_service.croaker_service.location
+  project  = google_cloud_run_v2_service.croaker_service.project
+  service  = google_cloud_run_v2_service.croaker_service.name
+  role     = "roles/run.invoker"
+  members  = ["allUsers"]
+}
