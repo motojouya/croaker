@@ -7,18 +7,18 @@
 - [-] croakerのgoogle cloud resoruceの準備
   - [-] bucket
   - [-] cloud run service account
-- [ ] deploy用github action
-  - [ ] artifact registryへbuild&pushする(tag名はpackage.jsonのvesionを参照、trigger master push)
-  - [ ] cloud runのdeploy terraform(var.versionを参照してpush、trigger dispatch)
+- [-] deploy用github action
+  - [-] artifact registryへbuild&pushする(tag名はpackage.jsonのvesionを参照、trigger master push)
+  - [-] cloud runのdeploy terraform(var.versionを参照してpush、trigger dispatch)
 - [-] litestream -> 不要 if-exist flagがあるので
   - [-] bucketに配置
   - [-] litestreamへ連携するサイドカーコンテナ設定
-- [ ] domain
-  - [ ] とりあえずデフォルトドメインでdeploy
-  - [ ] 今のドメインのサブドメインをコンソールから結びつけ
-  - [ ] terraform化
-- [ ] oauth account setting
-  - [ ] google
-  - [ ] github
+- [-] domain
+  - [-] とりあえずデフォルトドメインでdeploy
+  - [-] 今のドメインのサブドメインをコンソールから結びつけ
+  - [-] terraform化
+- [-] oauth account setting
+  - [-] google
+  - [-] github
 - [ ] 動作確認
 
