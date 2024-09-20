@@ -122,10 +122,10 @@ resource "google_cloud_run_v2_service" "croaker_service" {
       }
 
       startup_probe {
-        initial_delay_seconds = 0
-        failure_threshold     = 1
+        initial_delay_seconds = 1
+        failure_threshold     = 5
         timeout_seconds       = 1
-        period_seconds        = 3
+        period_seconds        = 2
         tcp_socket {
           port = 8080
         }
