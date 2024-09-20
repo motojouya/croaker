@@ -133,7 +133,7 @@ resource "google_cloud_run_v2_service" "croaker_service" {
 
       # command = ["restore", "-if-db-not-exists", "-if-replica-exists", "-v", "-o", "${var.database_path}", "gcs://${var.db_bucket_name}/${var.db_bucket_path}", "&&", "nc", "-lkp", "8080", "-e", "echo", "restored"]
       # command = "restore -if-db-not-exists -if-replica-exists -v -o ${var.database_path} gcs://${var.db_bucket_name}/${var.db_bucket_path} && nc -lkp 8081 -e echo restored"
-      command = ["/bin/sh", "-c", "echo restoring && /usr/local/bin/litestream restore -if-db-not-exists -if-replica-exists -o ${var.database_path}/${var.database_file} gcs://${var.db_bucket_name}/${var.db_bucket_path}/${var.database_file}"] # && nc -lkp 8080 -e echo restored
+      command = ["/bin/sh", "-c", "echo restoring && /usr/local/bin/litestream restore -if-db-not-exists -if-replica-exists -o ${var.database_path}/${var.database_file} gcs://${var.db_bucket_name}/${var.db_bucket_path}/${var.database_file} && nc -lkp 8080 -e echo restored"]
     }
   }
 
