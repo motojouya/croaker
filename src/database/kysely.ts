@@ -5,6 +5,7 @@ import { KyselyAuth } from "@auth/kysely-adapter";
 
 export type GetKysely = () => Kysely<Database>;
 export const getKysely: GetKysely = () => {
+  console.log('db path: ', process.env.SQLITE_FILE);
   return new KyselyAuth<Database>({
     dialect: new SqliteDialect({
       database: new Sqlite(process.env.SQLITE_FILE),
