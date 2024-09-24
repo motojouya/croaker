@@ -18,7 +18,7 @@ resource "google_cloud_run_v2_service" "croaker_service" {
       name = "data"
       empty_dir {
         medium     = "MEMORY"
-        size_limit = "512Mi"
+        size_limit = "256Mi"
       }
     }
 
