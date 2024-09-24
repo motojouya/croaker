@@ -15,6 +15,7 @@ declare module "next-auth" {
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   debug: true,
+  trustHost: true,
   session: { strategy: "database" }, // TODO 'jwt' でもいい。いずれにしろadapterがあれば永続化はしてくれる。どっちがいいのか
   // @ts-ignore
   adapter: KyselyAdapter(getKysely()), // TODO なんか型合わないが動かしてみて動けばいいでしょう
