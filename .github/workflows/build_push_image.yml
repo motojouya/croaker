@@ -26,21 +26,21 @@ jobs:
         id: 'auth'
         with:
           token_format: access_token
-          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
-      # - run: gcloud auth configure-docker "${{vars.registry_location}}-docker.pkg.dev" --quiet
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      # - run: gcloud auth configure-docker "${{secrets.registry_location}}-docker.pkg.dev" --quiet
       - uses: docker/login-action@v3
         with:
           username: 'oauth2accesstoken'
           password: '${{ steps.auth.outputs.access_token }}'
-          registry: '${{ vars.registry_location }}-docker.pkg.dev'
+          registry: '${{ secrets.registry_location }}-docker.pkg.dev'
       #   id: docker-auth
       - id: version
         run: echo "version=$(cat package.json | jq -r .version)" >> "$GITHUB_OUTPUT"
       - id: meta
         uses: docker/metadata-action@v5
         with:
-          images: "${{vars.registry_location}}-docker.pkg.dev/${{vars.project_id}}/${{vars.repositry_name}}/${{vars.image_name}}"
+          images: "${{secrets.registry_location}}-docker.pkg.dev/${{secrets.project_id}}/${{secrets.repositry_name}}/${{secrets.image_name}}"
           tags: |
             type=raw,value=latest
             type=raw,value=${{ steps.version.outputs.version }}
