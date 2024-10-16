@@ -17,10 +17,6 @@ import { trimContents } from "@/domain/croak/croak";
 import { nullableId } from "@/domain/id";
 import { Croak } from "@/domain/croak/croak";
 
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
-import { execute, executeA } from "@/lib/base/fp";
-
 export type FunctionResult = Croak | AuthorityFail | FetchAccessFail | InvalidArgumentsFail;
 
 const postCroakContext = {
@@ -125,80 +121,3 @@ const getOgps: GetOgps = async (fetcher, trimedContents) => {
 
   return values;
 };
-
-// import { Do, bind, bindA, map, toUnion } from '@/lib/base/fp';
-//
-// export const postCroakFP: PostCroak =
-//   ({ db, local, fetcher }) =>
-//   (identifier) =>
-//   (text, thread) =>
-//   pipe(
-//     Do,
-//     bind("trimedContents", () => trimContents(text)),
-//     bind("nullableThread", () => nullableId('thread', thread)),
-//
-//     bindA("croaker", ({ nullableThread }) => getCroaker(identifier, !!nullableThread, local, db)),
-//     bindA("links", ({ trimedContents }) => getOgps(fetcher, trimedContents)),
-//
-//     bind("croakData", ({ croaker, trimedContents, nullableThread }) => ({
-//       croaker_id: croaker.croaker_id,
-//       contents: trimedContents,
-//       thread: nullableThread || undefined,
-//     })),
-//     bindA("croak", ({ croakData, links }) => db.transact((trx) => trx.createTextCroak(croakData, links))),
-//
-//     map(({ croak, croaker }) => ({
-//       ...croak,
-//       croaker_name: croaker.croaker_name,
-//       has_thread: false,
-//       files: [],
-//     })),
-//     toUnion
-//   )();
-
-type CroakData = {
-  croaker_id: string;
-  contents: string;
-  thread?: number;
-};
-export const postCroakFP: PostCroak =
-  ({ db, local, fetcher }) =>
-  (identifier) =>
-  (text, thread) =>
-    pipe(
-      TE.Do,
-      TE.bindW("trimedContents", () => TE.fromEither(execute<string, InvalidArgumentsFail>(() => trimContents(text)))),
-      TE.bindW("nullableThread", () =>
-        TE.fromEither(execute<number | null, InvalidArgumentsFail>(() => nullableId("thread", thread))),
-      ),
-
-      TE.bindW("croaker", ({ nullableThread }) =>
-        executeA<Croaker, AuthorityFail>(() => getCroaker(identifier, !!nullableThread, local, db)),
-      ),
-      TE.bindW("links", ({ trimedContents }) =>
-        executeA<Ogp[], FetchAccessFail>(() => getOgps(fetcher, trimedContents)),
-      ),
-
-      TE.bindW("croakData", ({ croaker, trimedContents, nullableThread }) =>
-        TE.fromEither(
-          execute<CroakData>(() => ({
-            croaker_id: croaker.croaker_id,
-            contents: trimedContents,
-            thread: nullableThread || undefined,
-          })),
-        ),
-      ),
-      TE.bindW("croak", ({ croakData, links }) =>
-        executeA<ReturnCroak>(() => db.transact((trx) => trx.createTextCroak(croakData, links))),
-      ),
-
-      TE.map(({ croak, croaker }) => ({
-        ...croak,
-        croaker_name: croaker.croaker_name,
-        has_thread: false,
-        files: [],
-      })),
-      TE.toUnion,
-    )();
-
-setContext(postCroakFP, postCroakContext);
