@@ -14,8 +14,12 @@ import { AUTHORIZE_FORM_AGREEMENT } from "@/domain/authorization/validation/form
 import { AUTHORIZE_BANNED } from "@/domain/authorization/validation/banned";
 import { getAuthorizePostCroak } from "@/domain/authorization/validation/postCroak";
 import { trimContents } from "@/domain/croak/croak";
-import { nullableId } from "@/domain/id";
+import { nullableId, nullableIdFP } from "@/domain/id";
 import { Croak } from "@/domain/croak/croak";
+
+import { pipe } from "fp-ts/function";
+import * as E from "fp-ts/Either";
+import * as TE from "fp-ts/TaskEither";
 
 export type FunctionResult = Croak | AuthorityFail | FetchAccessFail | InvalidArgumentsFail;
 
@@ -29,45 +33,36 @@ export type PostCroak = ContextFullFunction<
   typeof postCroakContext,
   (identifier: Identifier) => (text: string, thread?: number) => Promise<FunctionResult>
 >;
+
+type CroakData = {
+  croaker_id: string;
+  contents: string;
+  thread?: number;
+};
 export const postCroak: PostCroak =
   ({ db, local, fetcher }) =>
   (identifier) =>
-  async (text, thread) => {
-    const trimedContents = trimContents(text);
-    if (trimedContents instanceof InvalidArgumentsFail) {
-      return trimedContents;
-    }
-
-    const nullableThread = nullableId("thread", thread);
-    if (nullableThread instanceof InvalidArgumentsFail) {
-      return nullableThread;
-    }
-
-    const croaker = await getCroaker(identifier, !!nullableThread, local, db);
-    if (croaker instanceof AuthorityFail) {
-      return croaker;
-    }
-
-    const createCroak = {
-      croaker_id: croaker.croaker_id,
-      contents: trimedContents,
-      thread: nullableThread || undefined,
-    };
-
-    const links = await getOgps(fetcher, trimedContents);
-    if (links instanceof FetchAccessFail) {
-      return links;
-    }
-
-    const croak = await db.transact((trx) => trx.createTextCroak(createCroak, links));
-
-    return {
-      ...croak,
-      croaker_name: croaker.croaker_name,
-      has_thread: false,
-      files: [],
-    };
-  };
+  (text, thread) =>
+    pipe(
+      TE.Do,
+      TE.bindW("trimedContents", () => TE.fromEither(trimContents(text))),
+      TE.bindW("nullableThread", () => TE.fromEither(nullableIdFP("thread", thread))),
+      TE.bindW("croaker", ({ nullableThread }) => () => getCroaker(identifier, !!nullableThread, local, db)),
+      TE.bindW("links", ({ trimedContents }) => () => getOgps(fetcher, trimedContents)),
+      TE.bindW("croakData", ({ croaker, trimedContents, nullableThread }) => TE.right({
+        croaker_id: croaker.croaker_id,
+        contents: trimedContents,
+        thread: nullableThread || undefined,
+      })),
+      TE.bindW("croak", ({ croakData, links }) => TE.rightTask(() => db.transact((trx) => trx.createTextCroak(croakData, links)))),
+      TE.map(({ croak, croaker }) => ({
+        ...croak,
+        croaker_name: croaker.croaker_name,
+        has_thread: false,
+        files: [],
+      })),
+      TE.toUnion,
+    )();
 
 setContext(postCroak, postCroakContext);
 
@@ -80,7 +75,7 @@ type GetCroaker = (
   isThread: boolean,
   local: Local,
   db: ReadableDB,
-) => Promise<Croaker | AuthorityFail>;
+) => Promise<E.Either<AuthorityFail, Croaker>>;
 const getCroaker: GetCroaker = async (identifier, isThread, local, db) => {
   const authorizePostCroak = getAuthorizePostCroak(
     isThread,
@@ -91,14 +86,20 @@ const getCroaker: GetCroaker = async (identifier, isThread, local, db) => {
     },
   );
 
-  return await authorizeCroaker(identifier, db.getCroakerUser, [
+  const result = await authorizeCroaker(identifier, db.getCroakerUser, [
     AUTHORIZE_FORM_AGREEMENT,
     AUTHORIZE_BANNED,
     authorizePostCroak,
   ]);
+
+  if (result instanceof AuthorityFail) {
+    return E.left(result);
+  } else {
+    return E.right(result);
+  }
 };
 
-type GetOgps = (fetcher: Fetcher, trimedContents: string) => Promise<Ogp[] | FetchAccessFail>;
+type GetOgps = (fetcher: Fetcher, trimedContents: string) => Promise<E.Either<FetchAccessFail, Ogp[]>>;
 const getOgps: GetOgps = async (fetcher, trimedContents) => {
   const links = getLinks(trimedContents);
 
@@ -115,9 +116,9 @@ const getOgps: GetOgps = async (fetcher, trimedContents) => {
 
   for (const val of values) {
     if (val instanceof FetchAccessFail) {
-      return val; // FIXME とりあえず最初の1つだけ
+      return E.left(val); // FIXME とりあえず最初の1つだけ
     }
   }
 
-  return values;
+  return E.right(values);
 };

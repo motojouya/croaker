@@ -5,6 +5,8 @@ import { CroakRecord, LinkRecord, FileRecord } from "@/database/type/croak";
 import { InvalidArgumentsFail } from "@/lib/base/validation";
 import { trimText, charCount } from "@/domain/text";
 
+import * as E from "fp-ts/Either";
+
 export type FileResource = {
   name: string;
   url: string;
@@ -62,23 +64,23 @@ export const resolveFileUrl: ResolveFileUrl = async (storage, croak, files) => {
 
 export const CONTENTS_COUNT_MAX = 140;
 
-export type TrimContents = (contents?: string) => string | InvalidArgumentsFail;
+export type TrimContents = (contents?: string) => E.Either<InvalidArgumentsFail, string>;
 export const trimContents: TrimContents = (contents) => {
   if (!contents) {
-    return new InvalidArgumentsFail("contents", "", "入力してください");
+    return E.left(new InvalidArgumentsFail("contents", "", "入力してください"));
   }
 
   const lines = trimText(contents);
   if (lines.length === 0) {
-    return new InvalidArgumentsFail("contents", contents, "入力してください");
+    return E.left(new InvalidArgumentsFail("contents", contents, "入力してください"));
   }
 
   const len = charCount(lines);
   if (len < 1 || CONTENTS_COUNT_MAX < len) {
-    return new InvalidArgumentsFail("contents", contents, `1文字以上${CONTENTS_COUNT_MAX}以下です`);
+    return E.left(new InvalidArgumentsFail("contents", contents, `1文字以上${CONTENTS_COUNT_MAX}以下です`));
   }
 
-  return lines.join("\n");
+  return E.right(lines.join("\n"));
 };
 
 export const URL_REG_EXP = new RegExp("^https://S+$");

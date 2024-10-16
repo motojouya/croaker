@@ -1,6 +1,8 @@
 import { InvalidArgumentsFail } from "@/lib/base/validation";
 import { Random } from "@/lib/io/local";
 
+import * as E from "fp-ts/Either";
+
 export type ValidateId = (value: number, name: string) => InvalidArgumentsFail | number;
 export const validateId: ValidateId = (value, name) => {
   if (!Number.isSafeInteger(value) || value < 1) {
@@ -20,6 +22,19 @@ export const nullableId: NullableId = (name, value) => {
   }
 
   return value;
+};
+
+export type NullableIdFP = (name: string, value?: number) => E.Either<InvalidArgumentsFail, number | null>;
+export const nullableIdFP: NullableIdFP = (name, value) => {
+  if (!value) {
+    return E.right(null);
+  }
+
+  if (!Number.isSafeInteger(value) || value < 1) {
+    return E.left(new InvalidArgumentsFail(name, String(value), `${name}は1以上の整数です`));
+  }
+
+  return E.right(value);
 };
 
 const ALPHABET_NUMBER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
