@@ -47,14 +47,28 @@ export const postCroak: PostCroak =
       TE.Do,
       TE.bindW("trimedContents", () => TE.fromEither(trimContents(text))),
       TE.bindW("nullableThread", () => TE.fromEither(nullableIdFP("thread", thread))),
-      TE.bindW("croaker", ({ nullableThread }) => () => getCroaker(identifier, !!nullableThread, local, db)),
-      TE.bindW("links", ({ trimedContents }) => () => getOgps(fetcher, trimedContents)),
-      TE.bindW("croakData", ({ croaker, trimedContents, nullableThread }) => TE.right({
-        croaker_id: croaker.croaker_id,
-        contents: trimedContents,
-        thread: nullableThread || undefined,
-      })),
-      TE.bindW("croak", ({ croakData, links }) => TE.rightTask(() => db.transact((trx) => trx.createTextCroak(croakData, links)))),
+      TE.bindW(
+        "croaker",
+        ({ nullableThread }) =>
+          () =>
+            getCroaker(identifier, !!nullableThread, local, db),
+      ),
+      TE.bindW(
+        "links",
+        ({ trimedContents }) =>
+          () =>
+            getOgps(fetcher, trimedContents),
+      ),
+      TE.bindW("croakData", ({ croaker, trimedContents, nullableThread }) =>
+        TE.right({
+          croaker_id: croaker.croaker_id,
+          contents: trimedContents,
+          thread: nullableThread || undefined,
+        }),
+      ),
+      TE.bindW("croak", ({ croakData, links }) =>
+        TE.rightTask(() => db.transact((trx) => trx.createTextCroak(croakData, links))),
+      ),
       TE.map(({ croak, croaker }) => ({
         ...croak,
         croaker_name: croaker.croaker_name,
