@@ -17,6 +17,50 @@ import { CroakInputFooter, RegisterFooter } from "@/components/parts/croaks/foot
 import type { Croaker } from "@/database/query/croaker/croaker";
 import { Main } from "@/components/parts/main";
 
+/*
+ * 以下のモジュールを用意しており、いずれかをimportして利用する
+ * - FooterLessCroakList
+ *   - 検索画面から利用
+ * - CroakList
+ *   - メインとスレッド画面から利用
+ *   - MessageCroakListを使用
+ *   - PostableCroakListを使用
+ *
+ * 内部の実装は機能ごとにファイルを区切ってある
+ * - croak.tsx
+ *   投稿自体のUIを提供する
+ * - loadingCroakList.tsx
+ *   サーバから取得した投稿(croak)を表示する
+ * - inputCroakList.tsx
+ *   ユーザが入力した投稿を表示する
+ *   サーバでコミット前でも表示を行うためのものだが、コミットしてもリロードされないのでこのモジュール上で継続的に表示する
+ *   画面をリロードしたらloadingCroakList側で表示する形となる
+ * - footer.tsx
+ *   フッター部分で入力窓を担うが、未ログインの場合は投稿できず、メッセージを表示する
+ *
+ * # 無限スクロール実装
+ * ## 対象ファイル
+ * 上記でもっとも複雑な構成をしているのがloadingCroakList.tsxだが、無限スクロールを実装しているため。
+ * 無限スクロールのトリガーとなるIntersectionObserverを実装しているのはcroak.tsxだが、トリガーされる関数はloadingCroakListから引き渡される。
+ *
+ * ## Croakの管理単位
+ * loadingCroakList.tsxは、内部的にCroakGroupTypeというデータ型を保持し、これがCroakリストの管理単位となる。
+ * CroakGroupTypeは、Croakのリストを持ち、自身がサーバからCroakリストをloadする役割を持っている。
+ * つまり、ロード中か否かの状態管理から、リストの表示までがCroakGroupTypeの役割。
+ * ロード中はメッセージがでるが、Croakが空の場合はUIに表示されない。
+ *
+ * CroakGroupTypeの単位でCroakのリストが管理されているため、無限スクロール時に通り過ぎて表示されなくなったCroakを画面から消すのもCroakGroupTypeを丸ごと消すのみ。
+ * 新しいCroakをロードする際もCroakGroupTypeを追加して、自身にロードさせるだけという形になる。
+ *
+ * ## CroakGroupTypeのtopic
+ * CroakGroupTypeは、管理されてる配列の中で、常に追加削除されるため、配列のindexでは特定できない。
+ * そのため、offsetCursor,reverse,startingPointの3つの値を比較して特定する。
+ *
+ * CroakGroupTypeは、スクロールによって追加削除されるが、トリガーしたCroakGroupTypeから前後1つ先のCroakGroupTypeがなければ追加し、前後ともに2つ先のCroakGroupTypeを削除する。
+ * つまり、結果として、スクロールによってトリガーする関数を持つCroakGroupTypeを中心として、3つのCroakGroupTypeが常に管理されている状態を保つ。
+ *
+ * FIXME だが、バグってるので、遡るスクロールは動くが、戻るスクロールはうまくいかない。
+ */
 type EqualInputCroak = (left: InputCroak, right: InputCroak) => boolean;
 const equalInputCroak: EqualInputCroak = (left, right) => left.key === right.key;
 

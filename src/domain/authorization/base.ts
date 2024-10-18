@@ -15,12 +15,8 @@ export type IdentifierUserId = { type: "user_id"; user_id: string };
 export type Identifier = IdentifierAnonymous | IdentifierUserId;
 
 /*
- * 設計方針として、next-authはclientサイドで参照しない
- * 考え方として、next-auth自体が仕様の塊であり、仕様の変更を強く受けてしまいそうな部分であるため
- * したがって、sessionにアクセスするのは常にサーバサイドであり、サーバサイドで取得したsession情報をlayout.tsxにbindすることでアクセスできるようにする
- * これは、clientサイドでuseSession、getSessionしてしまうと、通信が発生しパフォーマンスが悪化するという事情もある
- * ユーザを特定するためのkeyは`user.id = user_id`になるが、この値はいくらかsensitiveなので、これもclientには渡さないように注意する
- * ただ、必要なので、sessionから取れるようにはしておく。
+ * 認可の情報は、roleテーブルに設定され、特定のroleをcroakerと紐づけることで利用される。
+ * また、各Caseの中で、どの認可が必要なのかを選択し、authorizeCroaker関数に渡すことで認可処理を実行する。
  *
  * ユーザの状態としては、未ログイン -> ログイン -> croaker登録済みという段階で遷移するので、これを意識してコードを書く
  */

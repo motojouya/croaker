@@ -19,8 +19,8 @@ see [github actions](.github/workflows)
 
 ### DEVELOPMENT
 see
-- [docker command](dc)
-- [package.json](package.json)
+- [docker compose command](dc)
+- [package.json#script](package.json)
 
 ### 準備
 - sqlite3のデータベースファイルの用意  
@@ -70,15 +70,15 @@ see
 
 - `/`(top)
   - メイン画面
-  - [無限スクロール](#無限スクロール)
+  - Croakリスト [/src/components/parts/croaks/index.ts](/src/components/parts/croaks/index.ts)を利用
   - `/api/croak/top` (API)
 - `/search?text=[text]`
   - 検索画面
-  - [無限スクロール](#無限スクロール)
+  - Croakリスト [/src/components/parts/croaks/index.ts](/src/components/parts/croaks/index.ts)を利用
   - `/api/croak/search` (API)
 - `/thread/[croak_id]`
   - スレッド
-  - [無限スクロール](#無限スクロール)
+  - Croakリスト [/src/components/parts/croaks/index.ts](/src/components/parts/croaks/index.ts)を利用
   - `/api/croak/thread` (API)
 - `/croaker/[croaker_id]`
   - 投稿者(croaker)の画面
@@ -140,11 +140,11 @@ Croakerでは、サーバサイドのコードは、フロントエンドと分�
 
 機能としては以下を実装している  
 - session  
-  [Auth.js](src/lib/next/nextAuthOptions.ts)  
+  [src/lib/next/nextAuthOptions.ts](src/lib/next/nextAuthOptions.ts)からAuth.jsを使用  
 - リクエスト情報の取得  
   query string, request body, form dataからのパラメータの取得  
 - リクエスト情報のバリデーション  
-  [Zod](src/lib/base/schema.ts)  
+  [src/lib/base/schema.ts](src/lib/base/schema.ts)からZodを使用  
 - レスポンスの整理  
   レスポンスをclassからjsonに変換し、status codeを操作するなど  
 
@@ -160,125 +160,57 @@ const identifier = getIdentifier(session);
 const master = await bindContext(getMaster)(identifier)();
 ```
 
-以下の便利関数を用意すべきだが、してない。  
-便利関数があれば、RSCからAuth.jsへの依存も限定的にできる。 -> issueへ  
-```ts
-import { bindContext, GetContext, ContextFullFunction } from "@/lib/base/context";
-import { getIdentifier } from "@/lib/next/utility";
-import { auth } from "@/lib/next/nextAuthOptions";
-
-function <T extends GetContext, F>handle(func: ContextFullFunction<T, (identifier: Identifier) => F>): F {
-  const session = await auth();
-  const identifier = getIdentifier(session);
-  return bindContext(func)(identifier);
-};
-```
+FIXME 本当はRSCでも便利関数を用意してAuth.jsへの依存を減らすべき
 
 ### サーバサイドアプリケーションの機能を利用
 以下のモジュールで実装されている。  
 
 - DI  
-  [ContextBinder](src/lib/base/context.ts)  
+  ContextBinder [src/lib/base/context.ts](src/lib/base/context.ts)  
   Case上で設定し、API,SA,RSC上から利用されるという構成になっている  
 - 認可  
-  [Authorization](src/domain/authorization/base.ts)  
+  Authorization [src/domain/authorization/base.ts](src/domain/authorization/base.ts)  
   Case自身が知り、許可すべき内容なのでCaseのソースコードから利用される  
 - トランザクション管理  
-  [Database](src/database/base.ts)  
+  Database [src/database/base.ts](src/database/base.ts)  
   トランザクションもCaseのソースコードから利用される。  
 
 認可やトランザクションは、アプリケーションフレームワークがコンテナ上で処理することも多い概念だが、Croakerではそうなっておらず、プログラマが判断してCase上で利用される。  
 認可についてはCase自身が知り、管理すべきという考えのため。  
-コンテナで動くアプリケーションはDB以外のIOも比較して重くなりがちで、Caseの最初から最後までという統一的なトランザクション管理では荒すぎるため。  
+コンテナで動くアプリケーションはDB以外のIOも比較して重くなりがちで、Caseの最初から最後までという統一的なトランザクション管理では粗すぎるため。  
 
-### 未実装
+### 実装していないもの
 以下は特にモジュールを用意していない  
 
 - リクエスト情報の整理と引き渡し  
   API,SAの各実装で記載されているため、特に支援モジュールはない  
 - ロギング  
-  本当に未実装。やらなくてはならない。ContextBinderか、RouteHandlerでbindできると良い。  
+  FIXME 本当に未実装。やらなくてはならない。ContextBinderか、RouteHandlerでbindできると良い。  
 - その他  
   その他が必要になった場合、Next側ならRouteHandlerに挟み、サーバサイドアプリケーションならContextBinderに挟むのが望ましい  
 
+## その他
+IOに限らないが、ライブラリはwrapして利用し、切り替えやすい形としておく。  
+特にアプリケーションの外に出るIOモジュールのものは必須。  
+
+Date,Random,Consoleなど、比較的どの場面でも利用するIOなモジュールについては、主なIO処理と合わせてIOモジュール内は特にDIなどせず呼び出す。  
+ただし、Caseからは直接利用してはいけない。  
+
 ## Link
-上記の説明中にあるリンクをまとめておく  
-
-### Auth.js
-認証、セッション管理はAuth.jsを利用。
-Auth.jsはDBスキーマまで利用するモジュールで以下のの4つのテーブルを使っている
-- User
-- Account
-- Session
-- VerificationToken
-
-これらのテーブルのカラムうち、User.idのみをアプリケーションで参照するため、sessionからもuser_idのみを取得し、Caseに引き渡す形を取っている。
-また、Client Componentからはsessionにアクセスせず、RSCであるlayout.jsでuser_idを利用してアプリケーションの情報を取得し、React Contextを使ってClient Componentで参照する。
-
-そのため、Auth.jsへの依存自体が、routeHandler.ts,serverActions.ts,RSCに閉じたものとして実現している。
-Client ComponentやCaseからはAuth.jsを利用しない。してはいけない。
-これは、DBスキーマを利用するという大胆な発想のモジュールの将来の影響を最小限にするためのもの。
-
-認可処理はuser_idで紐づいたcroakerテーブルに認可情報へのリンクがあるため、Auth.jsでは認可にはまったく関与しない。
-[Authorization](src/domain/authorization/base.ts)モジュールで実現される。
-※ googleやgithubから見ればcroakerを認可する機能はAuth.jsに依存しているが、croaker内での認可の話。
-
-### Zod
-スキーマバリデータとしてZodを利用。
-Client Component上でreact-hooks-formと連携して利用もしているが、本モジュールはサーバサイドでリクエストをバリデーションするためのもの。
-
-ここで利用する定義は、typescriptで表現可能な型までとしている。
-後続の処理からは、このバリデーション内容が見えないため、型で担保されている以上のバリデーションが意識されず、再度後続で実装する必要がある。
-それであれば、型以上のバリデーションをする意味がないため。
-
-### Context Binder
-
-# 使い方
-いわゆるDIコンテナを代替する機能。
-1,2はCaseのそれぞれの名前空間で行い、3,4はCaseを利用するモジュール側で行う。
-
-1. Caseそれぞれに、bindしたい依存関係を解決する設定(GetContext型)を定義する
-2. setContextを使い、Caseのメイン関数(ContextFullFunction型)に1で定義した設定を組み込む
-3. API RoutesやServer Actions上で、bindContextを使ってCaseの関数にDIを行って、実行関数を取得する
-4. Case関数を実行する
-
-# コンセプト
-Caseの名前空間に依存の設定を記載する形になるので、依存性の解決というと違う感じもする。
-
-状態を取り扱うライブラリはアプリケーション上で直接使うのではなく、[src/lib/io](src/lib/io)モジュールでwrapして使うルールとする。
-そのため、それらのライブラリや状態をプラガブルに、疎結合に扱うことに関しては、IOモジュールに頼る形を取る。
-
-上記の前提に立つため、基本的にはテストをモックしやすくすることを目的としており、コード上での疎結合性を完璧に実現するためのものではない。
-Caseの名前空間に依存しているモジュールを記載するので、何を使っているか、一覧性は高いはず。
-
-使用感の違いとしては、DIコンテナとは機能的にかなり違い、多重でDIを解決したりはしない。
-依存する状態を組み合わせて実行するのはCase側の責任としている。
-
-### 無限スクロール
-see [/src/components/parts/croaks](/src/components/parts/croaks)
-
-PlantUMLを用意してもいいかも
-遷移や、apiアクセスのタイミング、画面の描画状態など、分かりづらいのでシーケンス図かなぁ。
-あるいは、純粋にワイヤーフレームみたいな図が、時系列で遷移していく感じのほうがいいか。
-
-### テキストについて
-単一行テキストは、特になんの仕様もない
-複数行テキストは、末尾のみtrimされ、先頭はtrimされない。
-また、行頭が`https://`で始まり、空白文字列を含んでいない行はURLとみなす。
-行全体をURLとしてみなすため、行中に空白文字列を含む場合はURLとしてみなさない。
-URLとして見なす場合は、リンク先の情報を取得して表示する。
-
-### 認可
-domain/authorization
-
-### エラー
-lib/base/fail
-
-### io
-lib/io
-基本的に分けて考えるがDataやRandom、consoleなど、どこでも呼べるようなものはioモジュールの中で、普通にそのまま呼んでる
-caseの中ではDIして呼ばないといけないが、ioでは混ぜてる
-
-### DB
-database
+- Session,認証  
+  [src/lib/next/nextAuthOptions.ts](src/lib/next/nextAuthOptions.ts)  
+- Schema Validator  
+  [src/lib/base/schema.ts](src/lib/base/schema.ts)  
+- Context Binder(DI代替)  
+  [src/lib/base/context.ts](src/lib/base/context.ts)  
+- CroakリストUI  
+  [/src/components/parts/croaks/index.ts](/src/components/parts/croaks/index.ts)  
+- テキストについて  
+  [src/domain/croak/croak.ts](src/domain/croak/croak.ts)  
+- 認可  
+  [src/domain/authorization/base.ts](src/domain/authorization/base.ts)  
+- エラー  
+  [src/lib/base/fail.ts](src/lib/base/fail.ts)  
+- DB  
+  [src/database/base.ts](src/database/base.ts)  
 
