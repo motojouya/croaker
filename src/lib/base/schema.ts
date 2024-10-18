@@ -1,6 +1,14 @@
 import { z } from "zod";
 import { Fail, isFailJSON } from "@/lib/base/fail";
 
+/*
+ * スキーマバリデータとしてZodを利用。
+ * Client Component上でzodとreact-hooks-formと連携して利用もしているが、本モジュールはサーバサイドでリクエストをバリデーションするためのもの。
+ *
+ * ここで利用する定義は、typescriptで表現可能な型までとしている。
+ * 後続の処理からは、このバリデーション内容が見えないため、型で担保されている以上のバリデーションが意識されず、再度後続で実装する必要がある。
+ * それであれば、型以上のバリデーションをする意味がないため。
+ */
 export function parse<S extends z.ZodTypeAny>(schema: S, data: unknown): z.infer<S> | ZodSchemaFail {
   const result = schema.safeParse(data);
 
@@ -11,8 +19,6 @@ export function parse<S extends z.ZodTypeAny>(schema: S, data: unknown): z.infer
   }
 }
 
-// TODO S extends z.SomeZodObjectしてるけど、stringとかnumber定義がコンパイルエラーになるか検証
-// parseがz.ZodTypeAnyを受け入れるようにしてるけどbodySchemaはz.SomeZodObjectになるようにしておく
 export type GetKeyValue<E> = (key: string) => string | null | E;
 export function parseKeyValue<S extends z.SomeZodObject, E extends Fail>(
   schema: S,

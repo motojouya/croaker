@@ -3,6 +3,12 @@ import { Database } from "@/database/type";
 import { Fail } from "@/lib/base/fail";
 import { getKysely } from "@/database/kysely";
 
+/*
+ * DBは、各Query,Update文ごとに名前空間を切り、独立したモジュールとして扱う。
+ * 利用時は、複数のQueryモジュールを利用することになるが、getDatabase関数を利用して一つのオブジェクトとし、Caseにbindされる形を取る。
+ * getDatabaseの第一引数はトランザクション外、第二引数はトランザクション内で呼び出すもの。
+ * トランザクションは、Case上の任意のタイミングで呼び出せる形を取る。
+ */
 export type GetQuery = Record<string, (db: Kysely<Database>) => unknown>;
 
 let db: Kysely<Database>;

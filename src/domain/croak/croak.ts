@@ -5,6 +5,16 @@ import { CroakRecord, LinkRecord, FileRecord } from "@/database/type/croak";
 import { InvalidArgumentsFail } from "@/lib/base/validation";
 import { trimText, charCount } from "@/domain/text";
 
+/*
+ * 投稿するテキストは以下のルールとなっている
+ * - twitterのもともとの仕様をリスペクトし、140文字まで
+ * - 行単位では、末尾のみtrimされ、先頭はtrimされない
+ * - 行頭が`https://`で始まり、空白文字列を含んでいない行はURLとみなす
+ * - 行全体をURLとしてみなすため、行中に空白文字を含む場合はURLとしてみなさない
+ * - URLはリンク先の情報を取得して表示する
+ *
+ * FIXME なお、バグってるので、上記の仕様でちゃんと動くのは文字数制限のみ
+ */
 export type FileResource = {
   name: string;
   url: string;

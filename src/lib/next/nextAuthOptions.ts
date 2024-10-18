@@ -1,7 +1,6 @@
 import NextAuth, { DefaultSession } from "next-auth";
 import GitHubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
-// import CredentialsProvider from "next-auth/providers/credentials";
 import { KyselyAdapter } from "@auth/kysely-adapter";
 import { getKysely } from "@/database/kysely";
 
@@ -13,12 +12,32 @@ declare module "next-auth" {
   }
 }
 
+/*
+ * 認証、セッション管理はAuth.jsを利用。
+ * Auth.jsはDBスキーマまで利用するモジュールで以下のの4つのテーブルを使っている
+ * - User
+ * - Account
+ * - Session
+ * - VerificationToken
+ *
+ * これらのテーブルのカラムうち、User.idのみをアプリケーションで参照するため、sessionからもuser_idのみを取得し、Caseに引き渡す形を取っている。
+ * また、Client Componentからはsessionにアクセスせず、RSCであるlayout.jsでuser_idを利用してアプリケーションの情報を取得し、React Contextを使ってClient Componentで参照する。
+ *
+ * そのため、Auth.jsへの依存自体が、routeHandler.ts,serverActions.ts,RSCに閉じたものとして実現している。
+ * Client ComponentやCaseからはAuth.jsを利用しない。してはいけない。
+ * これは、DBスキーマを利用するという大胆な発想のモジュールの将来の影響を最小限にするためのもの。またClientComponentからは通信が発生するのでパフォーマンスも悪化する。
+ * 更にuser_idはいくらかsensitiveな値なので、フロント側に渡したくない。
+ *
+ * 認可処理はuser_idで紐づいたcroakerテーブルに認可情報へのリンクがあるため、Auth.jsでは認可にはまったく関与しない。
+ * [src/domain/authorization/base.ts](src/domain/authorization/base.ts)のAuthorizationモジュールで認可が実現される。
+ * ※ googleやgithubから見ればcroakerを認可する機能はAuth.jsに依存しているが、croaker内での認可の話。
+ */
 export const { handlers, signIn, signOut, auth } = NextAuth({
   debug: true,
   trustHost: true,
-  session: { strategy: "database" }, // TODO 'jwt' でもいい。いずれにしろadapterがあれば永続化はしてくれる。どっちがいいのか
+  session: { strategy: "database" }, // FIXME 'jwt' でもいい。いずれにしろadapterがあれば永続化はしてくれる。どっちがいいのか
   // @ts-ignore
-  adapter: KyselyAdapter(getKysely()), // TODO なんか型合わないが動かしてみて動けばいいでしょう
+  adapter: KyselyAdapter(getKysely()), // FIXME なんか型合わないが動かしてみて動けばいいでしょう
   providers: [
     GitHubProvider({
       clientId: process.env.GITHUB_ID!,
@@ -28,49 +47,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
-    // CredentialsProvider({
-    //   name: "Sign in",
-    //   credentials: {
-    //     email: {
-    //       label: "Email",
-    //       type: "email",
-    //       placeholder: "example@example.com",
-    //     },
-    //     password: {label: "Password", type: "password"},
-    //   },
-    //   // メルアド認証処理
-    //   async authorize(credentials) {
-    //     const users = [
-    //       {id: "1", email: "user1@example.com", password: "password1"},
-    //       {id: "2", email: "user2@example.com", password: "password2"},
-    //       {id: "3", email: "abc@abc", password: "123"},
-    //     ];
-
-    //     const user = users.find(user => user.email === credentials?.email);
-
-    //     if (user && user?.password === credentials?.password) {
-    //       return {id: user.id, name: user.email, email: user.email, role: "admin"};
-    //     } else {
-    //       return null;
-    //     }
-    //   }
-    // }),
   ],
   callbacks: {
-    // jwt: async ({token, user, account, profile, isNewUser}) => {
-    //   // 注意: トークンをログ出力してはダメです。
-    //   console.log('in jwt', {user, token, account, profile})
-
-    //   if (user) {
-    //     token.user = user;
-    //     const u = user as any
-    //     token.role = u.role;
-    //   }
-    //   if (account) {
-    //     token.accessToken = account.access_token
-    //   }
-    //   return token;
-    // },
     session: ({ session, user, token }) => {
       return {
         ...session,
@@ -79,15 +57,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           id: user.id,
         },
       };
-      // console.log("in session", { session, token });
-      // token.accessToken
-      // return {
-      //   ...session,
-      //   user: {
-      //     ...session.user,
-      //     role: token.role,
-      //   },
-      // };
     },
   },
 });
