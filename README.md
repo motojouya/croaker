@@ -70,15 +70,15 @@ see
 
 - `/`(top)
   - メイン画面
-  - Croakリスト [src/components/parts/croaks/index.ts](src/components/parts/croaks/index.ts)を利用
+  - Croakリスト [src/components/parts/croaks/index.tsx](src/components/parts/croaks/index.tsx)を利用
   - `/api/croak/top` (API)
 - `/search?text=[text]`
   - 検索画面
-  - Croakリスト [src/components/parts/croaks/index.ts](src/components/parts/croaks/index.ts)を利用
+  - Croakリスト [src/components/parts/croaks/index.tsx](src/components/parts/croaks/index.tsx)を利用
   - `/api/croak/search` (API)
 - `/thread/[croak_id]`
   - スレッド
-  - Croakリスト [src/components/parts/croaks/index.ts](src/components/parts/croaks/index.ts)を利用
+  - Croakリスト [src/components/parts/croaks/index.tsx](src/components/parts/croaks/index.tsx)を利用
   - `/api/croak/thread` (API)
 - `/croaker/[croaker_id]`
   - 投稿者(croaker)の画面
@@ -204,7 +204,7 @@ Date,Random,Consoleなど、比較的どの場面でも利用するIOなモジ�
 - Context Binder(DI代替)  
   [src/lib/base/context.ts](src/lib/base/context.ts)  
 - CroakリストUI  
-  [src/components/parts/croaks/index.ts](src/components/parts/croaks/index.ts)  
+  [src/components/parts/croaks/index.tsx](src/components/parts/croaks/index.tsx)  
 - テキストについて  
   [src/domain/croak/croak.ts](src/domain/croak/croak.ts)  
 - 認可  
