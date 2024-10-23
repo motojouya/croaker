@@ -111,6 +111,14 @@ resource "google_cloud_run_v2_service" "croaker_service" {
       }
 
       args = ["replicate", "${var.database_path}/${var.database_file}", "gcs://${var.db_bucket_name}/${var.db_bucket_path}/${var.database_file}"]
+      # TODO to env
+      # DB_FILE_PATH = ${var.database_path}/${var.database_file}
+      # DB_REPLICA_URL = gcs://${var.db_bucket_name}/${var.db_bucket_path}/${var.database_file}
+      # RETENTION_CHECK_INTERVAL = 5m
+      # TODO change args
+      # replicate --config /srv/litestream.yml
+      # TODO change image
+      # "${var.registry_location}-docker.pkg.dev/${var.project_id}/${var.repositry_name}/${var.image_name_litestream}:${var.image_tag_litestream}"
     }
     containers {
       name  = "restore"

@@ -1,0 +1,5 @@
+dbs:
+  - path: $DB_FILE_PATH
+    replicas:
+      - url: $DB_REPLICA_URL
+        retention-check-interval: $RETENTION_CHECK_INTERVAL
