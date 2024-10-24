@@ -115,7 +115,7 @@ resource "google_cloud_run_v2_service" "croaker_service" {
       }
       env {
         name  = "RETENTION_CHECK_INTERVAL"
-        value = "${var.litestream_retention_check_interval}"
+        value = var.litestream_retention_check_interval
       }
       volume_mounts {
         name       = "data"
