@@ -1,0 +1,49 @@
+name: 'litestream image build and push'
+
+on:
+  workflow_dispatch:
+    inputs:
+      no-cache:
+        description: "Build docker images with no cache"
+        default: false
+        required: false
+        type: boolean
+
+jobs:
+  build_push:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: google-github-actions/auth@v1
+        id: 'auth'
+        with:
+          token_format: access_token
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      - uses: docker/login-action@v3
+        with:
+          username: 'oauth2accesstoken'
+          password: '${{ steps.auth.outputs.access_token }}'
+          registry: '${{ secrets.registry_location }}-docker.pkg.dev'
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: "${{secrets.registry_location}}-docker.pkg.dev/${{secrets.project_id}}/${{secrets.repositry_name}}/${{secrets.image_name_litestream}}"
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ vars.image_tag_litestream }}
+            type=sha,format=long
+      - uses: docker/build-push-action@v5
+        with:
+          file: ./litestream/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          no-cache: ${{ inputs.no-cache == true }}
