@@ -20,6 +20,10 @@ variable "image_name" {
 }
 variable "image_tag" {
 }
+variable "image_name_litestream" {
+}
+variable "image_tag_litestream" {
+}
 
 # database storage bucket
 variable "db_bucket_name" {
@@ -51,4 +55,6 @@ variable "google_client_secret_key" {
 variable "gh_account_id_key" {
 }
 variable "gh_account_secret_key" {
+}
+variable "litestream_retention_check_interval" {
 }
