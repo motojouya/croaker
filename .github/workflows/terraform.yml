@@ -32,6 +32,9 @@ env:
   TF_VAR_google_client_secret_key: ${{ secrets.google_client_secret_key }}
   TF_VAR_gh_account_id_key: ${{ secrets.gh_account_id_key }}
   TF_VAR_gh_account_secret_key: ${{ secrets.gh_account_secret_key }}
+  TF_VAR_image_name_litestream: ${{ secrets.image_name_litestream }}
+  TF_VAR_image_tag_litestream: ${{ vars.image_tag_litestream }}
+  TF_VAR_litestream_retention_check_interval: ${{ vars.litestream_retention_check_interval }}
 
 jobs:
   create_gce:
