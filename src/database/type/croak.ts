@@ -60,3 +60,27 @@ export interface FileTable {
 export type FileRecord = Selectable<FileTable>;
 export type NewFile = Insertable<FileTable>;
 export type FileUpdate = Updateable<FileTable>;
+
+export interface PostTable {
+  post_id: GeneratedAlways<number>;
+  user_id: string;
+  contents: string;
+  posted_date: Generated<Date>;
+  deleted_date: Date | null;
+}
+export type PostRecord = Selectable<PostTable>;
+export type NewPost = Insertable<PostTable>;
+export type PostUpdate = Updateable<PostTable>;
+
+export interface CommentTable {
+  comment_id: GeneratedAlways<number>;
+  post_id: number;
+  user_id: string;
+  contents: string;
+  posted_date: Generated<Date>;
+  deleted_date: Date | null;
+}
+export type CommentRecord = Selectable<CommentTable>;
+export type NewComment = Insertable<CommentTable>;
+export type CommentUpdate = Updateable<CommentTable>;
+

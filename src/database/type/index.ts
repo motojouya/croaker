@@ -1,5 +1,5 @@
 import type { UserTable, AccountTable, SessionTable, VerificationTokenTable } from "@/database/type/auth";
-import type { CroakTable, CroakerTable, FileTable, LinkTable } from "@/database/type/croak";
+import type { CroakTable, CroakerTable, FileTable, LinkTable, PostTable, CommentTable } from "@/database/type/croak";
 import type { RoleTable, ConfigurationTable } from "@/database/type/master";
 
 export interface Database {
@@ -13,4 +13,6 @@ export interface Database {
   link: LinkTable;
   role: RoleTable;
   configuration: ConfigurationTable;
+  post: PostTable;
+  comment: CommentTable;
 }
