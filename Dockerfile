@@ -1,5 +1,5 @@
 # BASE
-FROM node:22.2.0-bookworm-slim as base
+FROM node:22.23.4-bookworm-slim as base
 RUN apt update -y && apt upgrade -y
 RUN apt install -y sqlite3 imagemagick
 
